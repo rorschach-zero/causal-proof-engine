@@ -1,0 +1,94 @@
+# 12 Initial implementation roadmap
+
+A proposal (REVISION) for what would be built, in what order, with what exit criteria, **if and only if** the
+Codex review and the owner approve. It follows the dependency order the package itself gives (`07/02` §B) and
+the ten-step sequence in `07/01`, adjusted by the findings in this review. No phase authorises trading
+execution, broker credentials in code, or orders of any kind. Every phase ends with an independent review.
+
+## Phase 0: research foundation (this pull request)
+
+Deliverables: verbatim archive, English foundation documents, governance (`AGENTS.md`, `CLAUDE.md`), attribution
+controls. Exit: Codex review completed against `13-codex-review-checklist.md`; owner confirms or amends D1–D13;
+N1 (source families) and N12 (runtime) answered. **No code.**
+
+## Phase 1: measurement apparatus, offline, synthetic data only
+
+Build the smallest set of components that make anything afterwards evaluable. Pure Python, typed, tested,
+no network, no providers, no broker.
+
+| Component | Content | Review items applied |
+|---|---|---|
+| Ledger | append-only store with segment files or SQLite-append and canonical JSONL export; anchors as owner-side records; replay API | R1, N3, N4 |
+| Registry | EventSpec with typed resolution predicate (grammar v1), Forecast, statuses, deterministic resolver interface, `EXPIRED_NO` for late YES, full replay from ledger | R4, R5-prep |
+| E-process | consumes registry resolutions in ledger order; predictable λ; running-max rejection; replay equals online | R3 |
+| Gate | ledger record types `gate_promoted` / `gate_demoted`; derivation by replay; no in-memory authority | R2 |
+| Fusion | covariance-based minimum-variance weights, non-negativity fallback, typed decisions, width decomposition | R8, R7 |
+| Schemas | JSON schema for `ResearchOutput`, `EventSpec`, `Forecast`, `JevTriage`, `Certificate` | schema first |
+| Tests and CI | unit and property tests (anchor detects any byte change; replay invariants; e-process false alarm ≤ α + 0.015 over several seeds; fusion RE_RESEARCH on any missing input); static gate "no research module imports the executor"; log scan for `Bearer `; Python 3.11 and 3.13; Lean job on the pinned toolchain for the kept lemmas | `04/03` §6 |
+| Restore test | rebuild all state from the ledger on a clean checkout; part of CI | `02/04` §7 |
+| Power study | simulation report for N8; year-one criterion proposal | N8 |
+
+Exit criteria: CI green; restore test green; power report published; independent review (Codex) of the code;
+amendments N7, N9, N10, N11 recorded. Estimated size: a few thousand lines including tests. Deliberately not
+built: credal net, hazard model, allocator, adapters, Jev client, anything that talks to a network.
+
+## Phase 2: ingest, Jev triage, Design C, first registered events (owner actions interleaved)
+
+Owner actions first (none of them code): create the Saxo SIM application; request Jev early access; read and
+archive provider terms (Q2); choose three source families from the N1 profiles; schedule the monthly anchor
+check.
+
+| Component | Content |
+|---|---|
+| Ingest log | archived bytes, SHA-256, observer-signed `first_observed_at`, `available_at`, source family, publication-lag table entries with evidence; three source families only |
+| Jev adapter | typed client against the archived OpenAPI, both polarities, complement gap, retries, token ceiling, structural (not string) credential guard; initial 200-document calibration run; one pre-registered threshold amendment (R12) |
+| Design C | cohort base rates for the chosen event classes where free data exist; otherwise explicit "no floor" |
+| Event registration | first 100 events registered by hand under the `HUMAN` forecaster id with the eligibility rule pre-registered (R21); Design-C baseline forecasts committed |
+| Supply measurement | events per source family per week; lags measured against the table |
+
+Exit: ≥ 100 registered events with Design-C forecasts committed; anchors verified from a second machine;
+supply rate consistent with the year-one plan or the plan revised; independent review.
+
+## Phase 3: SIM read-only (executor principal) — first external broker action
+
+Separate OS principal and process; token from the OS credential store; `/port` and `/ref` readbacks;
+reconciliation report; monthly universe snapshot and candidate log started (R20); 72-hour PKCE refresh test
+(Q1); Q3/Q6/Q7 answered empirically. Gate promoted RESEARCH_ONLY → SIM_READ_ONLY by owner MAC recorded in the
+ledger. Exit: 7 consecutive days of readbacks; Q1 answered; independent review including a token-leak audit.
+Phases 2 and 3 can run in parallel; they share nothing but the ledger.
+
+## Phase 4: three-model adapters and fusion in operation
+
+Adapters for Claude (Max API credits), Gemini (per terms) and OpenAI (owner batch, constrained per R11), each
+against the `ResearchOutput` schema; per-item blinding records (N6); model configuration pinned per call (R15);
+fusion live; primary e-process started against Design C; ablation forecaster ids registered (including
+`single-model-three-roles`, R10); reasoning-overlap metrics (R9). Exit: three independent round-1 outputs per
+event, schema-valid, no cross-reading evidenced by blinding records; first 50 fused forecasts committed;
+independent review.
+
+## Phase 5: evaluation, credal net, hazard model, allocator, certificates (no orders)
+
+After ≥ 100 resolved events: reliability diagrams; A vs B ablation; identification-class skill table (R5);
+hazard model on vintage data as an exploratory H6; scenario grammar and allocator producing certificates that
+are checked in exact arithmetic (R13); SIM_PRECHECK promoted by owner MAC; 30 prechecks with cost fields
+archived; cost model as a component. Exit: 150 resolved events; design selection recorded; independent review.
+
+## Phase 6: promoter and self-improvement
+
+Only when there is something to improve and frozen holdouts exist: promoter principal with environment pinning
+(R17), canary namespace (R16), rolling prospective holdouts (R18), e-value combination rule (R19), degradation
+action rule. Exit: first promotion or rejection recorded end to end; independent review.
+
+## Phase 7: SIM execution — separate release, separate review
+
+Order placement in SIM only, with idempotency, cancel path, reconciliation, kill switch and fault injection;
+Codex second review required before merge (`07/01` step 9). Exit: 60 days, zero duplicate orders, every fill
+reconciled. Shadow live quotes afterwards. **LIVE remains blocked throughout this roadmap.** A LIVE pilot of at
+most USD 1,000 is a separate programme decision requiring the gates in `01/01` §5, an independent security and
+risk review of the order path, and the owner's written approval.
+
+## What this roadmap deliberately does not contain
+
+Trading execution outside SIM; broker credentials in any file; derivatives, margin, shorts "for testing";
+optimisation against live account data; a licensed point-in-time dataset (Q5 decision); any claim about returns
+before Phase 5 has data.
