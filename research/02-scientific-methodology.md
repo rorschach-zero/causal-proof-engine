@@ -124,3 +124,14 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    `16` Appendix B; the b = 0.2, δ = 0.02 row was added to the probe in round 2, RC-45, because round 1 cited
    it from Codex's D1 table without reproducing it). The year-one criterion is set only after supply and
    cluster structure are measured.
+7. **§1 H0 row and §4 read-out, round 3 (RC-49, RC-50).** Item 1 made the fixed-horizon cluster-aware test the
+   secondary analysis. Codex's round-3 review exhibited two structures under which the cluster-level e-process
+   crosses while the population-average null holds: clusters open at the same time sharing a period shock, and
+   skill that varies over time (both REPRODUCED, `16` Appendix D: 28.9 % crossings under a persistent regime,
+   62.8 % under +0.12 then −0.12 skill with zero average). The e-process tests the sequential conditional null
+   E[X_k | F_(k−1)] ≤ 0, which is stronger than H0 as written. Roles are therefore reassigned: the **primary
+   confirmatory test of H0 is the fixed-horizon paired cluster test with a pre-registered calendar-block
+   dependence model**; the committed e-process is the anytime-valid monitor of the conditional null, reported
+   with that label, and its crossing is never alone a confirmatory result. "Primary e-value ≥ 20" in §4 is
+   superseded accordingly. Under a persistent macro regime neither test holds size at 120 clusters over 24
+   periods, so the dependence model is an input to OD4 and OD5 (`17` §6).

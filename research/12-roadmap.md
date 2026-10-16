@@ -111,3 +111,8 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    additionally requires OD9a (`AGENTS.md` §2 items 7 and 10 wording), because both would otherwise contradict
    binding product requirements; `17` A0 lists OD1, OD2 and OD9a as prerequisites. Phase 2 months 1–3 are a
    blinded burn-in cohort excluded from the primary test (RC-39).
+7. **Phase 0 exit, round 3 (RC-49, RC-50).** "Primary e-process started against Design C" in Phase 2 is
+   superseded: the primary confirmatory test is the fixed-horizon paired cluster test with a pre-registered
+   dependence model, and the e-process runs as the anytime-valid monitor of the conditional null (`17` §6).
+   Codex round 3 on `43754cc` is processed in `16` §3b; the round budget of issue #3 is spent for RC-01 and
+   RC-15, so Phase 0 exit now waits on owner decisions OD1, OD2 and OD9a, not on a further review round.
