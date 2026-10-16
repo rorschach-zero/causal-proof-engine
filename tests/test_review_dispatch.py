@@ -21,6 +21,7 @@ WORKFLOW = Path(__file__).resolve().parents[1] / ".github/workflows/claude-on-co
 def dispatcher_code() -> str:
     contents = WORKFLOW.read_text(encoding="utf-8")
     assert "  issue_comment:\n    types: [edited]" in contents
+    assert "github.event.issue.number == 4 &&" in contents
     assert "  pull_request_review:" not in contents
     marker = "          python - <<'PY'\n"
     return textwrap.dedent(contents.split(marker, 1)[1].split("\n          PY", 1)[0])
