@@ -112,3 +112,25 @@ Observations:
    token in an interactive session; not acceptable for the executor service, which must read from the OS
    credential store and never from the process environment (environment variables leak into crash dumps and
    child processes).
+
+## 6. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+Codex's primary-source reads of 2026-10-16 are PACKAGE-VERIFIED by Codex and UNVERIFIED here.
+
+1. **§4 and §5 "fresh `x-request-id` per attempt" (RC-16).** Withdrawn, including from the execution-phase
+   checklist above. Saxo's duplicate protection is bypassed by a changed `x-request-id`; a fresh id on every
+   retry defeats it. After an ambiguous transport failure the executor reconciles by durable identifiers and
+   authoritative broker state and halts if duplication cannot be excluded; placement is never retried
+   automatically. `ExternalReference` is a correlation field, not idempotency.
+2. **§5 egress allow-list (RC-16).** SIM and LIVE share the host `gateway.saxobank.com` and differ by path and
+   credentials (consistent with §1 above), so a host-level allow-list cannot separate them. Policy is path- and
+   credential-based in the controlled adapter; the egress allow-list remains useful against everything else.
+3. **§2 Q7.** Codex reports that the SIM account-linking help article states that linking a funded live
+   account enables delayed data for available live instruments. This resolves Q7 at documentation level only,
+   not the owner's entitlement or a successful readback.
+4. **§3 gate (RC-12, RC-14).** The owner HMAC is replaced by owner public-key signatures over capability,
+   environment, release digest, evidence digest, monotone epoch, nonce and expiry, with consumed authorizations
+   stored durably; capabilities are modelled explicitly per environment instead of a linear enum, so
+   `SHADOW_LIVE_QUOTES` confers no SIM execution right, and a halt preserves reconciliation and authorised
+   cancellation.

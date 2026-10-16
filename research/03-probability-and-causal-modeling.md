@@ -110,3 +110,30 @@ as nobody claims the system *identifies* causal effects. Concretely:
    commit-before-resolve registry as an operating discipline is an integration proposal. The genuinely new,
    testable hypothesis is that this discipline produces measurable milestone skill (H1) and lead time (H5).
    Everything about 10x is downstream of that and is correctly deferred.
+
+## 6. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+
+1. **§1 "No multiplication of marginals" (RC-04).** The sentence "multiplying conditionals assumes an
+   independence that investment chains violate" is false as written and was repeated here from `03/01` §4. For
+   nested events E ⊆ D ⊆ C, P(E | D)·P(D | C)·P(C) = P(E) is an identity (REPRODUCED: 0.01). What is true: the
+   ban on multiplying *marginals* is correct; elicited conditionals from a model that has read the whole thesis
+   are neither coherent nor conditioned on the right history, which is an elicitation problem. Non-nested
+   chains need the full conditioning history unless a conditional-independence assumption is justified.
+2. **§4 rare probabilities and §3 floor (RC-03).** The base-rate floor is deleted: a population rate is not a
+   lower bound for an individual, and the rule inverts [0.001, 0.01] with base rate 0.02 to [0.02, 0.01]
+   (REPRODUCED). Replacement: declared shrinkage toward a pre-registered reference-class rate (Beta posterior
+   for cohort data; logit-space shrinkage of the model estimate with a pre-registered weight). "Never elicit
+   below 0.05" stays as a workflow rule. No rounding of estimated small probabilities. Rankings only until
+   cohorts exist.
+3. **§5 item 2 (RC-10).** The claim that endpoint enumeration per edge "gives an outer bound" is withdrawn:
+   sampled or partial enumeration is an inner approximation; a marginal-only projection drops constraints
+   induced through eliminated nodes; a sampled vertex subset overestimates the worst case for allocation.
+   Design B is deferred behind Design C and a small exact Design A; conditional bounds enter the LP as
+   l·P(A) ≤ P(A ∩ B) ≤ u·P(A) with zero-mass semantics declared; robust allocation minimises over the entire
+   declared credal set.
+4. **§5 item 4 (RC-04).** "Elicit each link with only the parent context" is right for nested milestone
+   chains and wrong in general; see item 1.
+5. **§5 item 3 (RC-05).** Width decomposition stands, with Codex's amendment: unresolved Monte Carlo uncertainty
+   at a decision boundary forces recomputation or abstention; it is never ignored.

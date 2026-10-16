@@ -99,3 +99,26 @@ budgets a negative result. That is more discipline than most published forecasti
 
 Items 1, 2 and 8 should be resolved before the first event is registered; they change what "success in year
 one" means.
+
+## 6. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+
+1. **§1 H0 and §4 primary read-out (RC-01).** The committed e-process tests the conditional null at every
+   update. Events whose outcomes depend on one underlying announcement violate it even when every forecast was
+   committed in advance (30 cloned outcomes reach e = 475 with probability 0.5; REPRODUCED). The betting unit
+   becomes the pre-declared outcome cluster; a fixed-horizon cluster-robust paired comparison is the secondary
+   analysis. The 300/600 *event* counts in §4 are replaced by independent-equivalent *cluster* counts to be set
+   after supply is measured (OD4, OD5).
+2. **§2 first bullet and §5 item 4 (RC-05).** The Winkler interval score was mis-specified: it elicits outcome
+   quantiles, not an epistemic interval for a Bernoulli parameter. Withdrawn. Each forecast carries one scored
+   point probability; the interval is a declared ambiguity set without a coverage claim.
+3. **§5 item 3 (RC-03).** Superseded: the base-rate floor is deleted rather than kept as a sensitivity.
+4. **§5 item 8 (RC-08).** "Family-wise control via e-BH" conflated error criteria. The pre-registered conjunction
+   "FULL beats every comparator" is an intersection-union test needing no correction; promotions use lifetime
+   α-spending; e-BH is for exploratory lists only.
+5. **§2 leakage controls (RC-09).** The time-shifted holdout control is withdrawn as ill-posed; replaced by
+   forbidden-future-information negative controls and fresh future cohorts.
+6. **§5 item 1 (RC-24).** Power at 600 independent observations under the archived rule is ≈ 27–31 % for a
+   Brier gain of 0.01 and ≈ 81–94 % for 0.02 (REPRODUCED, `16` Appendix B). The year-one criterion is set only
+   after supply and cluster structure are measured.

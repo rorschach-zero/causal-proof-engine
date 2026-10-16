@@ -92,3 +92,18 @@ risk review of the order path, and the owner's written approval.
 Trading execution outside SIM; broker credentials in any file; derivatives, margin, shorts "for testing";
 optimisation against live account data; a licensed point-in-time dataset (Q5 decision); any claim about returns
 before Phase 5 has data.
+
+## Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+
+1. **Phase 1 table is superseded** by `17-phase1-amended-specification.md`, which carries the amended scope,
+   acceptance criteria A0–A8 and the acceptance-test matrix. The differences are listed in `17` §2.
+2. **"Anchor detects any byte change" (RC-13)** is an overclaim: a rewritten and rehashed suffix after the last
+   anchor passes verification (REPRODUCED). The correct property is "any change inside the anchored prefix,
+   and truncation below it"; the restore test reports the unanchored window explicitly.
+3. **"`EXPIRED_NO` for late YES" (RC-11)** is replaced by the temporal semantics in `17` §3 item 1.
+4. **Phase 0 exit** additionally requires: Codex round 2 on the reconciliation commit, and owner decisions
+   OD1–OD2 (`16` §6). N12 (runtime and hosting) is answered at the Phase 2 gate, not in Phase 0 (RC-20).
+5. **Phase 2** starts point-in-time universe and candidate logging at the first authorised research ingest, not
+   at the first SIM readback (Codex R20 amendment), and adds the stratified Jev-reject audit (RC-17).

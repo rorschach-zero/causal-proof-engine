@@ -97,3 +97,31 @@ realised 3-year returns; from year 3 shadow book beats S&P 500 total return over
 9. **The asset-class ladder is sound.** Five acceptance artefacts per class, Lean loss bound required, stage 4
    (futures, short options, CFDs, FX margin) only by core change. Nothing to add except that stage 1
    (commodity ETCs) needs the roll-cost model *before* shadow, since roll yield can dominate the thesis.
+
+## 7. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+
+1. **§5 cycle table (RC-21).** The inverse table's first two rows in `04/04` use a 0.5 loser, not 0.3; the
+   summary above states 0.3 without the caveat (the mixed losers were flagged in `00-research-inventory.md`
+   §5). With 0.3 throughout, f = 0.10 gives 2.05x and f = 0.20 gives 11.2x. "A 10x hit rate ≥ 20 %" is not
+   necessary for 100x in the stated design (≈ 7.45 % suffices with five 30x cycles) and is withdrawn as a
+   milestone; "100 % hit rate impossible" is a boundary case, implausible rather than impossible. Milestones
+   are re-expressed as months after first cohort entry: a cohort registered now has no three-year return in
+   year two.
+2. **§6 item 1 (RC-27).** "Mutually infeasible" was too strong: cash is always feasible, and eight positions is
+   a maximum. The exact condition: with a 15 % full-loss cap a ticket is at most USD 150, so commission ≤ 1 %
+   requires a one-way minimum commission ≤ USD 1.50 before spreads, FX and taxes; unknown until Q6.
+3. **§3 limits (RC-22).** A fully paid equity can lose 100 %, so the 15 % worst-loss rule caps an unprotected
+   position at 15 % of pilot capital regardless of the 20 % nominal cap; gross exposure with a 10 % cash floor
+   is at most 90 %; the Kelly fraction belongs inside the constrained objective, not after it.
+4. **§4 and §6 item 4 (RC-19).** "Never force-liquidate thesis-intact positions" and "never sell a later winner
+   for price reasons" are amended: the second is a hindsight rule; a deadline miss can be delay rather than
+   failure; a 30 % cash floor cannot be reached by stopping purchases alone. EventSpecs distinguish
+   `terminal-falsifier` from `milestone-deadline`. Precedence: hard current risk limits > terminal falsifier >
+   valuation/opportunity review > hazard throttle; price drawdown triggers an evidence, financing and
+   liquidity review, never a mechanical sale. How caps treat appreciated compounders is owner decision OD7.
+   D9 is evaluated as a policy family by locked counterfactual arms on all entries (no-exit, hazard throttle,
+   fundamental-falsifier exit, fixed profit-taking, threshold trim, valuation review).
+5. **§1 cost term (RC-23).** −ln(1 − c) is exact only under a multiplicative fee convention; the cost model is a
+   component with declared conventions (item 7 above stands).

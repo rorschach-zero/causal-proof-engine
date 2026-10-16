@@ -24,6 +24,14 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 5. `12-roadmap.md`: what would be built first, with exit criteria, if the review approves.
 6. `13-codex-review-checklist.md`: what Codex is asked to check and where to disagree.
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
+8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
+   this branch's tree).
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix, reproduced evidence,
+   open disagreements and owner decisions.
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 and its acceptance-test matrix.
+
+Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
+2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.
 
 ## Status labels used throughout
 
