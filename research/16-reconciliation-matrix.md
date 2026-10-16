@@ -6,17 +6,18 @@ and is the single place where positions, evidence, dispositions and remaining bl
 original research under `research/original/` is unchanged. Nothing here authorises implementation, merges,
 capital, broker connectivity or policy changes.
 
-**Version:** v4, 2026-10-16. **Round:** 3 of 3 (Codex round 3 = automatic review `5550048687` of PR #4 at
-`43754cc`, seven findings; this version is the Claude response and the last substantive round under the budget
-of issue #3; round 2 was the two reviews of `10d1581`). **Awaiting:** Codex's automatic review of the exact
-commit of this document. That review is recorded, but it opens no further round: a finding on an item whose
-budget is spent (§4.6) is listed for the owner with a one-line assessment and no new revision; a finding on a
-fresh defect is handled only if the owner extends the budget on issue #3. **No disposition in this matrix is a
-Codex agreement** until Codex has reviewed that commit; "Codex position" quotes `research/15-codex-review.md`
-at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a and §3b. Round 3 engaged the RC-01 scope
-disagreement with two dependence structures (RC-49, RC-50), which §4.1 had named as what would settle it;
-Claude's position is withdrawn with the evidence in Appendix D. No Codex review addressed RC-07 (n_eff
-retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
+**Version:** v5, 2026-10-16. **Round:** 4 (Codex round 4 = automatic review `5550366107` of PR #4 at
+`d46c204`, eight findings, processed in §3c under the §4.6 rule written in v4: one bounded revision per finding
+on an item with budget left, record only on a budget-spent item; round 3 was review `5550048687` of `43754cc`;
+round 2 the two reviews of `10d1581`). After this version every item Codex has touched has used its three-round
+budget (§4.6). **Awaiting:** Codex's automatic review of the exact commit of this document, which is recorded
+in §3d for the owner without revision, and owner decisions OD1, OD2, OD9a and OD10. **No disposition in this
+matrix is a Codex agreement** until Codex has reviewed that commit; "Codex position" quotes
+`research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3c.
+Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); round 4 found two
+defects in Claude's own remedies (RC-56 on the two cut-offs, RC-60 on the redacting holder), both reproduced
+(Appendix E), one applied and one blocked by the budget. No Codex review addressed RC-07 (n_eff retention) or
+RC-20 (hosting timing). Silence in a diff review is not agreement.
 
 Labels follow `research/README.md`. Disposition statuses used here, per the protocol in issue #3:
 
@@ -41,7 +42,8 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Second Codex review of PR #4 | review `5549803107` on the same commit `10d1581`, triggered by the owner's PR #4 comment `6218467449` ("@codex review"), seven inline findings, comment IDs `4296205602`, `4296205617`, `4296205625`, `4296205637`, `4296205645`, `4296205655`, `4296205661`; none duplicates the first review | round 2 (§3a, RC-41 to RC-47) |
 | Third Codex review of PR #4 (round 3) | review `5550048687` on commit `43754cc29add7ed47235ed9dd595ca950497ae4c`, run after the round-2 push, seven inline findings, comment IDs `4296395259`, `4296395273`, `4296395286`, `4296395298`, `4296395308`, `4296395324`, `4296395335`; none duplicates rounds 1–2 | round 3 (§3b, RC-48 to RC-54) |
 | Issue #3 comments | `6218571025` (owner: controlled rollout, hardening gates; no scientific content), `6218965225` (routine, concurrent execution: supplementary evidence on RC-15/RC-47, folded in as RC-55) | round 3 |
-| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
+| Fourth Codex review of PR #4 (round 4) | review `5550366107` on commit `d46c2042a47457ee254582c682c2b17e6803c8bc`, run after the round-3 push, eight inline findings, comment IDs `4296649357`, `4296649368`, `4296649378`, `4296649389`, `4296649399`, `4296649412`, `4296649421`, `4296649427`; none duplicates rounds 1–3 | round 4 (§3c, RC-56 to RC-63) |
+| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
 | Automation | PR #5 (`automation/claude-review-dispatch`, merged to `main` 15:09 UTC) | not a scientific input |
 
 No Codex comment, commit or review newer than the above existed when this document was written. A later
@@ -214,6 +216,34 @@ automatic review again produced statistical findings on a Markdown-only diff (RC
 validity and hindsight channels), and this time two of them (RC-49, RC-50) addressed an open disagreement
 directly, so the native route covered that part of the protocol for RC-01.
 
+### 3c. Round 4: Codex's review of PR #4 at `d46c204` (review `5550366107`)
+
+Eight inline findings (six P1, two P2), none repeating rounds 1–3. Each was examined against the text and,
+where it carries a number or a logical claim, reproduced (Appendix E). Handling follows §4.6 as written in v4:
+a finding on an item with budget left gets one bounded revision (RC-56, RC-58, RC-61, RC-62, RC-63); a finding
+on a budget-spent item is recorded with a one-line assessment and the proposed wording, and nothing else
+changes (RC-60). Two findings (RC-57, RC-59) are incomplete propagations of the round-3 edits themselves (the
+t*_k cutoff of RC-52 and the role assignment of RC-49/RC-50 were not carried into one clause and one table
+row); they are applied as propagation, labelled as such, and the owner can revert them under a strict reading
+of §4.6. Every disposition is `PROPOSED` until Codex reviews the resulting commit.
+
+| ID | Codex finding (comment ID, severity) | Parent | Claude position and evidence | Resolved in (this commit) | Validation test | Status |
+|---|---|---|---|---|---|---|
+| RC-56 | The same primary claim is evaluated at cut-offs 12 and 24 months, each at one-sided α = 0.05, so confirmation after either look inflates the type-I error above 0.05; designate one cut-off as the sole primary or pre-register a group-sequential rule (`4296649357`, P1) | RC-08, RC-24 (the two cut-offs date from round 1, when the test was secondary; the round-3 role change made the defect material) | **A.** REPRODUCED: two looks at information fractions 0.5 and 1.0 give a normal-theory type-I error of 8.0 %; the block-of-one-period t test on the round-3 generator rejects at either look in 8.8 % (valid clustered null) and 7.8 % (independent period shocks) against 5.1 % at the 24-month look alone. The simpler option is taken: **one primary cut-off, 24 months after first cohort entry**; the 12-month look is a pre-registered interim for futility and integrity only, never confirmation (a non-binding futility look does not inflate the error: 5.1 %). If the owner wants early confirmation, the alternative is a Lan–DeMets O'Brien–Fleming-type spending, 0.0056 at 12 months and a nominal 0.0483 at 24 months (total 0.050 in normal theory; 5.3 % and 5.1 % with the block t through its own degrees of freedom), calibrated by simulation in T-12 because the first look has only twelve blocks. The two-look design is kept as an invalid control in T-12 | `17` §2 table, §6 primary-test, interim and stopping-rule rows, T-12; `02` §6 item 8; `09` D4 | T-12 | `PROPOSED`; early-confirmation option `OWNER_DECISION` (OD4) |
+| RC-57 | A member can still be declared VOID between publication and registry receipt because the closure clause uses receipt time rather than t*_k, which reopens the outcome-dependent selection channel the forecast-eligibility rule closes; VOID must be committed before the adjudicated outcome-knowable time or follow a pre-registered objective rule (`4296649368`, P1) | RC-52, RC-29 (budget-spent family) | **A.** The round-3 clause "pre-declared VOID before any member's outcome was received" kept the receipt cutoff that RC-52 replaced everywhere else with t*_k (worked example in Appendix E: a VOID received at 10:10 after a 10:00 publication and before the 10:30 receipt is accepted under the v3 clause and refused under t*_k; a 09:55 VOID is accepted under both). Applied as **propagation** of the RC-52 cutoff into the one clause that missed it, not as a new round on RC-01: the single substitution "before the cluster's outcome-knowable time t*_k" goes into §3 item 3 and T-17 gains the case; no new mechanism or objective VOID rule is added. Remaining uncertainty, for the Phase 2 contract: a member found unresolvable after t*_k leaves its cluster without an increment, which counts against the VOID cap (RC-38). If the owner reads §4.6 strictly, reverting that sentence and the T-17 case restores v3 | `17` §2 table, §3 item 3, T-17 | T-17 | `PROPOSED` (propagation; owner may revert) |
+| RC-58 | T-20's oracle fixes the posterior quantiles and the shrunk point but never specifies how `low` and `high` are derived, so `[0, 1]` passes; the raw posterior bounds cannot be the answer because q05 = 0.0874 exceeds the required point 0.014362 (`4296649378`, P2) | RC-54, RC-03 | **A.** Defined: the same logit-space convex combination with the same weight w(n), applied endpoint-wise, low toward the posterior 5 % quantile, point toward the mean, high toward the 95 % quantile; endpoints clipped to [10⁻⁶, 1 − 10⁻⁶] before the logit. Each map is monotone and the targets are ordered, so the output is ordered whenever the input is; a collapsed model interval acquires the reference-class spread; at n = 0 the model interval is returned unchanged. Fixtures (Appendix E): (0.0005, 0.001, 0.002) at (5, 20) → (0.006874, 0.014362, 0.027239); (0.3, 0.5, 0.7) → (0.168465, 0.315334, 0.488622); low = 0 → 0.000309. Raw posterior bounds fail the ordering check, as Codex computed. The interval stays a declared ambiguity set with no coverage claim (RC-05). Still built only after OD9a | `17` §2 table, §3 item 3, T-20 (c) | T-20 | `PROPOSED`; blocked on OD9a |
+| RC-59 | `09` §6 still records D4 with the fixed-horizon test as secondary while `17` and `02` make it primary; approving OD2 from `09` would record a different contract than `17` specifies (`4296649389`, P2) | RC-49, RC-50 (budget-spent family) | **A.** Incomplete propagation of the round-3 role assignment to the decisions document, which `AGENTS.md` §6 names as the record of decisions; no scientific content changes. The D4 row now states the round-3 roles, the single cut-off of RC-56, and that it said "secondary" until round 4 | `09` §6 D4 row | none (documentation) | `PROPOSED` (propagation) |
+| RC-60 | `Redacted` still stores the raw bearer in `_value` and the traceback frame retains the object; the round-3 probe inspects `repr` only, so a logger or crash collector that serialises object state recovers the secret; T-34 must require that no traceback-reachable object retains the raw secret rather than accepting a redacted representation (`4296649399`, P1) | RC-15, RC-47, RC-55 (**budget spent**) | **A on the defect; REPRODUCED** (Appendix E): a probe that walks object state (attributes, slots, containers, closures, exception `args`) finds the canary in the round-3 "passing" holder variant, which the `repr` probe clears. It does not find it when the secret lives only in a frame that has returned before the sanitised exception is raised (the transport function reads the credential, catches every exception and returns a typed outcome; the caller raises from the outcome), and it finds it again if that outcome is the exception object itself. Proposed wording for T-34 and the §3 RC-15 row, **not applied** under §4.6: "no object reachable from the escaping exception, by attribute, slot, container, closure or `args`, holds the raw secret; the probe traverses object state, not `repr`; the secret is held only in frames that have returned before any exception escapes, and the outcome passed upward is a typed value, never the exception object". Round 3's redacting holder was Claude's own addition and is acknowledged as insufficient; the v3 text stays until OD10. The owner extends the RC-15 budget by one round on issue #3 (OD10) and the next execution applies this wording | none (budget) | T-34 (proposed) | `OWNER_DECISION` (budget, OD10) |
+| RC-61 | The 27–94 % figures offered to OD4 are e-process crossing probabilities, but round 3 made the fixed-horizon test the primary; OD4 needs power curves for that test and its dependence model (`4296649412`, P1) | RC-24, RC-45, RC-49 | **A.** REPRODUCED (Appendix E; D1 generator, one increment per independent cluster, five per calendar period, block-of-one-period variance, 10,000 replications per cell): the primary test detects δ = 0.01 at 600 clusters with 80 % (b = 0.5) to 93 % (b = 0.2) power where the monitor crosses in 27 % to 32 %; δ = 0.02 at 300 clusters with 80 % to 94 %; δ = 0.005 at 600 with 54 % to 70 %. Under independent period shocks of ± 0.3 (F-22 generator, X ∈ {−0.2, +0.2}, so the scale differs from the D1 rows) the primary's power at δ = 0.02 and 600 clusters falls from 79 % to 47 %; under the persistent regime size is not held, so no power figure is meaningful. The OD4 row is rewritten with these figures; the monitor's figures stay labelled as such. The dependence model, not the cluster count alone, determines the detectable effect | `16` §6 OD4; `17` §2 table, A6, T-12, T-16, §6 "smallest useful effect"; `02` §6 item 8 | T-12, T-16 | `PROPOSED`; dependence model `EXPERIMENT_REQUIRED` |
+| RC-62 | T-31 mutates only the key, environment and release digest; a verifier signing a subset of the tuple passes while a holder substitutes the action, evidence digest, epoch, nonce or expiry under a valid signature (`4296649421`, P1) | RC-12, RC-43, RC-46 | **A.** REPRODUCED (Appendix E, synthetic HMAC toy, no real key): a verifier over (environment, release digest) accepts mutations of capability, evidence digest, epoch, nonce and expiry; one over the full tuple rejects every single-field mutation. §3 item 5 now states that the signature covers the whole tuple under one canonical serialisation; T-31 mutates each of the seven fields individually and adds canonical-serialisation cases (key order, whitespace, added field, re-typed numeric field) | `17` §3 item 5, T-31 | T-31 | `PROPOSED` |
+| RC-63 | A kernel that always returns "do not reject" satisfies every valid-null upper bound in A3 while the invalid-null controls exercise other algorithms; T-12 reports power with no minimum; add deterministic statistic fixtures and a pre-specified alternative with a bounded rejection rate per kernel (`4296649427`, P1) | RC-30, RC-48 | **A.** True by construction (an inert kernel scores zero on every A3 family). New T-36: (a) e-process oracle, twelve constant increments of +0.2 give e = 1.1¹⁰ = 2.593742 because λ = 0.5 from the third increment when the sample variance is zero, first crossing of 20 at increment 34 with e = 21.113777, and a fixed 12-vector gives e = 1.447854; (b) fixed-horizon oracle, block means (0.05, 0.10, 0.00, 0.05) give t = 2.449490 on 3 df, one-sided p = 0.045861; (c) positive-control alternative b = 0.5, δ = 0.08, 120 independent clusters, 20,000 replications, exact one-sided 99 % lower binomial bound ≥ 0.90 for the primary (true rate 0.964) and ≥ 0.60 for the monitor (true 0.711); a correct kernel passes with probability 1.000000 to six places, an inert one never (Appendix E) | `17` A3, T-12, new T-36 | T-36 | `PROPOSED` |
+
+Not addressed by Codex in round 4: RC-07 n_eff retention (§4.3) and RC-20 hosting timing (§4.2); no open
+scientific disagreement remains for a review to engage. Relevant to issue #3 acceptance item 2: the fourth
+automatic review on a Markdown-only diff again produced statistical and security findings (repeated-look
+inflation, a hindsight window, partial signatures, inert-kernel detection), two of which (RC-56, RC-60)
+identified defects in Claude's own round-1 and round-3 remedies.
+
 ## 4. Open disagreements (what would settle each)
 
 4.1 **RC-01 remedy scope: withdrawn by Claude in round 3.** Rounds 1–2: Codex asked for estimand, filtration,
@@ -254,15 +284,19 @@ the "which reviewer verified what" statements are the provenance §7 and §9 req
 prescribes. Not a scientific disagreement. **Settles it:** the owner's reading of §7, recorded under OD9b if
 the owner wants the wording clarified; Claude will adopt whichever reading the owner states.
 
-4.6 **Round budget (issue #3: three rounds per issue).** Rounds used: RC-01 and its children RC-29, RC-41,
-RC-49, RC-50, RC-51, RC-52, RC-53 → 3 (matrix v1/v2; round 2; round 3): **budget spent**; RC-15 with RC-47 and
-RC-55 → 3: **budget spent**; every other item → at most 2. Codex's automatic review of this commit is expected
-(PR #4 triggers it on push). The next routine execution reads it, deduplicates by comment ID against §1 and §7,
-and: for a finding on a budget-spent item, appends a row to §3c with Codex's claim and a one-line Claude
-assessment, status `OWNER_DECISION` (budget), and changes no other text; for a finding that exposes a fresh
-defect in an item with budget left, it may make one further bounded revision; for findings that only restate
-earlier positions, it records the comment IDs as processed and does nothing else. No further round is opened
-on RC-01 or RC-15 without the owner extending the budget on issue #3. The three P0 families stay blocked on
+4.6 **Round budget (issue #3: three rounds per issue).** Accounting after round 4. RC-01 family (RC-29, RC-41,
+RC-49 to RC-53; RC-57 and RC-59 applied as propagation only) and RC-15 family (RC-47, RC-55; RC-60 recorded,
+not applied): **budget spent**. Families revised in round 4 and now at their third round: RC-08 with RC-30 and
+RC-48 (RC-56, RC-63); RC-24 with RC-45 (RC-61); RC-12 with RC-43 and RC-46 (RC-62); RC-03 with RC-54 (RC-58):
+**budget spent**. Every item Codex has touched in rounds 2–4 has therefore used its budget; the items Codex
+never touched (RC-07, RC-20 and the rest of §3) have had one round and are not in dispute. Codex's automatic
+review of this commit is expected (PR #4 triggers it on push). The next routine execution reads it,
+deduplicates by comment ID against §1 and §7, appends every finding to a new §3d with Codex's claim, a one-line
+Claude assessment and status `OWNER_DECISION` (budget), updates §1 and §7, and changes no other text; it makes
+**no revision** to `17` or to any foundation document, propagation included, until the owner either records
+OD1, OD2 and OD9a or extends the budget on issue #3 (OD10). This closes the automatic revision loop on PR #4:
+the deliverable of the owner's protocol (amended specification, acceptance-test matrix, nondelegable owner
+choices) is complete as `PROPOSED`, and what remains is the owner's. The three P0 families stay blocked on
 OD1, OD2 and OD9a regardless.
 
 ## 5. Open hypotheses with bounded experiments (not disagreements)
@@ -282,13 +316,14 @@ OD1, OD2 and OD9a regardless.
 | OD1 | Approve the amended Phase 1 scope and acceptance criteria in `17-phase1-amended-specification.md`, or choose a research-only pause | pause costs calendar time only; approval authorises offline synthetic work, no network |
 | OD2 | Authorise recording the scientific dispositions (RC-03, 04, 05, 10, 21 and the N7/N9/N10/N11 amendments) as dated amendments to D2, D3, D4, D6, D9, D11 in `09-open-questions-and-decisions.md`; archive untouched | none beyond review time |
 | OD3 | Lifetime error budget α_total for artefact promotions, and whether reversible promotions get a separate budget | smaller budget = fewer false promotions, steeply less power after a handful of **attempts** (α_j is debited per registered test, not per success, RC-44) |
-| OD4 | Smallest useful Brier improvement to power the primary test for; the VOID-rate cap (RC-38); the calendar-block dependence model (block length) of the primary fixed-horizon test (RC-49) | at 600 independent-equivalent units the archived rule detects 0.02 with 81 % (b = 0.5) to 94 % (b = 0.2) power and 0.01 with 27–31 % (REPRODUCED, Appendix B); those figures assume independent clusters: under a persistent macro regime 120 clusters over 24 periods admit no valid test at any tested block length (REPRODUCED, Appendix D), so the dependence model must be justified from reference-class history before supply is read |
+| OD4 | Smallest useful Brier improvement to power the primary test for; the VOID-rate cap (RC-38); the calendar-block dependence model (block length) of the primary fixed-horizon test (RC-49); whether the 12-month look is futility-only (default) or carries a pre-registered O'Brien–Fleming-type spending (RC-56) | power of the **primary fixed-horizon test** with independent clusters, five per period, block-of-one-period variance (REPRODUCED, Appendix E): δ = 0.01 is detected at 600 clusters with 80 % (b = 0.5) to 93 % (b = 0.2), δ = 0.02 at 300 clusters with 80 % to 94 %, δ = 0.005 at 600 with 54 % to 70 %; the anytime-valid monitor crosses far less often at the same supply (27–32 % for δ = 0.01 at 600; Appendix B, the figures this row quoted until round 4, RC-61). Under independent period shocks of ± 0.3 the primary's power at δ = 0.02 and 600 clusters falls from 79 % to 47 %, and under a persistent macro regime 120 clusters over 24 periods admit no valid test at any tested block length (REPRODUCED, Appendix D), so the dependence model must be justified from reference-class history before supply is read |
 | OD5 | Five source families to profile, three to run; any paid-data allowance (Q5) | determines supply, cluster structure and licensing cost |
 | OD6 | Hosting at the Phase 2 gate: minimal cloud, hybrid (cloud trusted writer + local stateless GPU compute), or local-only | Codex's illustrative envelope ≈ USD 1,000 / year; local-only is the weakest boundary |
 | OD7 | Position caps for appreciated compounders (cost basis with a review ceiling vs market value with forced trims); precedence of hard limits over the thesis-intact veto | affects turnover, tax classification risk (Q9) and compounding |
 | OD8 | Provider access route per provider after setup-day verification of terms; human duties implied | batch route adds a human to the loop and latency |
 | OD9a | `AGENTS.md` §2 item 7 (floor → shrinkage) and §2 item 10 (time-shifted holdouts → forbidden-future-information controls) wording, proposed text below; **prerequisite of A0** because the Phase 1 shrinkage estimator (T-20) and leak detector (T-15) would otherwise contradict binding product requirements (RC-33) | governance change; owner approves personally; until recorded, T-20 and T-15 are not built |
 | OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28) | governance change; owner approves personally; not a prerequisite of A0 |
+| OD10 | Round budget: extend the RC-15 family by one round so that the RC-60 wording (§3c) is applied to T-34 and the §3 RC-15 row; state whether the propagation fixes RC-57 and RC-59 stand or are reverted; state whether any later Codex finding may be applied without a further extension | no cost beyond review time; without the extension T-34 keeps a pass condition that a holder storing the raw secret satisfies (REPRODUCED, Appendix E), which matters only once Phase 1 is built (OD1) |
 
 **Proposed `AGENTS.md` wording (for OD9a and OD9b; not applied here):**
 
@@ -303,15 +338,15 @@ OD1, OD2 and OD9a regardless.
 ## 7. Machine-readable state
 
 ```yaml
-matrix_version: 4
+matrix_version: 5
 date: 2026-10-16
-round: 3
+round: 4
 round_budget: 3
 inputs_processed:
   research_head: 8b2dba79fe9077df53a96a6b61b1823b80930ee8
   codex_review_commit: 59206fe5f652cc3ea63114ad1c2b0fd7252962c2
   pr2_comments: [6215215092, 6215369656]
-  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225]
+  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639]
   pr4_reviews:
     - review_id: 5548201046
       commit: 10d1581595b2d1ea6a8689e0f94b33bd68a59d66
@@ -327,7 +362,11 @@ inputs_processed:
       commit: 43754cc29add7ed47235ed9dd595ca950497ae4c
       comment_ids: [4296395259, 4296395273, 4296395286, 4296395298, 4296395308, 4296395324, 4296395335]
       items: [RC-48, RC-49, RC-50, RC-51, RC-52, RC-53, RC-54]
-awaiting: codex_review_of_this_commit_record_only
+    - review_id: 5550366107
+      commit: d46c2042a47457ee254582c682c2b17e6803c8bc
+      comment_ids: [4296649357, 4296649368, 4296649378, 4296649389, 4296649399, 4296649412, 4296649421, 4296649427]
+      items: [RC-56, RC-57, RC-58, RC-59, RC-60, RC-61, RC-62, RC-63]
+awaiting: codex_review_of_this_commit_record_only_no_revision
 round2_items:
   accepted: [RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40,
              RC-41, RC-42, RC-43, RC-44, RC-45, RC-46, RC-47]
@@ -338,20 +377,29 @@ round3_items:
   self_reported: [RC-55]
   disagreements_withdrawn_by_claude: [RC-01-scope]
   round2_dispositions_corrected: [RC-15, RC-29-cross-cluster-void, RC-29-implicit-singleton, A3-replications]
-budget_spent_items: [RC-01, RC-29, RC-41, RC-49, RC-50, RC-51, RC-52, RC-53, RC-15, RC-47, RC-55]
+round4_items:
+  revised: [RC-56, RC-58, RC-61, RC-62, RC-63]
+  propagation_only: [RC-57, RC-59]
+  recorded_not_applied_budget: [RC-60]
+  round1_and_round3_remedies_found_defective: [RC-08-two-cutoffs, RC-55-redacting-holder]
+budget_spent_items: [RC-01, RC-29, RC-41, RC-49, RC-50, RC-51, RC-52, RC-53, RC-57, RC-59,
+                     RC-15, RC-47, RC-55, RC-60,
+                     RC-08, RC-30, RC-48, RC-56, RC-63, RC-24, RC-45, RC-61, RC-12, RC-43, RC-46, RC-62,
+                     RC-03, RC-54, RC-58]
 next_execution:
-  on_codex_review_of_this_commit: record_in_section_3c; revise_only_fresh_defects_on_items_with_budget
+  on_codex_review_of_this_commit: record_in_section_3d_status_owner_decision; update_sections_1_and_7; no_revision
+  on_owner_budget_extension_or_OD1_OD2_OD9a: apply_RC-60_wording_to_T-34; then process recorded findings
   on_no_new_input: do_nothing
 disagreements_open: [RC-20-timing]   # both positions recorded; settled by OD6, not by a further round
 disagreements_resolved_pending_codex_review: [RC-01-scope]
-owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b)]
-owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b]
+owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b), RC-60 (OD10), RC-56-early-confirmation-option (OD4)]
+owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b, OD10]
 prerequisites_for_A0: [OD1, OD2, OD9a]
 experiments_required: [H1, H3, H5, H6, transfer-claim, persistent-regime-dependence-model (OD4/OD5)]
 p0_status:
-  e_process_protocol: remedy proposed; fixed-horizon paired cluster test primary, e-process monitor of the conditional null; tests T-02, T-10..T-13, T-17, T-19 specified, not implemented
-  rare_probability_and_intervals: remedy proposed, tests T-20 (with oracle)..T-22 specified, blocked on OD9a, not implemented
-  enforcement_boundaries: remedy proposed incl. anchor boundary, clock rollback, atomic nonce consumption, action-boundary enforcement and redacting holders, tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
+  e_process_protocol: remedy proposed; fixed-horizon paired cluster test primary at one 24-month cut-off, e-process monitor of the conditional null, positive controls per kernel; tests T-02, T-10..T-13, T-16, T-17, T-19, T-36 specified, not implemented
+  rare_probability_and_intervals: remedy proposed, tests T-20 (point and interval oracles)..T-22 specified, blocked on OD9a, not implemented
+  enforcement_boundaries: remedy proposed incl. anchor boundary, clock rollback, atomic nonce consumption, action-boundary enforcement, full-tuple signatures; T-34 secret-confinement wording pending OD10; tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
 implementation_authorised: false
 ```
 
@@ -1194,3 +1242,732 @@ P(stay) = 0.9 over 24 periods means roughly three independent regimes, too few f
 `RC52_publication_gap` is the eligibility rule on the worked example. `RC54_*` are the T-20 oracle values; the
 trivial s/n implementation differs from the posterior mean (0.25 vs 0.175). `RC55_exception_graph_canary` is
 the frame-locals table: only the redacting-holder variant removes the canary from the reachable graph.
+
+## Appendix E. Round-4 checks (REPRODUCED)
+
+Needs no reference code and no network. Run with `python -I round4_checks.py` in an isolated venv (Python
+3.11.17, numpy 2.4.6, scipy 1.17.1; 11 s), extracting the block between the `round4-script` markers as in
+Appendix A. Seeds are fixed; two consecutive runs produced byte-identical output. The generators are those of
+Appendix A (D1 rows: baseline b, challenger b ± √δ, E[X] = δ) and Appendix D (baseline 0.4, challenger 0.6,
+X = 0.4·Y − 0.2, five clusters per calendar period); the block-of-one-period t test is the Appendix D function.
+The HMAC in the RC-62 block uses a literal test string as key; it is a toy for the signing-subset argument, not
+a proposal to use HMAC (RC-12 requires owner public-key signatures).
+
+<!-- round4-script:start -->
+```python
+"""Round-4 checks for the Codex findings on PR #4 at d46c204 (no reference code, no network)."""
+import hashlib, hmac, json, math, sys, types
+import numpy as np
+from scipy.stats import beta, binom, norm, multivariate_normal, t as student_t
+
+out = {}
+ALPHA, THRESHOLD, LAM_MAX = 0.05, 20.0, 0.5
+
+def binom_upper(k, n, conf):
+    return 1.0 if k >= n else float(beta.ppf(conf, k + 1, n - k))
+def binom_lower(k, n, conf):
+    return 0.0 if k <= 0 else float(beta.ppf(1 - conf, k, n - k + 1))
+
+# ---- archived GRAPA recurrence (vectorised), identical to 16 Appendix A and D ----
+def grapa_paths(xs, lam_max=LAM_MAX, checkpoints=()):
+    n_paths, n_steps = xs.shape
+    s1 = np.zeros(n_paths); s2 = np.zeros(n_paths); wealth = np.ones(n_paths); peak = np.ones(n_paths)
+    snaps = {}
+    for n in range(n_steps):
+        if n < 2:
+            lam = np.zeros(n_paths)
+        else:
+            mean = s1 / n
+            var = np.maximum(0.0, (s2 - s1 * s1 / n) / (n - 1))
+            den = var + mean * mean
+            lam = np.divide(mean, den, out=np.zeros(n_paths), where=den > 0) * n / (n + 10)
+            lam = np.clip(lam, 0.0, lam_max)
+        wealth = wealth * (1 + lam * xs[:, n]); peak = np.maximum(peak, wealth)
+        s1 += xs[:, n]; s2 += xs[:, n] ** 2
+        if n + 1 in checkpoints:
+            snaps[n + 1] = peak.copy()
+    return wealth, peak, snaps
+
+def block_t(xs, per_period, block_periods=1):
+    """One-sided block-clustered t statistic of mean X <= 0: blocks of block_periods calendar periods."""
+    n_paths, k = xs.shape
+    periods = k // per_period
+    g = periods // block_periods
+    bm = xs[:, :g * block_periods * per_period].reshape(n_paths, g, -1).mean(axis=2)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        tb = bm.mean(axis=1) / (bm.std(axis=1, ddof=1) / math.sqrt(g))
+    return tb, g - 1
+
+def block_t_rejects(xs, per_period, alpha=ALPHA, block_periods=1):
+    tb, df = block_t(xs, per_period, block_periods)
+    return tb > student_t.ppf(1 - alpha, df)
+
+# ================= r4296649357 (RC-56): one primary claim evaluated at two cut-offs =================
+# Normal theory: two one-sided tests at information fractions 0.5 and 1.0 (correlation sqrt(0.5)),
+# each at nominal alpha = 0.05; P(reject at either look) under the null.
+z = norm.ppf(1 - ALPHA)
+rho = math.sqrt(0.5)
+cov = [[1.0, rho], [rho, 1.0]]
+p_neither = float(multivariate_normal(mean=[0, 0], cov=cov).cdf([z, z]))
+two_look = {'nominal_alpha_each_look': ALPHA, 'information_fractions': [0.5, 1.0],
+            'type_I_error_reject_at_either_look_normal_theory': round(1 - p_neither, 5)}
+# Lan-DeMets O'Brien-Fleming-type spending for one-sided alpha at t = 0.5, final boundary solved so that the
+# total equals alpha under the same correlation.
+def obf_spend(t_frac, alpha=ALPHA):
+    return 2 * (1 - norm.cdf(norm.ppf(1 - alpha / 2) / math.sqrt(t_frac)))
+a1 = obf_spend(0.5)
+c1 = norm.ppf(1 - a1)
+def total_alpha(c2):
+    return 1 - float(multivariate_normal(mean=[0, 0], cov=cov).cdf([c1, c2]))
+lo, hi = 1.0, 3.0
+for _ in range(60):
+    mid = (lo + hi) / 2
+    if total_alpha(mid) > ALPHA: lo = mid
+    else: hi = mid
+c2 = (lo + hi) / 2
+two_look['obf_spending_option'] = {'alpha_spent_at_12_months': round(a1, 5), 'z_boundary_12_months': round(c1, 4),
+                                   'z_boundary_24_months': round(c2, 4), 'nominal_level_24_months': round(1 - norm.cdf(c2), 5),
+                                   'total_type_I_error': round(total_alpha(c2), 5)}
+# Simulation with the block-of-one-period t test on the round-3 generator (baseline 0.4, challenger 0.6,
+# X = 0.4 Y - 0.2): look 1 after 12 periods (60 clusters), look 2 after 24 periods (120 clusters).
+REPS, PERIODS, PER_PERIOD = 20000, 24, 5
+K = PERIODS * PER_PERIOD
+rng = np.random.default_rng(4026)
+def increments(q, rng_):
+    y = (rng_.random(q.shape) < q).astype(float)
+    return 0.4 * y - 0.2
+sim = {}
+fam = {'independent_clusters_valid_null': np.full((REPS, K), 0.5)}
+shock = rng.choice([-0.3, 0.3], size=(REPS, PERIODS))
+fam['macro_shock_iid_periods'] = np.repeat(0.5 + shock, PER_PERIOD, axis=1)
+for name, q in fam.items():
+    x = increments(q, rng)
+    r1 = block_t_rejects(x[:, :K // 2], PER_PERIOD)
+    r2 = block_t_rejects(x, PER_PERIOD)
+    t1, df1 = block_t(x[:, :K // 2], PER_PERIOD); t2, df2 = block_t(x, PER_PERIOD)
+    # OBF-type boundaries applied to the t statistics through their own df (nominal levels a1 and 1 - Phi(c2)).
+    s1_ = t1 > student_t.ppf(1 - a1, df1); s2_ = t2 > student_t.ppf(norm.cdf(c2), df2)
+    sim[name] = {'reject_12m_only': round(float(r1.mean()), 5), 'reject_24m_only': round(float(r2.mean()), 5),
+                 'reject_at_either_look_both_nominal_0.05': round(float((r1 | r2).mean()), 5),
+                 'exact_lower_99_either_look': round(binom_lower(int((r1 | r2).sum()), REPS, 0.99), 5),
+                 'single_primary_at_24m_with_12m_futility_look_only': round(float(r2.mean()), 5),
+                 'obf_spending_both_looks': round(float((s1_ | s2_).mean()), 5)}
+two_look['block_t_simulation'] = sim
+out['RC56_two_cutoffs'] = two_look
+
+# ================= r4296649368 (RC-57): VOID declared between knowable_at and registry receipt =================
+def void_accepted_v3(void_receipt, first_outcome_receipt):      # v3 wording: "before any member's outcome was received"
+    return void_receipt < first_outcome_receipt
+def void_accepted_v4(void_receipt, t_star):                      # v4 wording: before the cluster's outcome-knowable time
+    return void_receipt < t_star
+knowable, outcome_receipt = 600, 630                             # 10:00 publication, 10:30 registry receipt
+t_star = min(knowable, outcome_receipt)
+out['RC57_void_window'] = {
+    'void_received_10:10': {'accepted_under_v3_rule': void_accepted_v3(610, outcome_receipt),
+                            'accepted_under_v4_rule': void_accepted_v4(610, t_star)},
+    'void_received_09:55': {'accepted_under_v3_rule': void_accepted_v3(595, outcome_receipt),
+                            'accepted_under_v4_rule': void_accepted_v4(595, t_star)},
+    'reading': 'the v3 clause used receipt time where RC-52 had already moved every other cutoff to t*_k'}
+
+# ================= r4296649378 (RC-58): interval transformation of the shrinkage estimator =================
+def logit(p): return math.log(p / (1 - p))
+def expit(zz): return 1 / (1 + math.exp(-zz))
+A_, B_, N0, EPS = 2.0, 18.0, 20.0, 1e-6                           # fixture prior, weight scale, logit clip
+def shrink(low, point, high, s_, n_):
+    post = beta(A_ + s_, B_ + n_ - s_)
+    targets = (float(post.ppf(0.05)), float(post.mean()), float(post.ppf(0.95)))
+    w = N0 / (N0 + n_)
+    res = []
+    for p_model, ref in zip((low, point, high), targets):
+        p_clip = min(max(p_model, EPS), 1 - EPS)
+        res.append(expit(w * logit(p_clip) + (1 - w) * logit(ref)))
+    return tuple(round(v, 6) for v in res)
+interval_fx = {}
+for (lo_, pt_, hi_), (s_, n_) in [((0.0005, 0.001, 0.002), (5, 20)), ((0.3, 0.5, 0.7), (5, 20)),
+                                  ((0.0005, 0.001, 0.002), (0, 0)), ((0.001, 0.001, 0.001), (5, 20)),
+                                  ((0.0, 0.001, 0.002), (5, 20)), ((0.0005, 0.001, 0.002), (0, 50))]:
+    r = shrink(lo_, pt_, hi_, s_, n_)
+    interval_fx[f'model=({lo_},{pt_},{hi_}),s={s_},n={n_}'] = {'low': r[0], 'point': r[1], 'high': r[2],
+                                                               'ordered': r[0] <= r[1] <= r[2]}
+out['RC58_interval_fixtures'] = interval_fx
+out['RC58_raw_posterior_bounds_would_violate_ordering'] = {'posterior_q05_at_(5,20)': 0.087401, 'shrunk_point': 0.014362,
+                                                           'low_le_point_if_raw_bounds_used': 0.087401 <= 0.014362}
+
+# ================= r4296649412 (RC-61): power of the fixed-horizon primary test =================
+# D1 generator of 16 Appendix A: baseline b, challenger p = b +/- sqrt(delta), Y ~ Bern(p),
+# X = (b - Y)^2 - (p - Y)^2 with E[X] = delta; one increment per cluster, clusters independent, five per
+# calendar period, block-of-one-period variance. The e-process (monitor) is run on the same paths.
+POW_REPS = 10000
+power = {}
+for b in (0.5, 0.2):
+    for delta in (0.005, 0.01, 0.02, 0.03):
+        for kk in (120, 300, 600):
+            r = np.random.default_rng(1000 + int(b * 10) * 100 + int(delta * 1000) * 10 + kk // 100)
+            p = b + math.sqrt(delta) * r.choice([-1., 1.], size=(POW_REPS, kk))
+            yy = (r.random(p.shape) < p).astype(float)
+            xs = (b - yy) ** 2 - (p - yy) ** 2
+            fh = int(block_t_rejects(xs, PER_PERIOD).sum())
+            ep = int((grapa_paths(xs)[1] >= THRESHOLD).sum())
+            power[f'b={b},delta={delta},clusters={kk}'] = {'fixed_horizon_block1_power': round(fh / POW_REPS, 4),
+                                                           'eprocess_monitor_crossing_rate': round(ep / POW_REPS, 4)}
+out['RC61_power_independent_clusters'] = power
+# Under independent period shocks (F-22 family, b = 0.5 structure of Appendix D): q_t = 0.5 + 2.5 delta +/- 0.3.
+power_shock = {}
+for amp in (0.0, 0.3):
+    for delta in (0.01, 0.02, 0.03):
+        for kk in (120, 300, 600):
+            r = np.random.default_rng(7000 + int(delta * 1000) * 10 + kk // 100 + int(amp * 10) * 1000)
+            periods = kk // PER_PERIOD
+            sh = r.choice([-amp, amp], size=(POW_REPS, periods))
+            q = np.repeat(0.5 + 2.5 * delta + sh, PER_PERIOD, axis=1)
+            xs = increments(q, r)
+            fh = int(block_t_rejects(xs, PER_PERIOD).sum())
+            ep = int((grapa_paths(xs)[1] >= THRESHOLD).sum())
+            power_shock[f'shock=+/-{amp},delta={delta},clusters={kk}'] = {
+                'fixed_horizon_block1_power': round(fh / POW_REPS, 4), 'eprocess_monitor_crossing_rate': round(ep / POW_REPS, 4)}
+out['RC61_power_macro_shock_iid_periods'] = {'generator': 'baseline 0.4, challenger 0.6, q_t = 0.5 + 2.5 delta +/- shock per period (E[X] = delta, X in {-0.2, +0.2})',
+                                              'cells': power_shock}
+out['RC61_persistent_regime'] = 'size not held at 120 clusters over 24 periods (16 Appendix D), so no power figure is meaningful there'
+
+# ================= r4296649427 (RC-63): positive-control oracles for each kernel =================
+# (a) deterministic e-value oracle: constant increments +0.2 under the archived rule.
+# lambda = 0 for n < 2; for constant X the sample variance is 0, so lambda = (1/mean) * n/(n+10) clipped
+# to 0.5, i.e. 0.5 from n = 2 on; wealth after k increments = 1.1^(k-2).
+const = np.full((1, 40), 0.2)
+w_const, peak_const, snaps = grapa_paths(const, checkpoints=tuple(range(1, 41)))
+first_cross = min(k for k, pk in snaps.items() if pk[0] >= THRESHOLD)
+oracle_e = {'constant_+0.2_after_12': round(float(grapa_paths(const[:, :12])[0][0]), 6),
+            'closed_form_1.1^10': round(1.1 ** 10, 6),
+            'first_crossing_step': first_cross, 'closed_form_e_at_step_34': round(1.1 ** 32, 6)}
+mixed = np.array([[0.2, -0.2, 0.2, 0.2, -0.2, 0.2, 0.2, 0.2, -0.2, 0.2, 0.2, 0.2]])
+oracle_e['mixed_12_vector'] = mixed[0].tolist()
+oracle_e['mixed_12_e_value'] = round(float(grapa_paths(mixed)[0][0]), 6)
+# (b) deterministic fixed-horizon oracle: four block means.
+bm = np.array([[0.05, 0.10, 0.00, 0.05]])
+tstat = float(bm.mean() / (bm.std(ddof=1) / 2))
+oracle_fh = {'block_means': bm[0].tolist(), 't_statistic': round(tstat, 6), 'df': 3,
+             'one_sided_p': round(float(student_t.sf(tstat, 3)), 6), 'rejects_at_0.05': bool(tstat > student_t.ppf(0.95, 3))}
+# (c) pre-specified alternative with a bounded minimum rejection rate for each kernel.
+pc = {}
+for delta in (0.03, 0.05, 0.08):
+    r = np.random.default_rng(9000 + int(delta * 100))
+    p = 0.5 + math.sqrt(delta) * r.choice([-1., 1.], size=(20000, 120))
+    yy = (r.random(p.shape) < p).astype(float)
+    xs = (0.5 - yy) ** 2 - (p - yy) ** 2
+    fh = int(block_t_rejects(xs, PER_PERIOD).sum()); ep = int((grapa_paths(xs)[1] >= THRESHOLD).sum())
+    pc[f'b=0.5,delta={delta},clusters=120'] = {
+        'fixed_horizon_rejections': fh, 'fixed_horizon_rate': round(fh / 20000, 4),
+        'fixed_horizon_exact_lower_99': round(binom_lower(fh, 20000, 0.99), 4),
+        'eprocess_crossings': ep, 'eprocess_rate': round(ep / 20000, 4),
+        'eprocess_exact_lower_99': round(binom_lower(ep, 20000, 0.99), 4)}
+# Pass probability of a correct kernel against a lower bound of 0.90 when its true power is 0.95 or 0.97.
+k_min = min(k for k in range(20000) if binom_lower(k, 20000, 0.99) >= 0.90)
+pc['fixed_horizon_bound_0.90_design'] = {'k_min_rejections_of_20000': k_min,
+                           'P_pass_if_power_0.93': round(float(binom.sf(k_min - 1, 20000, 0.93)), 6),
+                           'P_pass_if_power_0.95': round(float(binom.sf(k_min - 1, 20000, 0.95)), 6),
+                           'P_pass_if_power_0.964_(delta_0.08)': round(float(binom.sf(k_min - 1, 20000, 0.964)), 6),
+                           'P_pass_if_inert_kernel': 0.0}
+k_min_e = min(k for k in range(20000) if binom_lower(k, 20000, 0.99) >= 0.60)
+pc['eprocess_bound_0.60_design'] = {'k_min_crossings_of_20000': k_min_e,
+                           'P_pass_if_rate_0.65': round(float(binom.sf(k_min_e - 1, 20000, 0.65)), 6),
+                           'P_pass_if_rate_0.71_(delta_0.08)': round(float(binom.sf(k_min_e - 1, 20000, 0.71)), 6),
+                           'P_pass_if_inert_kernel': 0.0}
+out['RC63_positive_controls'] = {'eprocess_oracle': oracle_e, 'fixed_horizon_oracle': oracle_fh, 'alternative_grid': pc}
+
+# ================= r4296649421 (RC-62): a verifier that signs a subset of the capability tuple =================
+FIELDS = ('capability', 'environment', 'release_digest', 'evidence_digest', 'epoch', 'nonce', 'expiry')
+cap = {'capability': 'GATE_PROMOTE_SIM', 'environment': 'SIM', 'release_digest': 'r' * 8, 'evidence_digest': 'e' * 8,
+       'epoch': 7, 'nonce': 'n1', 'expiry': 1000}
+key = b'synthetic-test-key-not-a-secret'
+def sign(record, signed_fields):
+    msg = json.dumps({f: record[f] for f in signed_fields}, sort_keys=True).encode()
+    return hmac.new(key, msg, hashlib.sha256).hexdigest()
+def mutate(record, f):
+    r = dict(record); r[f] = (r[f] + 1) if isinstance(r[f], int) else r[f] + 'x'; return r
+subset = ('environment', 'release_digest')                     # what T-31 v3 exercised besides the key
+sig_subset = sign(cap, subset); sig_full = sign(cap, FIELDS)
+out['RC62_partial_signature'] = {
+    'verifier_signing_only_environment_and_release': {f: sign(mutate(cap, f), subset) == sig_subset for f in FIELDS},
+    'verifier_signing_every_field': {f: sign(mutate(cap, f), FIELDS) == sig_full for f in FIELDS},
+    'reading': 'True = the mutated record still verifies; T-31 v3 mutated only key, environment and release digest'}
+
+# ================= r4296649399 (RC-60): the redacting holder still stores the raw secret =================
+def canary(): return 'SYNTHETIC-' + 'CANARY-r4'
+class Transport(Exception):
+    def __init__(self, request): super().__init__('transport'); self.request = request
+class Sanitized(RuntimeError): pass
+class Redacted:
+    def __init__(self, value): self._value = value
+    def __repr__(self): return 'Redacted(***)'
+def reachable_repr(exc):                                            # the round-3 probe (repr only)
+    seen, found, stack = set(), [], [exc]
+    while stack:
+        e = stack.pop()
+        if e is None or id(e) in seen: continue
+        seen.add(id(e)); found.append(e); stack += [e.__context__, e.__cause__]
+        tb = e.__traceback__
+        while tb is not None:
+            for v in tb.tb_frame.f_locals.values():
+                (stack if isinstance(v, BaseException) else found).append(v)
+            tb = tb.tb_next
+    return found
+def leaks_repr(exc): return any(canary() in repr(o) for o in reachable_repr(exc))
+def leaks_state(exc):
+    """Traverse object state (attributes, slots, containers, closures, exception args), not repr."""
+    seen, stack = set(), list(reachable_repr(exc))
+    while stack:
+        o = stack.pop()
+        if id(o) in seen: continue
+        seen.add(id(o))
+        if isinstance(o, (str, bytes)):
+            if canary() in (o if isinstance(o, str) else o.decode('utf-8', 'ignore')): return True
+            continue
+        if isinstance(o, dict): stack += list(o.keys()) + list(o.values()); continue
+        if isinstance(o, (list, tuple, set, frozenset)): stack += list(o); continue
+        if isinstance(o, BaseException): stack += list(o.args)
+        d = getattr(o, '__dict__', None)
+        if isinstance(d, dict): stack += list(d.values())
+        for slot in getattr(type(o), '__slots__', ()):
+            if hasattr(o, slot): stack.append(getattr(o, slot))
+        if isinstance(o, types.FunctionType):
+            for cell in (o.__closure__ or ()):
+                try: stack.append(cell.cell_contents)
+                except ValueError: pass
+    return False
+def case_outside_redacted():                                        # round-3 "passing" variant
+    auth = Redacted(f'Bearer {canary()}'); kind = None
+    try: raise Transport({'Authorization': auth})
+    except Transport as ex: kind = type(ex).__name__
+    raise Sanitized(f'transport error: {kind}')
+def _transport_call(request):
+    """Holds the secret; catches every exception; returns only a typed outcome; its frame is gone before any raise."""
+    headers = {**request, 'Authorization': f'Bearer {canary()}'}
+    try:
+        raise Transport(headers)
+    except Transport as ex:
+        return type(ex).__name__
+    return None
+def case_secret_confined_to_returned_frame():
+    kind = _transport_call({'path': '/sim/precheck'})
+    if kind is not None:
+        raise Sanitized(f'transport error: {kind}')
+def case_confined_but_outcome_carries_exception():                  # wrong: the outcome object references the frame
+    def inner():
+        headers = {'Authorization': f'Bearer {canary()}'}
+        try: raise Transport(headers)
+        except Transport as ex: return ex
+    ex = inner()
+    raise Sanitized(f'transport error: {type(ex).__name__}')
+table = {}
+for name, fn in [('outside_handler_redacting_holder_(v3_pass)', case_outside_redacted),
+                 ('secret_confined_to_frame_that_returned', case_secret_confined_to_returned_frame),
+                 ('confined_but_outcome_is_the_exception_object', case_confined_but_outcome_carries_exception)]:
+    try: fn()
+    except Sanitized as s_:
+        table[name] = {'context_is_None': s_.__context__ is None, 'repr_probe_leaks': leaks_repr(s_), 'state_probe_leaks': leaks_state(s_)}
+out['RC60_object_state_canary'] = table
+out['python'] = sys.version.split()[0]
+print(json.dumps(out, indent=2))
+```
+<!-- round4-script:end -->
+
+Output:
+
+```json
+{
+  "RC56_two_cutoffs": {
+    "nominal_alpha_each_look": 0.05,
+    "information_fractions": [
+      0.5,
+      1.0
+    ],
+    "type_I_error_reject_at_either_look_normal_theory": 0.08008,
+    "obf_spending_option": {
+      "alpha_spent_at_12_months": 0.00557,
+      "z_boundary_12_months": 2.538,
+      "z_boundary_24_months": 1.6621,
+      "nominal_level_24_months": 0.04825,
+      "total_type_I_error": 0.05
+    },
+    "block_t_simulation": {
+      "independent_clusters_valid_null": {
+        "reject_12m_only": 0.05805,
+        "reject_24m_only": 0.05105,
+        "reject_at_either_look_both_nominal_0.05": 0.088,
+        "exact_lower_99_either_look": 0.0834,
+        "single_primary_at_24m_with_12m_futility_look_only": 0.05105,
+        "obf_spending_both_looks": 0.05255
+      },
+      "macro_shock_iid_periods": {
+        "reject_12m_only": 0.04665,
+        "reject_24m_only": 0.0507,
+        "reject_at_either_look_both_nominal_0.05": 0.07845,
+        "exact_lower_99_either_look": 0.07409,
+        "single_primary_at_24m_with_12m_futility_look_only": 0.0507,
+        "obf_spending_both_looks": 0.05085
+      }
+    }
+  },
+  "RC57_void_window": {
+    "void_received_10:10": {
+      "accepted_under_v3_rule": true,
+      "accepted_under_v4_rule": false
+    },
+    "void_received_09:55": {
+      "accepted_under_v3_rule": true,
+      "accepted_under_v4_rule": true
+    },
+    "reading": "the v3 clause used receipt time where RC-52 had already moved every other cutoff to t*_k"
+  },
+  "RC58_interval_fixtures": {
+    "model=(0.0005,0.001,0.002),s=5,n=20": {
+      "low": 0.006874,
+      "point": 0.014362,
+      "high": 0.027239,
+      "ordered": true
+    },
+    "model=(0.3,0.5,0.7),s=5,n=20": {
+      "low": 0.168465,
+      "point": 0.315334,
+      "high": 0.488622,
+      "ordered": true
+    },
+    "model=(0.0005,0.001,0.002),s=0,n=0": {
+      "low": 0.0005,
+      "point": 0.001,
+      "high": 0.002,
+      "ordered": true
+    },
+    "model=(0.001,0.001,0.001),s=5,n=20": {
+      "low": 0.009696,
+      "point": 0.014362,
+      "high": 0.019407,
+      "ordered": true
+    },
+    "model=(0.0,0.001,0.002),s=5,n=20": {
+      "low": 0.000309,
+      "point": 0.014362,
+      "high": 0.027239,
+      "ordered": true
+    },
+    "model=(0.0005,0.001,0.002),s=0,n=50": {
+      "low": 0.002657,
+      "point": 0.011072,
+      "high": 0.025155,
+      "ordered": true
+    }
+  },
+  "RC58_raw_posterior_bounds_would_violate_ordering": {
+    "posterior_q05_at_(5,20)": 0.087401,
+    "shrunk_point": 0.014362,
+    "low_le_point_if_raw_bounds_used": false
+  },
+  "RC61_power_independent_clusters": {
+    "b=0.5,delta=0.005,clusters=120": {
+      "fixed_horizon_block1_power": 0.1943,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.5,delta=0.005,clusters=300": {
+      "fixed_horizon_block1_power": 0.3356,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.5,delta=0.005,clusters=600": {
+      "fixed_horizon_block1_power": 0.5402,
+      "eprocess_monitor_crossing_rate": 0.0131
+    },
+    "b=0.5,delta=0.01,clusters=120": {
+      "fixed_horizon_block1_power": 0.2862,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.5,delta=0.01,clusters=300": {
+      "fixed_horizon_block1_power": 0.5471,
+      "eprocess_monitor_crossing_rate": 0.0142
+    },
+    "b=0.5,delta=0.01,clusters=600": {
+      "fixed_horizon_block1_power": 0.8,
+      "eprocess_monitor_crossing_rate": 0.2745
+    },
+    "b=0.5,delta=0.02,clusters=120": {
+      "fixed_horizon_block1_power": 0.4624,
+      "eprocess_monitor_crossing_rate": 0.0013
+    },
+    "b=0.5,delta=0.02,clusters=300": {
+      "fixed_horizon_block1_power": 0.8022,
+      "eprocess_monitor_crossing_rate": 0.2683
+    },
+    "b=0.5,delta=0.02,clusters=600": {
+      "fixed_horizon_block1_power": 0.9738,
+      "eprocess_monitor_crossing_rate": 0.8118
+    },
+    "b=0.5,delta=0.03,clusters=120": {
+      "fixed_horizon_block1_power": 0.6213,
+      "eprocess_monitor_crossing_rate": 0.0313
+    },
+    "b=0.5,delta=0.03,clusters=300": {
+      "fixed_horizon_block1_power": 0.9292,
+      "eprocess_monitor_crossing_rate": 0.6074
+    },
+    "b=0.5,delta=0.03,clusters=600": {
+      "fixed_horizon_block1_power": 0.9976,
+      "eprocess_monitor_crossing_rate": 0.9642
+    },
+    "b=0.2,delta=0.005,clusters=120": {
+      "fixed_horizon_block1_power": 0.2434,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.2,delta=0.005,clusters=300": {
+      "fixed_horizon_block1_power": 0.461,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.2,delta=0.005,clusters=600": {
+      "fixed_horizon_block1_power": 0.703,
+      "eprocess_monitor_crossing_rate": 0.0054
+    },
+    "b=0.2,delta=0.01,clusters=120": {
+      "fixed_horizon_block1_power": 0.3994,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.2,delta=0.01,clusters=300": {
+      "fixed_horizon_block1_power": 0.7192,
+      "eprocess_monitor_crossing_rate": 0.0049
+    },
+    "b=0.2,delta=0.01,clusters=600": {
+      "fixed_horizon_block1_power": 0.9336,
+      "eprocess_monitor_crossing_rate": 0.3151
+    },
+    "b=0.2,delta=0.02,clusters=120": {
+      "fixed_horizon_block1_power": 0.6494,
+      "eprocess_monitor_crossing_rate": 0.0003
+    },
+    "b=0.2,delta=0.02,clusters=300": {
+      "fixed_horizon_block1_power": 0.9442,
+      "eprocess_monitor_crossing_rate": 0.2962
+    },
+    "b=0.2,delta=0.02,clusters=600": {
+      "fixed_horizon_block1_power": 0.9981,
+      "eprocess_monitor_crossing_rate": 0.948
+    },
+    "b=0.2,delta=0.03,clusters=120": {
+      "fixed_horizon_block1_power": 0.8286,
+      "eprocess_monitor_crossing_rate": 0.0118
+    },
+    "b=0.2,delta=0.03,clusters=300": {
+      "fixed_horizon_block1_power": 0.9946,
+      "eprocess_monitor_crossing_rate": 0.7845
+    },
+    "b=0.2,delta=0.03,clusters=600": {
+      "fixed_horizon_block1_power": 1.0,
+      "eprocess_monitor_crossing_rate": 0.9991
+    }
+  },
+  "RC61_power_macro_shock_iid_periods": {
+    "generator": "baseline 0.4, challenger 0.6, q_t = 0.5 + 2.5 delta +/- shock per period (E[X] = delta, X in {-0.2, +0.2})",
+    "cells": {
+      "shock=+/-0.0,delta=0.01,clusters=120": {
+        "fixed_horizon_block1_power": 0.1375,
+        "eprocess_monitor_crossing_rate": 0.0021
+      },
+      "shock=+/-0.0,delta=0.01,clusters=300": {
+        "fixed_horizon_block1_power": 0.219,
+        "eprocess_monitor_crossing_rate": 0.0444
+      },
+      "shock=+/-0.0,delta=0.01,clusters=600": {
+        "fixed_horizon_block1_power": 0.3417,
+        "eprocess_monitor_crossing_rate": 0.1318
+      },
+      "shock=+/-0.0,delta=0.02,clusters=120": {
+        "fixed_horizon_block1_power": 0.2837,
+        "eprocess_monitor_crossing_rate": 0.0101
+      },
+      "shock=+/-0.0,delta=0.02,clusters=300": {
+        "fixed_horizon_block1_power": 0.5293,
+        "eprocess_monitor_crossing_rate": 0.1916
+      },
+      "shock=+/-0.0,delta=0.02,clusters=600": {
+        "fixed_horizon_block1_power": 0.7925,
+        "eprocess_monitor_crossing_rate": 0.4884
+      },
+      "shock=+/-0.0,delta=0.03,clusters=120": {
+        "fixed_horizon_block1_power": 0.4823,
+        "eprocess_monitor_crossing_rate": 0.0436
+      },
+      "shock=+/-0.0,delta=0.03,clusters=300": {
+        "fixed_horizon_block1_power": 0.8325,
+        "eprocess_monitor_crossing_rate": 0.4977
+      },
+      "shock=+/-0.0,delta=0.03,clusters=600": {
+        "fixed_horizon_block1_power": 0.9802,
+        "eprocess_monitor_crossing_rate": 0.8767
+      },
+      "shock=+/-0.3,delta=0.01,clusters=120": {
+        "fixed_horizon_block1_power": 0.101,
+        "eprocess_monitor_crossing_rate": 0.0497
+      },
+      "shock=+/-0.3,delta=0.01,clusters=300": {
+        "fixed_horizon_block1_power": 0.1336,
+        "eprocess_monitor_crossing_rate": 0.1968
+      },
+      "shock=+/-0.3,delta=0.01,clusters=600": {
+        "fixed_horizon_block1_power": 0.1923,
+        "eprocess_monitor_crossing_rate": 0.3345
+      },
+      "shock=+/-0.3,delta=0.02,clusters=120": {
+        "fixed_horizon_block1_power": 0.1706,
+        "eprocess_monitor_crossing_rate": 0.0928
+      },
+      "shock=+/-0.3,delta=0.02,clusters=300": {
+        "fixed_horizon_block1_power": 0.2922,
+        "eprocess_monitor_crossing_rate": 0.3597
+      },
+      "shock=+/-0.3,delta=0.02,clusters=600": {
+        "fixed_horizon_block1_power": 0.4688,
+        "eprocess_monitor_crossing_rate": 0.6038
+      },
+      "shock=+/-0.3,delta=0.03,clusters=120": {
+        "fixed_horizon_block1_power": 0.2685,
+        "eprocess_monitor_crossing_rate": 0.1646
+      },
+      "shock=+/-0.3,delta=0.03,clusters=300": {
+        "fixed_horizon_block1_power": 0.5056,
+        "eprocess_monitor_crossing_rate": 0.5719
+      },
+      "shock=+/-0.3,delta=0.03,clusters=600": {
+        "fixed_horizon_block1_power": 0.7552,
+        "eprocess_monitor_crossing_rate": 0.8337
+      }
+    }
+  },
+  "RC61_persistent_regime": "size not held at 120 clusters over 24 periods (16 Appendix D), so no power figure is meaningful there",
+  "RC63_positive_controls": {
+    "eprocess_oracle": {
+      "constant_+0.2_after_12": 2.593742,
+      "closed_form_1.1^10": 2.593742,
+      "first_crossing_step": 34,
+      "closed_form_e_at_step_34": 21.113777,
+      "mixed_12_vector": [
+        0.2,
+        -0.2,
+        0.2,
+        0.2,
+        -0.2,
+        0.2,
+        0.2,
+        0.2,
+        -0.2,
+        0.2,
+        0.2,
+        0.2
+      ],
+      "mixed_12_e_value": 1.447854
+    },
+    "fixed_horizon_oracle": {
+      "block_means": [
+        0.05,
+        0.1,
+        0.0,
+        0.05
+      ],
+      "t_statistic": 2.44949,
+      "df": 3,
+      "one_sided_p": 0.045861,
+      "rejects_at_0.05": true
+    },
+    "alternative_grid": {
+      "b=0.5,delta=0.03,clusters=120": {
+        "fixed_horizon_rejections": 12507,
+        "fixed_horizon_rate": 0.6253,
+        "fixed_horizon_exact_lower_99": 0.6173,
+        "eprocess_crossings": 642,
+        "eprocess_rate": 0.0321,
+        "eprocess_exact_lower_99": 0.0293
+      },
+      "b=0.5,delta=0.05,clusters=120": {
+        "fixed_horizon_rejections": 16599,
+        "fixed_horizon_rate": 0.8299,
+        "fixed_horizon_exact_lower_99": 0.8237,
+        "eprocess_crossings": 5133,
+        "eprocess_rate": 0.2566,
+        "eprocess_exact_lower_99": 0.2495
+      },
+      "b=0.5,delta=0.08,clusters=120": {
+        "fixed_horizon_rejections": 19279,
+        "fixed_horizon_rate": 0.9639,
+        "fixed_horizon_exact_lower_99": 0.9608,
+        "eprocess_crossings": 14214,
+        "eprocess_rate": 0.7107,
+        "eprocess_exact_lower_99": 0.7032
+      },
+      "fixed_horizon_bound_0.90_design": {
+        "k_min_rejections_of_20000": 18099,
+        "P_pass_if_power_0.93": 1.0,
+        "P_pass_if_power_0.95": 1.0,
+        "P_pass_if_power_0.964_(delta_0.08)": 1.0,
+        "P_pass_if_inert_kernel": 0.0
+      },
+      "eprocess_bound_0.60_design": {
+        "k_min_crossings_of_20000": 12162,
+        "P_pass_if_rate_0.65": 1.0,
+        "P_pass_if_rate_0.71_(delta_0.08)": 1.0,
+        "P_pass_if_inert_kernel": 0.0
+      }
+    }
+  },
+  "RC62_partial_signature": {
+    "verifier_signing_only_environment_and_release": {
+      "capability": true,
+      "environment": false,
+      "release_digest": false,
+      "evidence_digest": true,
+      "epoch": true,
+      "nonce": true,
+      "expiry": true
+    },
+    "verifier_signing_every_field": {
+      "capability": false,
+      "environment": false,
+      "release_digest": false,
+      "evidence_digest": false,
+      "epoch": false,
+      "nonce": false,
+      "expiry": false
+    },
+    "reading": "True = the mutated record still verifies; T-31 v3 mutated only key, environment and release digest"
+  },
+  "RC60_object_state_canary": {
+    "outside_handler_redacting_holder_(v3_pass)": {
+      "context_is_None": true,
+      "repr_probe_leaks": false,
+      "state_probe_leaks": true
+    },
+    "secret_confined_to_frame_that_returned": {
+      "context_is_None": true,
+      "repr_probe_leaks": false,
+      "state_probe_leaks": false
+    },
+    "confined_but_outcome_is_the_exception_object": {
+      "context_is_None": true,
+      "repr_probe_leaks": true,
+      "state_probe_leaks": true
+    }
+  },
+  "python": "3.11.17"
+}
+```
+
+Reading. `RC56_two_cutoffs`: two confirmatory looks at nominal α = 0.05 give 8.0 % (normal theory) and 8.8 % /
+7.8 % (block test on the two null families); a single primary at 24 months with a futility-only interim gives
+5.1 %; the O'Brien–Fleming-type boundaries give 5.3 % / 5.1 % through the block test's own degrees of freedom
+(the 12-month look has twelve blocks, which is why the first-look size alone is 5.8 % on the valid null and the
+spending option needs simulation calibration in T-12). `RC57_void_window`: the v3 clause admits a VOID declared
+between publication and registry receipt; the t*_k clause refuses it. `RC58_interval_fixtures`: the endpoint-wise
+logit shrinkage returns ordered intervals on every fixture, including a collapsed model interval and low = 0;
+the raw posterior quantiles would violate low ≤ point, as Codex computed. `RC61_*`: power of the primary test on
+the D1 generator with independent clusters, with the monitor's crossing rate on the same paths (the monitor's
+600-cluster rates 0.2745 and 0.3151 at δ = 0.01 agree with the Appendix B counts 1,623 / 6,000 and 1,844 /
+6,000 within Monte Carlo error); the macro-shock table is on the Appendix D generator (X ∈ {−0.2, +0.2}, a
+different scale from the D1 rows), where ± 0.3 period shocks roughly halve the primary's power at every cell.
+`RC63_positive_controls`: the deterministic oracles and the pre-specified alternative with its pass
+probabilities. `RC62_partial_signature`: a verifier over two fields accepts five single-field substitutions; one
+over the whole tuple rejects all seven. `RC60_object_state_canary`: the round-3 `repr` probe clears the
+redacting holder while the object-state probe finds the secret in it; confining the secret to a frame that has
+returned clears both probes; returning the exception object as the outcome leaks under both.

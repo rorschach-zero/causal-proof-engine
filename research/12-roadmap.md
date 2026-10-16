@@ -116,3 +116,9 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    dependence model, and the e-process runs as the anytime-valid monitor of the conditional null (`17` §6).
    Codex round 3 on `43754cc` is processed in `16` §3b; the round budget of issue #3 is spent for RC-01 and
    RC-15, so Phase 0 exit now waits on owner decisions OD1, OD2 and OD9a, not on a further review round.
+8. **Phase 0 exit, round 4 (RC-56 to RC-63).** Codex's review of `d46c204` is processed in `16` §3c: the
+   primary test has a single 24-month cut-off, power is stated for the primary test itself, every signed
+   capability field is mutated in T-31, and each kernel has a positive control (T-36). RC-60 (the redacting
+   holder still stores the secret) is reproduced but not applied because the RC-15 budget is spent (OD10).
+   Every item Codex has touched has now used its budget; later automatic reviews are recorded for the owner
+   without revision (`16` §4.6). Phase 0 exit waits on OD1, OD2, OD9a and, for T-34, OD10.

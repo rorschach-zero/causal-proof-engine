@@ -91,7 +91,7 @@ amendments. Nothing below is in force; the decisions in §3–§4 above stand un
 |---|---|---|
 | D2 | Design C plus small exact Design A first; Design B deferred until out-of-sample value; selection at 150 resolutions is development, confirmed on fresh clusters | RC-10 |
 | D3 | thresholds are configuration fixtures until calibrated on development data and validated on fresh strata; equal weights default; n_eff never a criterion | RC-06, RC-07, RC-17 |
-| D4 | one increment per pre-declared outcome cluster; server receipt time; fixed-horizon cluster-robust paired test as secondary; valid-null and clustered-null negative controls permanent | RC-01, RC-02 |
+| D4 | one increment per pre-declared outcome cluster; server receipt time; **primary confirmatory test = fixed-horizon paired cluster test at one 24-month cut-off with a pre-registered calendar-block dependence model; the cluster-level e-process is the anytime-valid monitor of the sequential conditional null, labelled as such, never alone confirmatory** (roles assigned in round 3, RC-49, RC-50; single cut-off in round 4, RC-56; this row said "secondary" until round 4, RC-59); valid-null, clustered-null, macro-shock and time-varying negative controls permanent | RC-01, RC-02, RC-49, RC-50, RC-56 |
 | D6 | delete the base-rate floor; declared shrinkage toward a reference-class rate; rankings until cohorts exist; "never elicit below 0.05" kept as workflow rule | RC-03 |
 | D9 | terminal falsifier vs milestone deadline; precedence hard limits > falsifier > valuation review > throttle; counterfactual policy arms on all entries; compounder caps per OD7 | RC-19 |
 | D11 | milestones from cohort entry; necessity claims withdrawn | RC-21 |

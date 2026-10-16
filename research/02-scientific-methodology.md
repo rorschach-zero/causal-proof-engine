@@ -135,3 +135,11 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    with that label, and its crossing is never alone a confirmatory result. "Primary e-value ≥ 20" in §4 is
    superseded accordingly. Under a persistent macro regime neither test holds size at 120 clusters over 24
    periods, so the dependence model is an input to OD4 and OD5 (`17` §6).
+8. **§4 read-out and item 6 above, round 4 (RC-56, RC-61).** The primary test has one cut-off, 24 months after
+   first cohort entry; the 12-month look is an interim for futility and integrity only, because two
+   confirmatory looks at nominal α inflate the type-I error (8.0 % in normal theory, 8.8 % for the block test;
+   REPRODUCED, `16` Appendix E). The power figures in item 6 are the monitor's; the primary test detects
+   δ = 0.01 at 600 independent clusters with 80 % (b = 0.5) to 93 % (b = 0.2) power and δ = 0.02 at 300
+   clusters with 80 % to 94 % (REPRODUCED, `16` Appendix E), but under independent period shocks of ± 0.3 its
+   power at δ = 0.02 and 600 clusters falls to 47 %, so the dependence model, not the cluster count alone,
+   determines the detectable effect (OD4).
