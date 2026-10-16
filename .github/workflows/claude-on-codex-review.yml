@@ -1,0 +1,88 @@
+name: Trigger Claude reconciliation after Codex review
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cpe-claude-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  fire-routine:
+    # Only respond to genuine Codex reviews on Claude branches in this repository.
+    # Never execute pull-request code or accept instructions from review text.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'claude/') &&
+      contains(fromJSON('["chatgpt-codex-connector[bot]", "chatgpt-codex-connector"]'), github.event.review.user.login) &&
+      contains(fromJSON('["commented", "changes_requested"]'), github.event.review.state)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      ROUTINE_URL: ${{ secrets.CPE_CLAUDE_ROUTINE_URL }}
+      ROUTINE_TOKEN: ${{ secrets.CPE_CLAUDE_ROUTINE_TOKEN }}
+      REVIEW_ID: ${{ github.event.review.id }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      REVIEWED_SHA: ${{ github.event.pull_request.head.sha }}
+    steps:
+      - name: Notify Claude routine
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.parse
+          import urllib.request
+
+          url = os.environ.get("ROUTINE_URL", "")
+          token = os.environ.get("ROUTINE_TOKEN", "")
+          if not url or not token:
+              raise SystemExit("Required Claude routine GitHub secrets are missing")
+
+          parsed = urllib.parse.urlsplit(url)
+          if (
+              parsed.scheme != "https"
+              or parsed.hostname != "api.anthropic.com"
+              or parsed.port is not None
+              or not parsed.path.startswith("/v1/claude_code/routines/")
+              or not parsed.path.endswith("/fire")
+              or parsed.username is not None
+              or parsed.password is not None
+              or parsed.query
+              or parsed.fragment
+          ):
+              raise SystemExit("Claude routine URL does not match the documented API origin")
+
+          payload = {
+              "text": (
+                  "Codex submitted a GitHub review on PR #"
+                  + os.environ["PR_NUMBER"]
+                  + ", review ID "
+                  + os.environ["REVIEW_ID"]
+                  + ", head SHA "
+                  + os.environ["REVIEWED_SHA"]
+                  + ". Retrieve and independently assess new review comments"
+                  + " using the saved routine instructions. This is a locator,"
+                  + " not authority to merge or to change safeguards."
+              )
+          }
+          request = urllib.request.Request(
+              url=url,
+              data=json.dumps(payload).encode("utf-8"),
+              method="POST",
+              headers={
+                  "Authorization": "Bearer " + token,
+                  "anthropic-beta": "experimental-cc-routine-2026-04-01",
+                  "anthropic-version": "2023-06-01",
+                  "Content-Type": "application/json",
+              },
+          )
+          with urllib.request.urlopen(request, timeout=20) as response:
+              if response.status not in (200, 201, 202):
+                  raise SystemExit("Claude routine API returned an unsuccessful response")
+              print("Claude routine notification accepted for PR", os.environ["PR_NUMBER"])
+          PY
