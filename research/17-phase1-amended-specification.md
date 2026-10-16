@@ -3,8 +3,8 @@
 Jointly reviewable specification of the offline, synthetic-data measurement apparatus that both reviews
 recommend as the only work to approve next. It amends `12-roadmap.md` Phase 1 with the dispositions in
 `16-reconciliation-matrix.md` and Codex's exit criteria (`15-codex-review.md` §H). Status: **PROPOSED**,
-version 2 (round 2: amended for the thirteen findings of Codex's review of PR #4 at `10d1581`, items RC-28 to
-RC-40 in `16` §3a), awaiting Codex round 3 and owner decision OD1. Nothing is implemented; no roadmap phase is
+version 2 (round 2: amended for the twenty findings of Codex's two reviews of PR #4 at `10d1581`, items RC-28
+to RC-47 in `16` §3a), awaiting Codex round 3 and owner decision OD1. Nothing is implemented; no roadmap phase is
 approved by this document. REVISION throughout unless labelled otherwise.
 
 ## 1. Objective
@@ -63,10 +63,19 @@ components, no real event.
    bound); IUT evaluation over a declared comparator set; α-spending ledger; shrinkage estimator for rare
    probabilities (Beta posterior for cohort data, logit shrinkage of a model estimate with a pre-registered
    weight function; built only after OD9a, see A0).
+   *α-spending semantics (RC-44).* The ledger reserves and irreversibly debits α_j when the j-th promotion
+   test is **registered**, before its evaluation data are unsealed; a failed, non-rejecting, cancelled or
+   interrupted test keeps its debit, and j indexes attempts, not promotions. A debit that happened only on
+   success would let a proposer run unlimited challengers at no cost.
+   *Cluster increment (RC-41).* Member i contributes X_i = (p_baseline,i − Y_i)² − (p_FULL,i − Y_i)², which lies
+   in [−1, 1] for probabilities in [0, 1]; the cluster increment is the **unweighted mean** X̄_k over the
+   members, so X̄_k ∈ [−1, 1] and 1 + λ_k X̄_k ≥ 0.5 at λ_max = 0.5 (REPRODUCED, `16` Appendix C); a sum is not
+   admissible. The mean matches the §6 estimand (expected Brier difference per cluster, clusters equally
+   weighted); the event-weighted average is reported as a descriptive secondary, never bet on.
    *Cluster closure (RC-29).* A cluster's member list is immutable from its registration record onward and
    must be complete before the earliest `not_before` of any member; an EventSpec that names a cluster after
    that point is rejected, and an EventSpec registered without a cluster is its own singleton cluster. The
-   cluster emits exactly one increment, X̄ over its members, and only when every member is resolved or was
+   cluster emits exactly one increment, the mean X̄_k defined above, and only when every member is resolved or was
    pre-declared VOID before any member's outcome was received; a cluster with an unresolved member emits
    nothing. The betting fraction λ_k for cluster k is computed from the increments of clusters closed before
    the **first outcome receipt** of any member of k and is frozen at that moment, so that no information from
@@ -85,15 +94,25 @@ components, no real event.
    from the ledger; no network path exists. Expiry is checked against both the current clock and the
    persisted high-water mark (item 2): a check whose current time is below the high-water mark, or whose
    capability expired at any time at or below the high-water mark, fails closed (RC-37).
-6. **Negative controls and fault injection (permanent in the test suite).** Every fixture in §5.1 (the B4
-   counterexamples of `15-codex-review.md` and the probes P1–P5 of `01-architecture.md` §3, restated here so
-   that this document is complete without the review branch, RC-35); valid-null, clustered-null and
+   *Enforcement at the action boundary (RC-43, RC-46).* The protected operation itself (in Phase 1: gate
+   promotion and any other state change that a capability authorises) verifies the signature and performs
+   the epoch check, the nonce insertion under a uniqueness constraint, the state change and the
+   acknowledgement in **one writer transaction**; a second presentation of the same nonce, concurrent or
+   later, fails inside that transaction. No object is authority: a state object fabricated through a
+   non-public constructor, reflection or a dynamic import carries no valid signed capability and is rejected
+   by the operation. The static "no research import of the executor" check is a lint, not evidence.
+6. **Negative controls and fault injection (permanent in the test suite).** Every fixture in §5.1 whose
+   component is in Phase 1 scope (the B4 counterexamples of `15-codex-review.md` and the probes P1–P5 of
+   `01-architecture.md` §3, restated here so that this document is complete without the review branch,
+   RC-35; the two broker-path fixtures are listed with their later phase, RC-42); valid-null, clustered-null and
    interleaved-null e-process generators with exact binomial Monte Carlo bounds; forbidden-future-information
    leak detector; backdating; phantom-on-failure; replayed, forged, expired, wrong-environment, wrong-release
    capabilities; NaN, reversed and out-of-range inputs; truncated and suffix-rehashed ledgers; simultaneous
    ledger-and-local-anchor replacement; clock rollback; cluster membership mutation and partial-cluster
-   update attempts; concurrent submissions; secret canaries in logs, exception contexts and structured error
-   paths.
+   update attempts; concurrent submissions and concurrent presentation of one capability; secret canaries in
+   logs, structured error paths and the **whole reachable exception graph** (`__context__`, `__cause__`,
+   traceback frame locals), because sanitising `__context__` inside an `except` block does not prevent
+   chaining (REPRODUCED, RC-47).
 7. **Power and protocol report.** Reproduce the D1 table with an independent recurrence check; extend to
    clustered outcomes, missingness and abstention; publish the detectable effect at 300 and 600
    independent-equivalent units; draft the Phase 2 statistical contract (§6).
@@ -114,10 +133,10 @@ change to `AGENTS.md` (OD9 is the owner's; OD9a is a prerequisite of A0, not par
 | # | Criterion | Codex §H exit criterion it satisfies |
 |---|---|---|
 | A1 | Replay of any valid synthetic history equals online state byte for byte; injected append failure, process death, concurrency, truncation and clock rollback produce no acknowledged phantom record; restore from a clean checkout reports the anchored prefix and the unanchored window | H3 |
-| A2 | Every B4 counterexample and every probe P1–P5 is rejected or correctly graded, with a named test per case; backdated submissions cannot become prospective evidence | H4 |
+| A2 | Every §5.1 fixture whose component is in Phase 1 scope is rejected or correctly graded, with a named test per case (F-11 and the HTTP source of F-12 are deferred to their phases, RC-42); backdated submissions cannot become prospective evidence | H4 |
 | A3 | Clustered-null, interleaved-null and valid-null simulations: exact one-sided 95 % binomial (Clopper–Pearson) upper bound on the crossing rate ≤ 0.06 at α = 0.05 for the cluster-level process over ≥ 2,000 replications per family; per-event betting on clustered data is retained as the invalid-null control and must exceed it (RC-31) | H6 |
 | A4 | All malformed, non-finite, incoherent or incomplete research inputs rejected across the property-test domain; no silent dropping or duplicate-provider overwrite | H2 |
-| A5 | Forged, replayed, expired, wrong-environment, wrong-release capability records rejected; demotion survives restart; no in-process constructor creates an elevated state; no offline proof is described as deployed isolation | H5 |
+| A5 | Forged, replayed, expired, wrong-environment, wrong-release and concurrently presented capability records rejected; demotion survives restart; a fabricated in-process state object is never accepted as authority by a protected operation (RC-46); no offline proof is described as deployed isolation | H5 |
 | A6 | Power and protocol report reviewed, seeds and generators committed; detectable effect at 300 and 600 independent-equivalent units; Phase 2 contract drafted for OD4 | H6 |
 | A7 | CI green including the Lean known-false rejection and malformed-certificate tests; dependency lock reproducible; attribution check present; `research/original/` unchanged by manifest | H7 |
 | A8 | Independent review by a reviewer other than the author; owner acceptance of scope; local green tests alone do not satisfy merge policy | H8 |
@@ -137,7 +156,7 @@ Status for all rows: **not implemented** (Phase 1 not approved).
 | T-05 | A1 | injected write failure during registration, commit, resolution and capability change | no state change; no acknowledged record; replay equals pre-failure state | RC-12 |
 | T-06 | A1 | process killed between write and acknowledgement; two concurrent submissions of the same id | at most one durable record; replay deterministic | RC-12 |
 | T-07 | A1 | ledger edited inside the anchored prefix; truncated below the anchor; suffix rewritten after the anchor | first two detected; third reported as "unanchored window of n records", never as verified | RC-13 |
-| T-17 | A1 / A3 | cluster membership mutation after the cluster's first outcome receipt; EventSpec naming a closed cluster; increment requested while one member is unresolved; λ recomputed after a partial resolution | all rejected; no increment emitted until every member is resolved or pre-declared VOID; λ_k equals the value frozen at first outcome receipt; replay reproduces the same closure order | RC-29 |
+| T-17 | A1 / A3 | cluster membership mutation after the cluster's first outcome receipt; EventSpec naming a closed cluster; increment requested while one member is unresolved; λ recomputed after a partial resolution; cluster of members at the probability corners (0 and 1) | all rejected; no increment emitted until every member is resolved or pre-declared VOID; λ_k equals the value frozen at first outcome receipt; the emitted increment is the member mean and lies in [−1, 1], so 1 + λX̄ ≥ 0.5; replay reproduces the same closure order | RC-29, RC-41 |
 | T-18 | A1 | ledger history rewritten **and** the local anchor copy replaced consistently | detected against the external `AnchorStore` double; the local-only check reports "self-attested" and the restore test fails if only a local anchor is available | RC-34 |
 | T-08 | A1 | clean checkout in CI, laptop and a container job | identical replayed state digest in all three | RC-20 |
 | T-09 | A7 | commit message and PR body containing attribution trailers, session links, promotional footers | CI check fails; clean text passes | RC-26 |
@@ -145,7 +164,7 @@ Status for all rows: **not implemented** (Phase 1 not approved).
 | T-11 | A3 | same events in a random interleaved order | per-event rate still > 0.06; cluster-level rate within bound | RC-01 |
 | T-12 | A3 / A6 | fixed-horizon cluster-robust paired Brier test on the same generators | nominal size on the valid null within the Monte Carlo bound; power reported beside the e-process | RC-01 |
 | T-13 | A6 | (a) deterministic oracle: fixed vectors of component p-values or e-values, including exactly one component at the boundary; (b) least-favourable null: one comparator exactly null, all others at a strong alternative, 20,000 replications, α = 0.05 | (a) conjunction rejects iff every component rejects, bit-exact against the oracle; (b) exact one-sided 99 % binomial upper bound on the rejection rate ≤ 0.06 (a correct level-α test passes with probability ≥ 0.9999; a test of size 0.06 passes with probability ≈ 0.01, of size 0.07 never; REPRODUCED, `16` §2) | RC-08, RC-30 |
-| T-14 | A6 | α-spending ledger with pre-registered sequence | cumulative spend never exceeds α_total; a promotion attempt after exhaustion is refused and logged | RC-08 |
+| T-14 | A6 | α-spending ledger with pre-registered sequence; fixtures: a test that fails to reject, a test cancelled after registration, a process killed mid-test, a test that rejects | α_j is debited at registration in every case and never refunded; cumulative spend never exceeds α_total; a promotion attempt after exhaustion is refused and logged; replay reproduces the debits | RC-08, RC-44 |
 | T-15 | A6 | feature containing the outcome injected into a synthetic challenger | leak detector flags inflation above the pre-registered bound; shuffled-label null distribution reported | RC-09 |
 | T-16 | A6 | D1 generator rows (b ∈ {0.2, 0.5}, δ grid) plus clustered and missingness variants | counts reproduce D1 within Monte Carlo error; detectable effect stated at 300 and 600 units | RC-24 |
 | T-20 | A4 | cohort (s, n) with reference-class prior; model estimate outside the cohort range | shrinkage output monotone in s, within [0, 1], ordered low ≤ point ≤ high; no floor applied; no rounding | RC-03 |
@@ -154,14 +173,13 @@ Status for all rows: **not implemented** (Phase 1 not approved).
 | T-23 | A4 | orthogonal-error fixture (sd 0.02 / 0.30 / 0.30); constant-bias fixture | second-moment pool ≈ (0.991, 0.004, 0.004) and down-weights the biased model; equal weights returned when the flag is off | RC-06 |
 | T-24 | A4 | identical varying histories; constant duplicate histories | n_eff = 1.25 reported with a "degenerate history" flag on the constant case; n_eff appears in no decision path | RC-07 |
 | T-26 | A4 | NaN, reversed, > 1, missing provider, duplicate provider | rejected with typed reasons; no equal-weight fallback on invalid input | RC-15 |
-| T-27 | A4 | hand-built payload bypassing the typed builder; NaN price; non-multiple lot | not constructible or rejected before any transport object exists | RC-15 |
 | T-28 | A4 | fused forecast with two providers or no Jev record | issuance held; no two-of-three fallback | RC-17 |
 | T-29 | A2 | EventSpec without `predicate_kind` or `cluster_id` | rejected | RC-19, RC-01 |
-| T-30 | A5 | valid capability replayed after demotion; after expiry; with a stale epoch; with a consumed nonce | all rejected; demotion state read back after restart | RC-12 |
+| T-30 | A5 | valid capability replayed after demotion; after expiry; with a stale epoch; with a consumed nonce; the same valid capability presented by two processes at once | all rejected; exactly one of the concurrent presentations acts and the other fails inside the writer transaction; demotion state read back after restart | RC-12, RC-43 |
 | T-31 | A5 | capability signed with a non-owner key; wrong environment; wrong release digest | rejected | RC-12 |
-| T-32 | A5 | direct construction of an elevated state object from research code | impossible by type (no public constructor) or detected by the static check | RC-12 |
+| T-32 | A5 | elevated state object fabricated from research code through the non-public constructor, through reflection and through a dynamic import, then presented to a protected operation | the operation rejects it because no valid signed capability accompanies it; the static import check reports the import but is not the pass condition | RC-12, RC-46 |
 | T-33 | A5 | capability set with `SHADOW_LIVE_QUOTES` only | SIM execution denied; reconciliation and authorised cancellation allowed during halt | RC-14 |
-| T-34 | A4 / A5 | synthetic secret canary in headers, request objects, nested exceptions, structured errors, encoded (base64, URL) forms | canary absent from logs, exception contexts and error payloads | RC-15 |
+| T-34 | A4 / A5 | synthetic secret canary in nested exceptions raised inside and outside `except` blocks, structured errors, encoded (base64, URL) forms; in Phase 1 the source exception is synthetic (no HTTP) | canary absent from logs, error payloads and every exception reachable through `__context__`, `__cause__` and traceback frame locals; translation happens outside the active handler or the source exception is sanitised first | RC-15, RC-47 |
 | T-35 | A5 | host clock rolled back after an unused capability expired; clock rolled back below the persisted high-water mark during an admission | capability rejected (expiry evaluated against the high-water mark); admission fails closed and is logged; high-water mark survives restart | RC-37 |
 | T-40 | A7 | Lean job with a deliberately false lemma; job run with the Mathlib cache unreachable | false lemma fails; cache failure reported as "not verified" and the job is red | `04-formal-verification.md` |
 | T-41 | A7 | `research/original/` manifest and Git tree object | `sha256sum -c MANIFEST.sha256` reports 71 OK; `git rev-parse HEAD:research/original/CPE_Forschungspaket_2026-10-16` equals `122a1619cdad4f1c7f577e26f86709c34ce86298` (the value at the reviewed head `8b2dba7`, unchanged at `10d1581` and at this commit; the tree object also detects added or renamed files, which the manifest does not) | integrity, RC-40 |
@@ -170,7 +188,9 @@ Status for all rows: **not implemented** (Phase 1 not approved).
 
 Each fixture is reproduced against the archived v0.2 reference code by `16` Appendix A (REPRODUCED) or by
 `15-codex-review.md` Appendix 1 (REPRODUCED by Codex). The Phase 1 implementation must reject or correctly
-grade every one; the fixture, not the review document, is the acceptance input.
+grade every fixture whose component it builds; the fixture, not the review document, is the acceptance
+input. F-11 belongs to the order-payload builder (Phase 7) and the HTTP source of F-12 to the first network
+principal (Phase 3); both stay listed so that the later phase inherits them (RC-42).
 
 | Fixture | Input (synthetic) | Reference-code behaviour | Required Phase 1 behaviour | Test |
 |---|---|---|---|---|
@@ -184,8 +204,8 @@ grade every one; the fixture, not the review document, is the acceptance input.
 | F-08 anchor and ledger replaced together | history rewritten and local anchor copy regenerated | (no external anchor exists) | detected against the external anchor store | T-18 |
 | F-09 gate replay | valid promotion record re-used after demotion; caller supplies the signing key | promoted again | rejected (consumed nonce, stale epoch); key never caller-supplied | T-30, T-31 |
 | F-10 direct construction | `Gate(SIM_EXECUTION)` built in-process (probe P5) | passes precheck | no public constructor for elevated state; static check | T-32 |
-| F-11 payload bypass | hand-built `Cfd` payload, amount −1; NaN price; 11 units at lot size 10 | reaches transport / accepted | not constructible; rejected before any transport object | T-27 |
-| F-12 error context | `raise … from None` after an HTTP error with a synthetic bearer header | header present in `__context__` | canary absent from exception context, logs and structured errors | T-34 |
+| F-11 payload bypass (Phase 7) | hand-built `Cfd` payload, amount −1; NaN price; 11 units at lot size 10 | reaches transport / accepted | not constructible; rejected before any transport object | T-27 (§7) |
+| F-12 error context | `raise … from None` after an HTTP error with a synthetic bearer header (Phase 1: synthetic source exception; HTTP source in Phase 3) | header present in `__context__` | canary absent from the whole reachable exception graph, logs and structured errors; translation outside the handler | T-34 |
 | F-13 fusion inputs | NaN, reversed [0.8, 0.2], [1.2, 1.3] intervals | `forecast` | rejected with typed reasons | T-26 |
 | F-14 n_eff | three constant identical histories; three identical varying histories | 3.0; 1.25 | "degenerate history" flag; 1.25 reported as diagnostic only | T-24 |
 | F-15 cloned outcomes | 30 pairs (0.25 vs 0.75) sharing one fair outcome | e = 475.0986 or 1.0; crossing probability 0.5 | one cluster, one increment; crossing probability within the A3 bound | T-10 |
@@ -214,6 +234,10 @@ grade every one; the fixture, not the review document, is the acceptance input.
 **Credal LP (Phase 5, RC-10, RC-32).** T-25: small exact credal instance; the inner LP over the whole declared
 credal set returns a worst case ≤ any sampled-subset worst case; conditional bounds enter as linear constraints
 l·P(A) ≤ P(A ∩ B) ≤ u·P(A) with declared zero-mass semantics. Not part of Phase 1 (§3, out of scope).
+
+**Order payload boundary (Phase 7, RC-15, RC-42).** T-27: hand-built payload bypassing the typed builder, NaN
+price, non-multiple lot (fixture F-11); not constructible or rejected before any transport object exists. The
+typed-builder principle applies in Phase 1 only to the research schemas (T-26, T-29).
 
 **Evaluator side channels (Phase 6).** Exfiltration canaries in evaluator-only data; logs, crash dumps,
 telemetry and parser errors scanned for canaries; bounded feedback (pass/fail plus coarse diagnostics); cap on

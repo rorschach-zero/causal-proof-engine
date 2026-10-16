@@ -6,8 +6,8 @@ and is the single place where positions, evidence, dispositions and remaining bl
 original research under `research/original/` is unchanged. Nothing here authorises implementation, merges,
 capital, broker connectivity or policy changes.
 
-**Version:** v3, 2026-10-16. **Round:** 2 of 3 (Codex round 2 = the automatic review of PR #4 at `10d1581`,
-thirteen findings; this version is the Claude response). **Awaiting:** Codex round 3 on the exact commit of
+**Version:** v3, 2026-10-16. **Round:** 2 of 3 (Codex round 2 = the two automatic reviews of PR #4 at
+`10d1581`, thirteen plus seven findings; this version is the Claude response). **Awaiting:** Codex round 3 on the exact commit of
 this document. **No disposition in this matrix is a Codex agreement** until Codex has reviewed that commit;
 "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment
 named in §3a. Codex's PR #4 review is a diff review of the two new documents; it did not address RC-01 (remedy
@@ -34,13 +34,13 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Claude round-1 response (matrix v1) | PR #2 comment `6215369656` | superseded by this document |
 | Coordination issue | #3 (no comments at time of writing) | round 1 |
 | Codex review of PR #4 | review `5548201046` on commit `10d1581595b2d1ea6a8689e0f94b33bd68a59d66`, thirteen inline findings, comment IDs `4294987374`, `4294987389`, `4294987395`, `4294987398`, `4294987403`, `4294987415`, `4294987422`, `4294987435`, `4294987446`, `4294987458`, `4294987465`, `4294987471`, `4294987476` | round 2 (§3a) |
-| Owner trigger | PR #4 comment `6218467449` ("@codex review", 15:09 UTC); the resulting second review of `10d1581` was still running when this version was written and is **not** processed here | round 2 (noted) |
+| Second Codex review of PR #4 | review `5549803107` on the same commit `10d1581`, triggered by the owner's PR #4 comment `6218467449` ("@codex review"), seven inline findings, comment IDs `4296205602`, `4296205617`, `4296205625`, `4296205637`, `4296205645`, `4296205655`, `4296205661`; none duplicates the first review | round 2 (§3a, RC-41 to RC-47) |
 | Own posts | PR #2 comment `6216071592`, issue #3 comment `6216073335` (handoff 1 note) | not inputs |
 | Automation | PR #5 (`automation/claude-review-dispatch`, merged to `main` 15:09 UTC) | not a scientific input |
 
-No Codex comment, commit or review newer than the above existed when this document was written, other than
-the second review still running on `10d1581`. A later round processes only inputs not listed here; if the
-second review repeats a finding listed above, it is deduplicated by content and not processed twice.
+No Codex comment, commit or review newer than the above existed when this document was written. A later
+round processes only inputs not listed here; a finding that repeats one listed above is deduplicated by
+content and not processed twice.
 
 ## 2. Executed (REPRODUCED)
 
@@ -52,8 +52,8 @@ package installation; no provider, broker or Jev call; no credential.
 | Check | Command | Result (round 1 → round 2) |
 |---|---|---|
 | Archived v0.2 suite | `python -m pytest -q` in the scratch copy | `31 passed in 2.12s` → `31 passed in 2.18s` |
-| Reconciliation probes | `python -I reconciliation_probes.py <scratch v0.2>` (script in Appendix A, written for this matrix without importing or copying Codex's Appendix 1; renamed and re-run in round 2 with the exact binomial bound, RC-28, RC-31) | output in Appendix B; every round-1 value reproduced unchanged except the corrected bound |
-| Round-2 arithmetic (binomial bound, VOID imputation, IUT check design) | `python -I round2_checks.py` (script in Appendix C) | output in Appendix C |
+| Reconciliation probes | `python -I reconciliation_probes.py <scratch v0.2>` (script in Appendix A, written for this matrix without importing or copying Codex's Appendix 1; renamed and re-run in round 2 with the exact binomial bound and the added power row, RC-28, RC-31, RC-45) | output in Appendix B; every round-1 value reproduced unchanged except the corrected bound; one row added |
+| Round-2 checks (binomial bound, VOID imputation, IUT check design, exception-context chaining, increment bound) | `python -I round2_checks.py` (script in Appendix C) | output in Appendix C |
 
 Key reproduced values (all from Appendix B unless stated):
 
@@ -70,11 +70,14 @@ Key reproduced values (all from Appendix B unless stated):
   least-favourable-null replications and an exact 99 % upper bound ≤ 0.06, a correct test passes with
   probability 0.99995, size 0.06 passes with 0.010 and size 0.07 never (RC-30). Imputing VOID as NO adds +0.8
   to the paired Brier increment when FULL says 0.1 and the baseline 0.9, while Y = 1 gives −0.8, so it is a
-  one-sided imputation, not a conservative one (RC-38).
+  one-sided imputation, not a conservative one (RC-38). Setting `__context__ = None` or using `raise … from
+  None` **inside** an `except` block leaves the handled exception reachable through `__context__` (Python
+  3.11.17); translating outside the handler does not (RC-47). The per-event paired Brier increment is bounded
+  by 1 in absolute value, so the cluster mean keeps 1 + λX̄ ≥ 0.5 at λ_max = 0.5 (RC-41).
 - Codex power rows re-derived with an independently written vectorised recurrence (checked equal to the
   reference implementation to 1e-12 on a random path): b = 0.5, δ = 0.01 → 67 / 6,000 by n = 300 and
-  1,623 / 6,000 by n = 600; b = 0.5, δ = 0.02 → 1,584 and 4,883; b = 0.2, δ = 0.01 → 21 and 1,881. All
-  identical to Codex D1.
+  1,623 / 6,000 by n = 600; b = 0.5, δ = 0.02 → 1,584 and 4,883; b = 0.2, δ = 0.01 → 21 and 1,881; and, added
+  in round 2 (RC-45), b = 0.2, δ = 0.02 → 1,844 and 5,653 (94.2 %). All identical to Codex D1.
 - Floor rule inverts [0.001, 0.01] with base rate 0.02 to [0.02, 0.01]; nested chain product
   (0.01/0.1)(0.1/0.5)(0.5) = 0.01 exactly.
 - Fusion: correlation-only weights on orthogonal errors with standard deviations 0.02 / 0.30 / 0.30 are
@@ -114,7 +117,7 @@ is empty until Codex reviews this commit.
 | RC-12 | "ledger-backed registry"; gate with owner HMAC | no replay (0 events after restart); phantom after failed append; replay of a promotion after demotion; caller-supplied key (REPRODUCED) | A | P0 | transactional single writer; all state derived by replay; owner public-key signatures over (capability, environment, release digest, evidence digest, epoch, nonce, expiry); consumed authorizations stored durably; demotion persists | T-05, T-06, T-30, T-31, T-32 | key custody model (hosted phase) | OD6 for hosting | `FALSIFIED`; `PROPOSED` |
 | RC-13 | `12` Phase 1: "anchor detects any byte change" | rehashed unanchored suffix passes (REPRODUCED) | A (overclaim withdrawn, `12` Amendments) | CONFIRMED-DEFECT | property: any change inside the anchored prefix, or truncation below it, is detected; the unanchored window is reported explicitly by the restore test | T-07 | anchoring cadence vs hindsight window | none | `FALSIFIED`; `PROPOSED` |
 | RC-14 | linear gate enum RESEARCH_ONLY → LIVE | SHADOW_LIVE_QUOTES would inherit SIM execution; halt vs reconciliation conflated | A | capability model | explicit capabilities × environment; halt denies new risk but preserves reconciliation and explicitly authorised cancellation | T-33 | none | none | `PROPOSED` |
-| RC-15 | "token never propagates"; payload validated | `__context__` keeps the bearer header; hand-built `Cfd` payload reaches transport; NaN price and non-multiple lot accepted; fusion accepts NaN / reversed / > 1 (REPRODUCED) | A | CONFIRMED-DEFECT | typed payload objects only; `__context__ = None` set explicitly; synthetic-canary redaction tests on structured and encoded paths; full input validation (finite, ordered, in range) at every public function | T-26, T-27, T-34 | none | none | `FALSIFIED`; `PROPOSED` |
+| RC-15 | "token never propagates"; payload validated | `__context__` keeps the bearer header; hand-built `Cfd` payload reaches transport; NaN price and non-multiple lot accepted; fusion accepts NaN / reversed / > 1 (REPRODUCED) | A | CONFIRMED-DEFECT | typed payload objects only; exception translation **outside the active handler** or sanitisation of the source exception, with the whole reachable exception graph scanned (round 1 proposed `__context__ = None`, which does not work: RC-47, REPRODUCED); synthetic-canary redaction tests on structured and encoded paths; full input validation (finite, ordered, in range) at every public function | T-26, T-34 (Phase 1); T-27 (Phase 7, RC-42) | none | none | `FALSIFIED`; `PROPOSED` (revised round 2) |
 | RC-16 | `08` §4–§5: fresh `x-request-id` per retry; host allow-list separates SIM from LIVE | defeats Saxo's 15-second duplicate guard; same host, different path (Codex primary-source read reported in `15` §E2; UNVERIFIED here) | A (foundation repeated it; amended in `08` §6) | CONFIRMED-DEFECT | no automatic placement retry; reconcile by durable identifiers or halt; path- and credential-based SIM/LIVE policy at the adapter | later phase; recorded in `08` §6 | Saxo idempotency facts (Q3) | none | `PROPOSED` |
 | RC-17 | three models + Jev mandatory; Jev gates research | recall over Jev-approved items is not funnel recall | A | retain membership; soften routing authority; stratified reject audit | mandatory three round-1 outputs plus Jev record on every issued forecast; absence holds issuance; ablations are evaluation forecaster ids only; stratified random audit of Jev rejects with known inclusion probabilities; thresholds development-only, then frozen and validated on fresh strata | T-28 (schema) ; Phase 2 design | H1, H3 untested; shared-judge bias in the Jev benchmark (UNVERIFIED) | OD8 | `PROPOSED`; H1/H3 `EXPERIMENT_REQUIRED` |
 | RC-18 | proposer/promoter with canaries and frozen holdouts | side channels: feedback, runtime, cache, logs, parser execution; holdout exhaustion | A | agree and extend | isolated network-less secret-less evaluator with pinned environment hash; evaluator/scorer separation; bounded feedback and capped proposals per period; canary namespace; rolling prospective cohorts; lifetime α-spending | Phase 6; exfiltration canary tests specified in 17 §7 | none | OD3 | `PROPOSED` |
@@ -128,12 +131,12 @@ is empty until Codex reviews this commit.
 | RC-26 | `.githooks/commit-msg` and `.claude/settings.json` enforce the attribution policy | local hook is bypassable; a tool server appended a footer to PR #1's body and to PR #2 comment `6215369656` before correction | A | CONFIRMED-DEFECT | provider-neutral CI check on commit and PR text; read-back after every tool mutation (`AGENTS.md` §7 already requires it); branch protection where available | T-09 | branch-protection visibility (API returned 403) | OD9 | `PROPOSED` |
 | RC-27 (new) | `07` §6 item 1: pilot limits "mutually infeasible" until Q6 | cash is always feasible; with a 15 % full-loss cap a ticket is ≤ USD 150, so commission ≤ 1 % needs c_min ≤ USD 1.50 (Codex F; arithmetic re-derived) | A (overstatement withdrawn, `07` §7) | ESTABLISHED / REVISION | feasibility statement replaced by the exact condition; decision after Q6 | documentation | Q6 | none | `PROPOSED` |
 
-### 3a. Round 2: Codex's review of PR #4 (commit `10d1581`, review `5548201046`)
+### 3a. Round 2: Codex's reviews of PR #4 (commit `10d1581`, reviews `5548201046` and `5549803107`)
 
-Thirteen inline findings, each with a Codex-assigned severity (P1 or P2). Every one was examined against the
-documents and, where it carries a number or a logical claim, reproduced (Appendix C). Positions as before:
-**A** agree, **P** partly, **D** disagree. "Resolved in" names the change made in this commit; every
-disposition is `PROPOSED` until Codex reviews this commit.
+Thirteen plus seven inline findings, each with a Codex-assigned severity (P1 or P2). Every one was examined
+against the documents and, where it carries a number or a logical claim, reproduced (Appendix C). Positions
+as before: **A** agree, **P** partly, **D** disagree. "Resolved in" names the change made in round 2; every
+disposition is `PROPOSED` until Codex reviews the resulting commit.
 
 | ID | Codex finding (comment ID, severity) | Parent | Claude position and evidence | Resolved in (this commit) | Validation test | Status |
 |---|---|---|---|---|---|---|
@@ -151,11 +154,20 @@ disposition is `PROPOSED` until Codex reviews this commit.
 | RC-39 | Measuring supply in Phase 2 months 1–3 before freezing OD4–OD5 lets the design change after confirmatory outcomes are visible while the cohort stays in the estimand (`4294987471`, P1) | RC-24 | **A.** Months 1–3 become a blinded burn-in cohort: registered and committed, outcomes sealed until the contract is frozen, permanently excluded from the primary test; only counts, cluster sizes and source metadata inform OD4–OD5 | `17` §6 planned-supply row | Phase 2 contract; registry test that burn-in clusters carry a non-primary flag that replay preserves | `PROPOSED` |
 | RC-40 | T-41 "tree hash unchanged" has no recorded reference value or procedure (`4294987476`, P2) | integrity | **A.** Recorded: `git rev-parse HEAD:research/original/CPE_Forschungspaket_2026-10-16` = `122a1619cdad4f1c7f577e26f86709c34ce86298` at `8b2dba7`, `10d1581` and this commit (REPRODUCED); kept beside the manifest because the Git tree object also detects added or renamed files, which `sha256sum -c` cannot | `17` T-41 | T-41 | `PROPOSED` |
 
-Not addressed by Codex's PR #4 review and therefore unchanged: RC-01 remedy scope (§4.1), RC-20 hosting
-timing (§4.2), RC-07 n_eff retention (§4.3), and every `PROPOSED` disposition of §3. Relevant to issue #3
-acceptance item 2: on a Markdown-only diff the automatic review produced substantive statistical findings
-(RC-29, RC-30, RC-31, RC-38, RC-39), not only style findings; it did not engage the open disagreements, which
-still need Codex's full response.
+| RC-41 | The single cluster increment is undefined as sum, mean or weighted aggregate; a sum can leave the bounded domain and make 1 + λX negative; a mean changes the weighting relative to an event-level estimand (`4296205602`, P1) | RC-01, RC-29 | **A.** The round-2 text had written "X̄" without defining or bounding it. Defined: unweighted mean of member increments X_i = (p_baseline − Y)² − (p_FULL − Y)² ∈ [−1, 1], so X̄ ∈ [−1, 1] and 1 + λX̄ ≥ 0.5 at λ_max = 0.5 (REPRODUCED, Appendix C); the mean is the estimand's own weighting (§6: per cluster, clusters equal); the event-weighted average is descriptive only | `17` §3 item 3, T-17 | T-17 | `PROPOSED` |
+| RC-42 | T-27 requires order-payload, price, lot-size and transport-boundary behaviour although Phase 1 excludes broker adapters and execution code (`4296205617`, P2) | RC-15, RC-32 | **A.** Same inconsistency as RC-32. T-27 and fixture F-11 moved to `17` §7 (Phase 7); the HTTP source of F-12 noted as Phase 3 with the canary scanner tested on synthetic exception graphs in Phase 1; A2 restricted to fixtures whose component Phase 1 builds | `17` §3 item 6, A2, §5.1, §7 | T-26, T-29 (Phase 1); T-27 (Phase 7) | `PROPOSED` |
+| RC-43 | Two concurrent presentations of one capability can both pass the unconsumed-nonce check before either writes the consumed record; T-30 covers sequential replay only (`4296205625`, P1) | RC-12 | **A.** Verification outside the writer transaction is a time-of-check/time-of-use gap. Required: epoch check, nonce insertion under a uniqueness constraint, state change and acknowledgement in one writer transaction; T-30 gains a concurrent-presentation case in which exactly one acts | `17` §3 item 5, T-30 | T-30 | `PROPOSED` |
+| RC-44 | T-14 debits α only on successful promotion, so unlimited unsuccessful challengers cost nothing and the lifetime control is void (`4296205637`, P1) | RC-08 | **A.** The v2 wording "cumulative spend never exceeds α_total" left the debit event undefined. α_j is reserved and irreversibly debited at test registration, before evaluation data are unsealed; failed, cancelled and interrupted tests keep the debit; j indexes attempts. Consequence for OD3: the power cost of 0.05/[j(j+1)] is per attempt, so the budget question is sharper than v2 stated | `17` §3 item 3, T-14; OD3 row | T-14 | `PROPOSED`; level `OWNER_DECISION` (OD3) |
+| RC-45 | `02` §6 item 6 labels "81–94 %" REPRODUCED although Appendix B has only the b = 0.5 row (81.4 %); the 94 % endpoint (b = 0.2, δ = 0.02) was not reproduced (`4296205645`, P2) | RC-24 | **A.** Correct: the 94 % came from Codex's D1 table. The row was added to the probe and re-run: 1,844 / 6,000 by n = 300 and 5,653 / 6,000 by n = 600 (94.2 %), identical to D1; the label is now earned and the sentence names both baselines | Appendix A, B; §2; `02` §6 item 6; OD4 row | T-16 | `PROPOSED` (`REPRODUCED` for the value) |
+| RC-46 | A non-public constructor or static check cannot make elevated state unforgeable in Python; T-32 accepts type-level inaccessibility as sufficient; the protected operation must validate and consume the capability itself (`4296205655`, P1) | RC-12, RC-14 | **A.** Object visibility is not a security boundary. The protected operation verifies the signature and consumes the nonce in the writer transaction; a fabricated object (constructor, reflection, dynamic import) presented to it is rejected for lack of a valid signed capability; the static check is a lint. A5 reworded | `17` §3 item 5, A5, T-32 | T-32 | `PROPOSED` |
+| RC-47 | Setting `__context__ = None` inside the handler does not prevent chaining; Python re-attaches the active exception at raise time, and `from None` only suppresses rendering (`4296205661`, P1) | RC-15 | **A.** REPRODUCED on Python 3.11.17 (Appendix C): the canary stays reachable in both in-handler variants and is absent only when the translation happens outside the handler. Round 1's disposition for RC-15 was wrong and is revised in §3; T-34 now scans the whole reachable exception graph and requires translation outside the handler or sanitisation of the source exception | §3 RC-15; `17` §3 item 6, T-34, F-12 | T-34 | `PROPOSED` (round-1 disposition corrected) |
+
+Not addressed by either Codex review of PR #4 and therefore unchanged: RC-01 remedy scope (§4.1), RC-20
+hosting timing (§4.2), RC-07 n_eff retention (§4.3), and every `PROPOSED` disposition of §3 other than RC-15
+(revised under RC-47). Relevant to issue #3 acceptance item 2: on a Markdown-only diff the automatic review
+produced substantive statistical and security findings (RC-29, RC-30, RC-31, RC-38, RC-39, RC-41, RC-43,
+RC-44, RC-47), not only style findings; it did not engage the open disagreements, which still need Codex's
+full response.
 
 ## 4. Open disagreements (what would settle each)
 
@@ -207,8 +219,8 @@ the owner wants the wording clarified; Claude will adopt whichever reading the o
 |---|---|---|
 | OD1 | Approve the amended Phase 1 scope and acceptance criteria in `17-phase1-amended-specification.md`, or choose a research-only pause | pause costs calendar time only; approval authorises offline synthetic work, no network |
 | OD2 | Authorise recording the scientific dispositions (RC-03, 04, 05, 10, 21 and the N7/N9/N10/N11 amendments) as dated amendments to D2, D3, D4, D6, D9, D11 in `09-open-questions-and-decisions.md`; archive untouched | none beyond review time |
-| OD3 | Lifetime error budget α_total for artefact promotions, and whether reversible promotions get a separate budget | smaller budget = fewer false promotions, steeply less power after a handful of promotions |
-| OD4 | Smallest useful Brier improvement to power the primary test for | at 600 independent-equivalent units the archived rule detects ≈ 0.02 with ≈ 80–94 % power and 0.01 with ≈ 30 % |
+| OD3 | Lifetime error budget α_total for artefact promotions, and whether reversible promotions get a separate budget | smaller budget = fewer false promotions, steeply less power after a handful of **attempts** (α_j is debited per registered test, not per success, RC-44) |
+| OD4 | Smallest useful Brier improvement to power the primary test for; the VOID-rate cap (RC-38) | at 600 independent-equivalent units the archived rule detects 0.02 with 81 % (b = 0.5) to 94 % (b = 0.2) power and 0.01 with 27–31 % (REPRODUCED, Appendix B) |
 | OD5 | Five source families to profile, three to run; any paid-data allowance (Q5) | determines supply, cluster structure and licensing cost |
 | OD6 | Hosting at the Phase 2 gate: minimal cloud, hybrid (cloud trusted writer + local stateless GPU compute), or local-only | Codex's illustrative envelope ≈ USD 1,000 / year; local-only is the weakest boundary |
 | OD7 | Position caps for appreciated compounders (cost basis with a review ceiling vs market value with forced trims); precedence of hard limits over the thesis-intact veto | affects turnover, tax classification risk (Q9) and compounding |
@@ -244,11 +256,17 @@ inputs_processed:
       comment_ids: [4294987374, 4294987389, 4294987395, 4294987398, 4294987403, 4294987415, 4294987422,
                     4294987435, 4294987446, 4294987458, 4294987465, 4294987471, 4294987476]
       items: [RC-28, RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40]
-  pr4_comments_seen_not_processed: [6218467449]
+    - review_id: 5549803107
+      commit: 10d1581595b2d1ea6a8689e0f94b33bd68a59d66
+      trigger_comment: 6218467449
+      comment_ids: [4296205602, 4296205617, 4296205625, 4296205637, 4296205645, 4296205655, 4296205661]
+      items: [RC-41, RC-42, RC-43, RC-44, RC-45, RC-46, RC-47]
 awaiting: codex_round_3_on_this_commit
 round2_items:
-  accepted: [RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40]
+  accepted: [RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40,
+             RC-41, RC-42, RC-43, RC-44, RC-45, RC-46, RC-47]
   partly: [RC-28]
+  round1_dispositions_corrected: [RC-15]
 disagreements_open: [RC-01-scope, RC-20-timing, RC-07-retention]
 owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b]
 prerequisites_for_A0: [OD1, OD2, OD9a]
@@ -256,15 +274,16 @@ experiments_required: [H1, H3, H5, H6, transfer-claim]
 p0_status:
   e_process_protocol: remedy proposed incl. cluster closure, tests T-10..T-13, T-17 specified, not implemented
   rare_probability_and_intervals: remedy proposed, tests T-20..T-22 specified, blocked on OD9a, not implemented
-  enforcement_boundaries: remedy proposed incl. anchor boundary and clock rollback, tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
+  enforcement_boundaries: remedy proposed incl. anchor boundary, clock rollback, atomic nonce consumption and action-boundary enforcement, tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
 implementation_authorised: false
 ```
 
 ## Appendix A. Reconciliation probe script (REPRODUCED)
 
 Written for this matrix without importing or copying the script in `15` Appendix 1; imports only the scratch
-copy of the reference code; no network, no credentials. Round 2 renamed it, neutralised the docstring (RC-28)
-and replaced the pseudo-count bound by the exact binomial bound (RC-31); nothing else changed. Extract and run
+copy of the reference code; no network, no credentials. Round 2 renamed it, neutralised the docstring (RC-28),
+replaced the pseudo-count bound by the exact binomial bound (RC-31) and added the (b = 0.2, δ = 0.02) power
+row (RC-45); nothing else changed. Extract and run
 from the repository root after copying `source_v0_2` to a scratch directory with numpy, scipy, httpx and
 pytest installed in an isolated venv:
 
@@ -446,9 +465,10 @@ perm = rng.permutation(CLUSTERS * PER)
 _, peak_shuf, _ = grapa_paths(x_event[:, perm])
 out['RC01_clustered_null']['false_alarm_per_event_betting_interleaved_order'] = float((peak_shuf >= 20).mean())
 
-# Independent power check of two rows of Codex D1 (same generator specification, seeds 17, 29, 43).
+# Independent power check of four rows of Codex D1 (same generator specification, seeds 17, 29, 43);
+# the (0.2, 0.02) row was added in round 2 (RC-45) because 02 section 6 cited it without reproduction.
 power = {}
-for b, delta in [(0.5, 0.01), (0.5, 0.02), (0.2, 0.01)]:
+for b, delta in [(0.5, 0.01), (0.5, 0.02), (0.2, 0.01), (0.2, 0.02)]:
     counts = {300: 0, 600: 0}
     for seed in (17, 29, 43):
         r = np.random.default_rng(seed)
@@ -471,7 +491,7 @@ print(json.dumps(out, indent=2, allow_nan=False))
 ## Appendix B. Probe output (REPRODUCED, round 2 re-run)
 
 Identical to the round-1 output except the key `mc_upper_95_per_cluster_exact_binomial` (was
-`mc_upper_95_per_cluster: 0.0008`).
+`mc_upper_95_per_cluster: 0.0008`) and the added row `b=0.2,delta=0.02`.
 
 ```json
 {
@@ -540,6 +560,10 @@ Identical to the round-1 output except the key `mc_upper_95_per_cluster_exact_bi
     "b=0.2,delta=0.01": {
       "crossings_by_300_of_6000": 21,
       "crossings_by_600_of_6000": 1881
+    },
+    "b=0.2,delta=0.02": {
+      "crossings_by_300_of_6000": 1844,
+      "crossings_by_600_of_6000": 5653
     }
   },
   "RC08_alpha_spending_0.05/(j(j+1))": {
@@ -611,6 +635,27 @@ for n_rep, margin, conf in [(2000, 0.01, 0.95), (10000, 0.01, 0.99), (20000, 0.0
         'P_pass_size_0.10': float(binom.cdf(k_max_d, n_rep, 0.10))}
 out['t13_design'] = design
 
+# Finding r4296205661 (RC-47): does sanitising __context__ inside the handler prevent chaining?
+def chained_context(style):
+    try:
+        try:
+            raise ValueError('bearer SYNTHETIC-CANARY')
+        except ValueError as e:
+            if style == 'set_none_in_handler':
+                new = RuntimeError('sanitised'); new.__context__ = None; raise new
+            if style == 'from_none_in_handler':
+                raise RuntimeError('sanitised') from None
+            summary = type(e).__name__          # keep only a sanitised summary, leave the handler
+        raise RuntimeError(f'sanitised ({summary})')
+    except RuntimeError as r:
+        return 'CANARY' in repr(r.__context__)
+out['exception_context_canary_reachable'] = {s: chained_context(s) for s in
+    ('set_none_in_handler', 'from_none_in_handler', 'translate_outside_handler')}
+
+# Finding r4296205602 (RC-41): bound of the per-event paired Brier increment and of 1 + lambda * mean.
+corners = [abs((pb - y) ** 2 - (pf - y) ** 2) for pb in (0.0, 1.0) for pf in (0.0, 1.0) for y in (0, 1)]
+out['increment_bound'] = {'max_abs_X_i': max(corners), 'min_factor_at_lambda_max_0.5': 1 - 0.5 * max(corners)}
+
 # Finding r4294987471 / r4294987415: no arithmetic; design-level.
 print(json.dumps(out, indent=2))
 ```
@@ -674,6 +719,15 @@ Output:
       "P_pass_size_0.07": 9.812816862921764e-16,
       "P_pass_size_0.10": 4.181300507765669e-111
     }
+  },
+  "exception_context_canary_reachable": {
+    "set_none_in_handler": true,
+    "from_none_in_handler": true,
+    "translate_outside_handler": false
+  },
+  "increment_bound": {
+    "max_abs_X_i": 1.0,
+    "min_factor_at_lambda_max_0.5": 0.5
   }
 }
 ```
@@ -681,4 +735,5 @@ Output:
 The `iut_single_run` block shows why T-13 needs its own margin: at 2,000 replications a correct level-0.05
 test fails an "upper bound ≤ 0.06" check 39 % of the time. The `t13_design` block fixes the chosen design
 (20,000 replications, exact one-sided 99 % upper bound ≤ 0.06, reached at 1,122 rejections): pass probability
-0.99995 for a test of size 0.05, 0.0100 for size 0.06, below 10⁻¹⁵ for size 0.07.
+0.99995 for a test of size 0.05, 0.0100 for size 0.06, below 10⁻¹⁵ for size 0.07. The
+`exception_context_canary_reachable` block is the RC-47 reproduction; `increment_bound` is RC-41.

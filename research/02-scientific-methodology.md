@@ -119,6 +119,8 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    α-spending; e-BH is for exploratory lists only.
 5. **§2 leakage controls (RC-09).** The time-shifted holdout control is withdrawn as ill-posed; replaced by
    forbidden-future-information negative controls and fresh future cohorts.
-6. **§5 item 1 (RC-24).** Power at 600 independent observations under the archived rule is ≈ 27–31 % for a
-   Brier gain of 0.01 and ≈ 81–94 % for 0.02 (REPRODUCED, `16` Appendix B). The year-one criterion is set only
-   after supply and cluster structure are measured.
+6. **§5 item 1 (RC-24).** Power at 600 independent observations under the archived rule is ≈ 27 % (b = 0.5)
+   to 31 % (b = 0.2) for a Brier gain of 0.01 and ≈ 81 % (b = 0.5) to 94 % (b = 0.2) for 0.02 (REPRODUCED,
+   `16` Appendix B; the b = 0.2, δ = 0.02 row was added to the probe in round 2, RC-45, because round 1 cited
+   it from Codex's D1 table without reproducing it). The year-one criterion is set only after supply and
+   cluster structure are measured.
