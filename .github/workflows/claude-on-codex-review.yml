@@ -17,6 +17,7 @@ jobs:
   dispatch:
     if: >-
       github.event.issue.pull_request != null &&
+      github.event.issue.number == 4 &&
       github.event.comment.user.login == 'chatgpt-codex-connector[bot]' &&
       contains(github.event.comment.body, '<!-- codex-pull-request-review-summary -->')
     runs-on: ubuntu-latest
