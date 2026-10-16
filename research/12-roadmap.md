@@ -130,3 +130,16 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    arithmetic, a maturation rule, membership tests from registration, the late-YES label and the A0/OD10
    conflict. All nine recorded findings (RC-60, RC-64 to RC-71) wait on OD10; Phase 0 exit waits on OD1, OD2,
    OD9a and OD10.
+10. **Phase 0 exit, round 6 (RC-72 to RC-79, recorded only; last automatic round).** Codex's review of `4de18e5`
+    is recorded in `16` §3e without revision. Five findings reproduce (`16` Appendix G): the primary test's A3
+    size bound is a calibration on the specified families, not finite-sample validity (exact size 7.3 % on a
+    zero-mean two-point null, up to 15 % on skewed ones; the distribution-free alternative has no power at 24
+    blocks, RC-72); neither the clock wording nor its round-5 repair detects an idle window before a rollback
+    (RC-73); a nonce consumed after the last anchor is replayable after a restore (RC-74); the scored forecast
+    revision is unspecified (RC-75); a NO by expiry is knowable before the source's record (RC-77). Three are
+    requirements of `02` §5 and `AGENTS.md` §8 that `17` never carried: a common issuance window and evidence
+    cutoff for both arms, which moves the start of the primary cohort to Phase 4 (RC-76); a pre-registered
+    inclusion predicate with an audited candidate log (RC-78); point-in-time leakage fixtures and an as-of read
+    interface for T-15 (RC-79). All seventeen recorded findings (RC-60, RC-64 to RC-79) wait on OD10. Because
+    each record-only push re-triggers a full automatic review of unchanged text, no further round is recorded
+    by the routine on its own; Phase 0 exit waits on OD1, OD2, OD9a and OD10.

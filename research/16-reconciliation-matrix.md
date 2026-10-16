@@ -6,7 +6,7 @@ and is the single place where positions, evidence, dispositions and remaining bl
 original research under `research/original/` is unchanged. Nothing here authorises implementation, merges,
 capital, broker connectivity or policy changes.
 
-**Version:** v6, 2026-10-16. **Round:** 5, record only (Codex round 5 = automatic review `5550735335` of PR #4 at `88abaa4`, eight findings, recorded in §3d under the §4.6 rule written in v5: no revision to `17` or to any foundation document until the owner records OD1, OD2 and OD9a or extends the budget on issue #3, OD10; round 4 was review `5550366107` of `d46c204`, round 3 review `5550048687` of `43754cc`, round 2 the two reviews of `10d1581`). Three of the eight round-5 findings carry checkable claims and all three reproduce (Appendix F): the round-2 clock remedy admits an expired capability after a rollback (RC-65), equal calendar-block means can reverse the sign of the per-cluster estimate (RC-69), and the round-4 power figure under period shocks was computed over 120 periods where the design has 24, so 47 % is 18 % (RC-70). None of the eight is applied here. **Awaiting:** owner decisions OD1, OD2, OD9a and OD10 (now covering all nine recorded-not-applied findings, RC-60 and RC-64 to RC-71). **No disposition in this matrix is a Codex agreement** until Codex has reviewed the commit that carries it; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3d. Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); round 4 found two defects in Claude's own remedies (RC-56, RC-60; Appendix E); round 5 found three more (RC-65, RC-69, RC-70; Appendix F). No Codex review addressed RC-07 (n_eff retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
+**Version:** v7, 2026-10-16. **Round:** 6, record only and **last automatic round** (Codex round 6 = automatic review `5550966930` of PR #4 at `4de18e5`, eight findings, recorded in §3e under the §4.6 rule: no revision to `17` or to any foundation document until the owner records OD1, OD2 and OD9a or extends the budget on issue #3, OD10; round 5 was review `5550735335` of `88abaa4`, round 4 review `5550366107` of `d46c204`, round 3 review `5550048687` of `43754cc`, round 2 the two reviews of `10d1581`). Five of the eight round-6 findings carry checkable claims and all five reproduce (Appendix G): the one-sided t test over 24 two-point block means has exact size 7.33 % on Codex's zero-mean null and up to 15 % on skewed two-point nulls, while the distribution-free bounded-mean test that would be valid has no power at 24 blocks (RC-72); neither the v4 clock wording nor the RC-65 repair detects an idle window before a rollback, and a monotonic clock with a boot id does (RC-73); a nonce consumed after the last anchor and restored away is replayable unless the record is anchored before acknowledgement or the epoch is rotated on start (RC-74); scoring the forecast revision nearest the outcome turns a null expected increment of −0.04 into +0.16 (RC-75); and a forecast received after the deadline plus latency window is eligible under v4's `knowable_at` (RC-77). None of the eight is applied here. Because every record-only push triggers a further automatic review of the unchanged v4 text, this is the last record-only commit: later Codex findings are processed together with the owner's decision, not by a further push (§4.6). **Awaiting:** owner decisions OD1, OD2, OD9a and OD10 (now covering all seventeen recorded-not-applied findings, RC-60 and RC-64 to RC-79). **No disposition in this matrix is a Codex agreement** until Codex has reviewed the commit that carries it; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3e. Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); round 4 found two defects in Claude's own remedies (RC-56, RC-60; Appendix E); round 5 found three more (RC-65, RC-69, RC-70; Appendix F); round 6 found that the RC-65 repair is itself insufficient and that the primary test's A3 claim is incomplete (RC-73, RC-72; Appendix G). No Codex review addressed RC-07 (n_eff retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
 
 Labels follow `research/README.md`. Disposition statuses used here, per the protocol in issue #3:
 
@@ -33,7 +33,8 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Issue #3 comments | `6218571025` (owner: controlled rollout, hardening gates; no scientific content), `6218965225` (routine, concurrent execution: supplementary evidence on RC-15/RC-47, folded in as RC-55) | round 3 |
 | Fourth Codex review of PR #4 (round 4) | review `5550366107` on commit `d46c2042a47457ee254582c682c2b17e6803c8bc`, run after the round-3 push, eight inline findings, comment IDs `4296649357`, `4296649368`, `4296649378`, `4296649389`, `4296649399`, `4296649412`, `4296649421`, `4296649427`; none duplicates rounds 1–3 | round 4 (§3c, RC-56 to RC-63) |
 | Fifth Codex review of PR #4 (round 5) | review `5550735335` on commit `88abaa4f15bd0e1e1ea7035a32094c7a5113285c`, run after the round-4 push (summary comment `6216072575` edited 16:31 UTC), eight inline findings, all P1, comment IDs `4296914293`, `4296914298`, `4296914307`, `4296914319`, `4296914330`, `4296914341`, `4296914351`, `4296914363`; none duplicates rounds 1–4 | round 5 (§3d, RC-64 to RC-71; recorded, not applied) |
-| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3), `6219896670` (handoff 4); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
+| Sixth Codex review of PR #4 (round 6) | review `5550966930` on commit `4de18e599733c9275ec59f0da678cca5fe88c3a6`, run after the round-5 push (summary comment `6216072575` edited 16:53 UTC), eight inline findings, all P1, all on `17-phase1-amended-specification.md` (unchanged since `88abaa4`), comment IDs `4297109177`, `4297109194`, `4297109203`, `4297109207`, `4297109215`, `4297109220`, `4297109231`, `4297109245`; none duplicates rounds 1–5 (RC-73 extends RC-65 with a new scenario, RC-77 extends RC-52 and RC-71, RC-74 extends RC-34 and RC-43; each is a distinct claim) | round 6 (§3e, RC-72 to RC-79; recorded, not applied) |
+| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3), `6219896670` (handoff 4), `6220313901` (handoff 5); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
 | Automation | PR #5 (`automation/claude-review-dispatch`, merged to `main` 15:09 UTC) | not a scientific input |
 
 No Codex comment, commit or review newer than the above existed when this document was written. A later
@@ -268,6 +269,43 @@ item 2: the fifth automatic review on a Markdown-only diff produced eight substa
 missing-data handling and a security control, three of them reproducible with numbers, and found a wrong
 figure in the matrix's own evidence appendix.
 
+### 3e. Round 6: Codex's review of PR #4 at `4de18e5` (review `5550966930`), recorded without revision
+
+Eight inline findings, all P1, all on `17-phase1-amended-specification.md`, none repeating rounds 1–5. The
+reviewed commit `4de18e5` changed only this matrix, the README and `12-roadmap.md`; `17` is the version-4 text
+Codex reviewed in round 5, so this review is a further pass over unchanged text and found eight new things in
+it. Per §4.6, each finding is **recorded** with Claude's assessment and the wording that would resolve it,
+and **nothing is applied**. Five findings carry a checkable claim and all five reproduce (Appendix G; evidence,
+not revision). Two of them show that Claude's own earlier remedies are incomplete again: the RC-65 wording
+proposed in round 5 does not close the clock channel (RC-73), and the A3 size claim for the primary test holds
+only on the families it was calibrated on (RC-72). Every disposition is `PROPOSED` wording and
+`OWNER_DECISION` status.
+
+| ID | Codex finding (comment ID, severity) | Parent | Claude assessment and evidence | Wording that would resolve it (not applied) | Validation test | Status |
+|---|---|---|---|---|---|---|
+| RC-72 | With 24 independent calendar blocks whose clusters all share one outcome, baseline 0.9518, FULL 0.0518 and P(Y = 0) = 0.4982, each block increment is +0.90324 or −0.89676 with mean exactly zero; the one-sided t kernel rejects when at least 16 blocks are positive, probability 0.07330, above A3's 0.06 ceiling, while the symmetric null families specified can still pass; calibrate over skewed bounded nulls or use a finite-sample-valid bounded-mean procedure (`4297109177`, P1) | RC-48 (A3), RC-49, RC-56, RC-63, RC-69 (budget spent) | **A; REPRODUCED** (Appendix G). Exact size 0.07330 with rejection from k = 16 positive blocks: the k = 16 statistic is 1.714 against t₀.₉₅,₂₃ = 1.7139, so Codex placed the null on the threshold. Under the symmetric ± 0.9 null the same test rejects from k = 17 and has size 3.2 %: with 24 two-point blocks the statistic is discrete and the size oscillates with the null. The skewed family is worse and does not improve with more blocks at any useful rate: over zero-mean two-point nulls (a ∈ [0.02, 1], P(a) ∈ [0.02, 0.98], c ≥ −1; a sample with every block equal counted as no rejection) the exact size reaches 15.2 % at G = 24, 15.9 % at G = 96 and 13.2 % at G = 240, always at the rare-catastrophe shape (many small gains, rare large loss). Monte Carlo on Codex's null: 7.27 % (99 % bound 0.0771). The finite-sample-valid alternative, the archived GRAPA betting test run over the 24 block means and evaluated at the horizon, has size 0.06 % there (bound 0.0011) and **power 0.0** at every alternative on the grid (δ ∈ {0.02, 0.05, 0.08}, 25 or 50 clusters per period, where the t test has 97–100 %): with λ ≤ 0.5 and twenty-two betting steps the wealth cannot reach 20 unless every block mean is at least 0.29. So at 24 blocks there is no distribution-free bounded-mean test with power at a useful effect, and the t test is valid only on the null families it is calibrated on; the v4 A3 wording claims the 0.06 bound on four symmetric families and is silent on skew. Codex's finding is correct in substance and the remedy must be a statement of conditional validity, not a different kernel | `17` A3 and §6 primary-test row: "the primary test's size is **calibrated on the pre-registered null families, not finite-sample valid**; the families include the two-point period-shock family (every cluster in a block shares one outcome; the forecast pair and P(Y) pre-registered as a worst case) and the rare-catastrophe two-point family, both **reported with exact size**, and the pre-registered dependence model states the maximum block skew it assumes (a cap d_max on \|p_FULL − p_baseline\| for forecasts entering the primary, and a reference-class bound on the share of catastrophe periods); the bounded betting test on block means is reported beside the primary as the distribution-free check, with its power stated (zero at useful effects over 24 blocks)"; T-12 gains both two-point families; T-36 (b) gains the two-point oracle (k = 16 of 24 rejects, k = 15 does not) | T-12, T-36 | `OWNER_DECISION` (OD10; d_max and the shock family OD4) |
+| RC-73 | Last observed time t₀ = 10, capability expires at t₁ = 20, machine idle until real time 30, wall clock rolled back to 15 before the next check: current time and watermark are both below expiry and the rule admits the capability; unlike RC-65 there is no post-expiry check to advance the watermark, so the RC-65 repair cannot satisfy T-35's scenario either; use a rollback-resistant time source, a boot or session epoch, or mandatory re-authorisation after an unverifiable clock discontinuity (`4297109194`, P1) | RC-37 (round 2), RC-65 (round 5, recorded) | **A; REPRODUCED** (Appendix G, toy state machine): variant A (v4 text) and variant B (RC-65 wording) both give `admitted` after the idle rollback and after a reboot; variant C, which persists the monotonic clock reading and the boot id beside the wall clock at every check and treats a wall-minus-monotonic drift beyond a tolerance or a new boot id as a discontinuity, gives `rejected_clock_discontinuity_reauthorise` in both cases. The point is general: no rule that reads only the wall clock can measure time during which nothing was observed. A defect in Claude's round-5 proposed remedy, which was itself a repair of the round-2 remedy; the RC-37 family now has two recorded, unapplied findings | `17` §3 item 2 and item 5: "every clock-dependent check persists (wall time, monotonic time, boot id) in the same transaction; a boot id change, or a change of wall-minus-monotonic beyond the pre-registered tolerance, is an unverifiable discontinuity: every outstanding capability is invalid until the owner signs a fresh epoch (re-authorisation), and the discontinuity is logged; from Phase 2 the `AnchorStore`'s signed timestamp bounds elapsed time at every anchor"; T-35 gains the idle-window fixture (admission at 10, expiry 20, no check until a rollback to 15 with the monotonic clock advanced) and the reboot fixture (monotonic clock reset, new boot id), both refused with re-authorisation required | T-35 | `OWNER_DECISION` (OD10) |
+| RC-74 | Capability and nonce state is reconstructed from the local ledger while external anchors may lag, so a protected action acknowledged after the last anchor disappears if SQLite and the JSONL suffix are restored or truncated back to that anchor; the external store cannot prove the unanchored record existed, replay sees an unused nonce and a stale epoch and accepts the same signed capability again; require the consumed nonce and epoch to be externally durable before acknowledgement, or fail closed and rotate authorisation state whenever suffix continuity cannot be established (`4297109203`, P1) | RC-12, RC-13, RC-34 (anchor), RC-43 (atomic nonce) | **A; REPRODUCED** (Appendix G, toy ledger): under the v4 wording (acknowledge inside the writer transaction, anchor asynchronously) the replay after a restore to the last anchor is `acknowledged`; anchoring the record externally before the acknowledgement gives `rejected_nonce_consumed`; rotating the epoch at every process start, with the rotation anchored before any protected action is accepted, gives `rejected_stale_epoch`. Codex's second option as written cannot work alone: a ledger truncated exactly to an anchor is continuous by construction, so continuity cannot reveal the missing record; it works only as epoch rotation on start. RC-43 made consumption atomic with the state change and the acknowledgement; it did not make it durable beyond the local ledger. Protected actions in Phase 1 are rare (gate promotions), so one synchronous external round trip each is affordable | `17` §3 item 5: "the protected operation acknowledges only after the ledger record carrying the consumed nonce is in an externally anchored prefix (synchronous anchor; the Phase 1 double is the harness-owned store of RC-34); if the anchor fails the operation fails closed and no state change is acknowledged"; §3 item 2: "the epoch is rotated at every process start and the rotation is anchored before any capability is checked, so that a capability signed for an earlier epoch is stale after any restore"; T-30 gains the restore fixture (protected action acknowledged, ledger and JSONL restored to the previous anchor, same capability presented: refused); T-07 reports a restore that lands exactly on an anchor as "continuous, unanchored window 0" and the test asserts that this report alone is not a pass condition for T-30 | T-30, T-07, T-18 | `OWNER_DECISION` (OD10; the external store is OD6) |
+| RC-75 | Two forecasts with different ids and probabilities recorded for the same event and arm before t*_k both satisfy eligibility, but the increment refers to one p_FULL and p_baseline without saying which record is scored; an implementation can select the revision nearest Y after resolution while passing T-06's same-id duplicate check and every prospectivity test; define a unique event/arm/scoring-slot key or a pre-registered revision schedule that scores every slot, and test multiple eligible revisions with different ids (`4297109207`, P1) | RC-02, RC-12 (T-06), RC-52 | **A; REPRODUCED** (Appendix G): revisions 0.3 and 0.7 against a baseline equal to the true probability q give an expected paired increment of −0.04 each when scored honestly at q = 0.5, and +0.16 when the revision nearest Y is scored; at q = 0.3 the honest values are 0.00 and −0.16 against +0.12. A hindsight channel of the same class as RC-52 and RC-57 but on the forecast side; none of the eligibility rules (receipt before t*_k) constrains which eligible record is used. Nothing in v4 states a key | `17` §3 item 1: "`Forecast` records are keyed by (event id, arm, forecaster version, scoring slot); the EventSpec pre-registers its scoring slots (default one slot: the first forecast received for the arm; a second record for an occupied slot is refused at submission); an EventSpec with a revision schedule names every slot in advance and every slot is scored and reported, never a chosen one"; T-06 gains: two eligible forecasts with different ids for one key before t*_k: the second is refused (one slot) or both are scored (schedule); the oracle fixture is the pair (0.3, 0.7) with Y = 1 where scoring 0.7 alone fails | T-06, T-02 | `OWNER_DECISION` (OD10) |
+| RC-76 | The roadmap commits the Design C baseline in Phase 2 but FULL forecasts exist only once the Phase 4 adapters operate, while the estimand accepts any forecast received before t*_k; for events spanning those phases FULL can use months of evidence unavailable to Design C, so the paired Brier difference measures information timing, not model design; start the primary cohort only after every arm is operational and require a pre-registered common issuance time and evidence cutoff per comparison (`4297109215`, P1) | RC-24, RC-39 (burn-in), RC-52; `12` Phases 2 and 4 | **A.** Design gap, correctly identified; nothing numeric. `17` §6 and `12` leave the two arms' issuance times unconstrained relative to each other, and the receipt-before-t*_k rule bounds each arm only from above. The gap is Claude's: round 2 added the burn-in cohort (RC-39) without aligning it to the arm that exists last. Consequence for the roadmap: the primary cohort, and the burn-in that sizes it, cannot start before Phase 4; Phase 2 registrations feed the Design C track record and the monitor as exploratory only | `17` §6 estimand row: "each event pre-registers one issuance window [t_open, t_close] and one evidence cutoff t_cut ≤ t_close; a forecast of any arm is eligible for the primary only if received inside the window and built on evidence with `available_at` ≤ t_cut (the as-of interface of RC-79); the first registration of the primary cohort and of its burn-in is at or after the date on which every arm of the IUT comparator set is operational and frozen"; `12` Phase 2: "Design C track record and candidate log; no primary cohort"; `12` Phase 4: "burn-in cohort and primary cohort start" | T-02 (window fixture), T-16 (protocol report states the window) | `OWNER_DECISION` (OD10; roadmap OD1) |
+| RC-77 | For outcomes established by logical finality rather than publication, once an eventually-by-deadline event's deadline plus latency window passes without evidence of timely occurrence, NO is determinable even if the registry receives the source's formal record later; T-02 covers publication-to-receipt cases only, so a forecast in the expiry-to-receipt gap can be accepted and scored after its outcome is known; define `knowable_at` to include the pre-registered logical-finality time and add the fixture (`4297109220`, P1) | RC-11, RC-52, RC-57, RC-71 (recorded) | **A; REPRODUCED** (Appendix G, arithmetic): deadline 100, latency window 10, formal record received at 118, forecast received at 113: `knowable_at` = 118 under v4 (publication or public occurrence), so the forecast is eligible; = 110 under the proposed rule, so it is not. Same channel as RC-52 on the NO side. Remaining uncertainty, which RC-71 also touches: finality at D + L is true only if a timely occurrence reported after D + L can never re-grade the event; the latency window must therefore be pre-registered long enough that such a report is a source failure (VOID, counted against the cap and the worst-case bounds), never a YES, or the finality claim is false | `17` §3 item 1: "`knowable_at` for an eventually-by-deadline predicate is min(publication time, public occurrence time, deadline + declared latency window); after the last of these the outcome is logically final"; §3 resolution rules: "a report of timely occurrence received after deadline + latency window resolves VOID with a source-latency defect logged, never YES"; fixture F-21b (100 / 10 / 118 / 113) in T-02; T-04 gains "NO by expiry at D + L with the formal record arriving later: resolved at D + L" | T-02, T-04 | `OWNER_DECISION` (OD10; latency windows per source OD5) |
+| RC-78 | The estimand names a pre-registered eligible-event population but the contract defines neither its inclusion predicate nor how registered events are sampled from it, and does not require the candidate and rejection log or the random eligible subsample that `02` §5 item 2 already calls for; hand registration can retain only events where FULL looks promising while passing every acceptance test; freeze eligibility and sampling before forecasting and log every candidate with its decision (`4297109231`, P1) | RC-39, OD5; `02` §5 item 2 | **A.** Correct and a propagation gap of Claude's: `02` §5 item 2 and `12` Phase 2 ("candidate logging") have the requirement, `17` §6 never carried it into the contract and no Phase 1 test covers the log. Selection at registration is the one hindsight channel that RC-52, RC-57, RC-75 and RC-77 do not touch because it happens before any outcome exists; it is a sampling bias, not a timing one, and only a pre-registered predicate with an audited log makes the analysed population the named population. Nothing numeric | `17` §6 new row "Eligible-event population": "a pre-registered inclusion predicate (source family, predicate kind, horizon range, sector list, Jev triage result) and a sampling rule (every eligible candidate is registered, or a seeded random subsample with its inclusion probability recorded); every candidate considered is logged with id, source, time, decision and reason **before** any forecast on it exists, the log is part of the ledger and the replay, and the protocol report states candidate, registered and rejected counts by reason"; `17` §3 item 2: candidate log in the registry; new T-37: registration without a prior candidate entry is refused; a candidate entry written after a forecast on the same event is refused; the log replays byte for byte | T-37 (new), T-16 | `OWNER_DECISION` (OD10; predicate content OD5) |
+| RC-79 | T-15 can be passed by a detector that recognises only the injected outcome column or perfect outcome correlation, while ordinary future leakage through revised values, publication-lagged joins, backfilled rows or post-cutoff timestamps stays undetected; those are the real paths; add fixtures for vintages, revisions, lagged publication and as-of joins, and reject every feature read whose availability timestamp exceeds the forecast cutoff (`4297109245`, P1) | RC-09, RC-33 (T-15, OD9a); `AGENTS.md` §8 | **A.** Test-design gap: T-15 as written is a positive control for one statistical detector and says nothing about the mechanism that prevents leakage, which `AGENTS.md` §8 names (point-in-time universe, publication-lag shifted series, vintage data). The detector cannot see a leak whose effect is a few points of Brier; the interface can refuse the read. Nothing numeric; the four fixtures are deterministic | `17` §3 item 1: a Phase 1 synthetic point-in-time store with (entity, feature, value, `observed_at`, `available_at`, vintage id) and an as-of read interface taking the forecast's evidence cutoff t_cut; T-15 redefined: (a) revised value whose later vintage replaces an earlier one, (b) publication-lagged join (observed before t_cut, available after), (c) backfilled row inserted after t_cut with `observed_at` before it, (d) post-cutoff timestamp: every read with `available_at` > t_cut is refused at the interface, deterministically; the shuffled-label statistical detector stays as the second line with the injected-outcome column as its positive control only; T-15 remains blocked on OD9a | T-15 | `OWNER_DECISION` (OD10; build blocked on OD9a) |
+
+Assessment across the eight: none is a misunderstanding. Five reproduce (RC-72, RC-73, RC-74, RC-75, RC-77),
+and two of those are against Claude's own earlier remedies: the RC-65 wording of round 5 is insufficient
+(RC-73), and the A3 bound for the primary test is a calibration on the specified families, not a validity
+property (RC-72), which is the more consequential of the two because it changes what the Phase 2 contract can
+claim for the primary test. RC-72 also fixes a fact for OD4 that no earlier round stated: at 24 blocks no
+distribution-free bounded-mean test has power at a useful effect, so the primary test's validity rests on the
+pre-registered dependence model and skew bound, and those must be justified from reference-class history. The
+other three (RC-76, RC-78, RC-79) are requirements that `02` §5, `12` and `AGENTS.md` §8 already state and that
+`17` never carried into the Phase 1 tests or the Phase 2 contract; they are propagation gaps of Claude's.
+Nothing was changed in `17` or in any foundation document. Not addressed by Codex in round 6: RC-07 and RC-20.
+Relevant to issue #3 acceptance item 2: the sixth automatic review re-read text unchanged since round 4 and
+produced eight further substantive findings on it, which is evidence that the native route reviews the whole
+diff on every trigger rather than the changed hunks, and that the findings per pass are not yet exhausted.
+
 ## 4. Open disagreements (what would settle each)
 
 4.1 **RC-01 remedy scope: withdrawn by Claude in round 3.** Rounds 1–2: Codex asked for estimand, filtration,
@@ -332,6 +370,21 @@ written unconditionally and announced in handoff 4; the routine does not loosen 
 automatic review of this commit will run on the push; if it produces findings, the next execution records them
 in a §3e in the same way and still applies nothing. OD10 now covers RC-60 and RC-64 to RC-71 together.
 
+Round 6 followed that rule: review `5550966930` of `4de18e5` is recorded in §3e and nothing is applied. Family
+accounting: RC-72 on the spent RC-48/RC-49/RC-56/RC-63/RC-69 families; RC-73 on the RC-37 clock family (now two
+recorded, unapplied findings, RC-65 and RC-73); RC-74 on RC-12/RC-13/RC-34/RC-43; RC-75 on RC-02/RC-12/RC-52;
+RC-76 on RC-24/RC-39/RC-52; RC-77 on the RC-11 family (RC-71 and RC-77 recorded); RC-78 and RC-79 on
+requirements of `02` §5 and `AGENTS.md` §8 that `17` never carried. **This is the last record-only commit.**
+The reviewed commit `4de18e5` changed no line of `17`, yet the automatic review returned eight new findings on
+`17`: each record-only push re-triggers a full review of unchanged text, which re-triggers this routine, and
+the routine's own rules forbid a self-triggering loop. Codex's automatic review of this commit will run on the
+push; its findings, and any later ones on PR #4, are **not** recorded by a further commit. The next execution
+on a Codex review without an owner decision does nothing (the findings stay on PR #4, keyed by comment ID, and
+are deduplicated against §1 and §7 when the owner's decision is processed). The next execution on an owner
+decision (OD1, OD2, OD9a or OD10 on issue #3) applies the wording the owner names from §3c to §3e, then
+processes every Codex finding posted since `4de18e5` under the budget the owner sets. OD10 now covers RC-60 and
+RC-64 to RC-79, seventeen findings.
+
 ## 5. Open hypotheses with bounded experiments (not disagreements)
 
 | Hypothesis | Experiment (as amended) | Earliest read-out |
@@ -356,7 +409,7 @@ in a §3e in the same way and still applies nothing. OD10 now covers RC-60 and R
 | OD8 | Provider access route per provider after setup-day verification of terms; human duties implied | batch route adds a human to the loop and latency |
 | OD9a | `AGENTS.md` §2 item 7 (floor → shrinkage) and §2 item 10 (time-shifted holdouts → forbidden-future-information controls) wording, proposed text below; **prerequisite of A0** because the Phase 1 shrinkage estimator (T-20) and leak detector (T-15) would otherwise contradict binding product requirements (RC-33) | governance change; owner approves personally; until recorded, T-20 and T-15 are not built |
 | OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28) | governance change; owner approves personally; not a prerequisite of A0 |
-| OD10 | Round budget: state which of the nine recorded-not-applied findings are applied (RC-60 wording to T-34 and the §3 RC-15 row, §3c; RC-64 to RC-71 wording, §3d), whether the propagation fixes RC-57 and RC-59 stand or are reverted, and whether any later Codex finding may be applied without a further extension | no cost beyond review time; without it T-34 keeps a pass condition that a holder storing the raw secret satisfies (RC-60), the clock remedy admits an expired capability after a rollback (RC-65), the primary-test statistic is unspecified for unequal supply (RC-69), the §6 and OD4 power figure under period shocks is wrong by a factor of 2.6 (RC-70), and the A0 prerequisites conflict with `12` (RC-64); all REPRODUCED or documented in §3d and Appendix F; every one matters only once Phase 1 is built (OD1), except RC-70 which already misstates the evidence offered to OD4 |
+| OD10 | Round budget: state which of the seventeen recorded-not-applied findings are applied (RC-60 wording to T-34 and the §3 RC-15 row, §3c; RC-64 to RC-71 wording, §3d; RC-72 to RC-79 wording, §3e), whether the propagation fixes RC-57 and RC-59 stand or are reverted, and whether later Codex findings on PR #4 may be applied without a further extension (the routine records no further round on its own, §4.6) | no cost beyond review time; without it T-34 keeps a pass condition that a holder storing the raw secret satisfies (RC-60), the clock remedy admits an expired capability after a rollback and after an idle window (RC-65, RC-73), a consumed nonce restored away is replayable (RC-74), the scored forecast revision is unspecified (RC-75), the primary-test statistic is unspecified for unequal supply (RC-69), its A3 size claim is silent on skewed bounded nulls where the exact size is 7.3–15 % (RC-72), the §6 and OD4 power figure under period shocks is wrong by a factor of 2.6 (RC-70), the two arms have no common evidence cutoff (RC-76), the eligible population has no predicate or candidate log (RC-78), T-15 does not test the real leakage paths (RC-79), and the A0 prerequisites conflict with `12` (RC-64); all REPRODUCED or documented in §3d, §3e, Appendix F and Appendix G; every one matters only once Phase 1 is built (OD1), except RC-70 and RC-72, which already misstate the evidence and the validity claim offered to OD4, and RC-76, which moves the start of the primary cohort to Phase 4 |
 
 **Proposed `AGENTS.md` wording (for OD9a and OD9b; not applied here):**
 
@@ -371,15 +424,15 @@ in a §3e in the same way and still applies nothing. OD10 now covers RC-60 and R
 ## 7. Machine-readable state
 
 ```yaml
-matrix_version: 6
+matrix_version: 7
 date: 2026-10-16
-round: 5   # record only
+round: 6   # record only; last automatic round
 round_budget: 3
 inputs_processed:
   research_head: 8b2dba79fe9077df53a96a6b61b1823b80930ee8
   codex_review_commit: 59206fe5f652cc3ea63114ad1c2b0fd7252962c2
   pr2_comments: [6215215092, 6215369656]
-  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670]
+  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670, 6220313901]
   pr4_reviews:
     - review_id: 5548201046
       commit: 10d1581595b2d1ea6a8689e0f94b33bd68a59d66
@@ -405,7 +458,13 @@ inputs_processed:
       comment_ids: [4296914293, 4296914298, 4296914307, 4296914319, 4296914330, 4296914341, 4296914351, 4296914363]
       items: [RC-64, RC-65, RC-66, RC-67, RC-68, RC-69, RC-70, RC-71]
       handling: recorded_not_applied
-awaiting: owner_decisions_OD1_OD2_OD9a_OD10; codex_review_of_this_commit_record_only_no_revision
+    - review_id: 5550966930
+      commit: 4de18e599733c9275ec59f0da678cca5fe88c3a6
+      summary_comment: 6216072575
+      comment_ids: [4297109177, 4297109194, 4297109203, 4297109207, 4297109215, 4297109220, 4297109231, 4297109245]
+      items: [RC-72, RC-73, RC-74, RC-75, RC-76, RC-77, RC-78, RC-79]
+      handling: recorded_not_applied
+awaiting: owner_decisions_OD1_OD2_OD9a_OD10; no_further_automatic_round
 round2_items:
   accepted: [RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40,
              RC-41, RC-42, RC-43, RC-44, RC-45, RC-46, RC-47]
@@ -427,24 +486,31 @@ round5_items:
   own_earlier_remedies_found_defective: [RC-37-watermark-on-admission-only, RC-63-equal-block-means, RC-61-power-over-120-periods]
   on_families_with_budget_formally_left: [RC-65, RC-71]
   superseded_figure_still_in_17: '47 % power at delta = 0.02, 600 clusters under +/- 0.3 period shocks; 24-period value 18 % (Appendix F)'
+round6_items:
+  recorded_not_applied: [RC-72, RC-73, RC-74, RC-75, RC-76, RC-77, RC-78, RC-79]
+  reproduced: [RC-72, RC-73, RC-74, RC-75, RC-77]
+  own_earlier_remedies_found_incomplete: [RC-65-wording-idle-window, RC-48-A3-bound-not-finite-sample-valid]
+  propagation_gaps_from_foundation_documents: [RC-76, RC-78, RC-79]
+  superseded_claim_still_in_17: 'A3: exact 99 % binomial upper bound <= 0.06 stated for four symmetric null families; exact size of the t kernel on a zero-mean two-point null is 0.0733 and up to 0.152 at G = 24 (Appendix G)'
+  last_automatic_round: true
 budget_spent_items: [RC-01, RC-29, RC-41, RC-49, RC-50, RC-51, RC-52, RC-53, RC-57, RC-59,
                      RC-15, RC-47, RC-55, RC-60,
                      RC-08, RC-30, RC-48, RC-56, RC-63, RC-24, RC-45, RC-61, RC-12, RC-43, RC-46, RC-62,
                      RC-03, RC-54, RC-58]
 next_execution:
-  on_codex_review_of_this_commit: record_in_section_3e_status_owner_decision; update_sections_1_and_7; no_revision
-  on_owner_budget_extension_or_OD1_OD2_OD9a: apply_the_wording_the_owner_names_from_RC-60_and_RC-64..RC-71; then process recorded findings
+  on_codex_review_without_owner_decision: do_nothing   # findings stay on PR #4 keyed by comment ID; no self-triggering loop
+  on_owner_budget_extension_or_OD1_OD2_OD9a: apply_the_wording_the_owner_names_from_RC-60_and_RC-64..RC-79; then process every Codex finding posted since 4de18e5 under the budget the owner sets
   on_no_new_input: do_nothing
 disagreements_open: [RC-20-timing]   # both positions recorded; settled by OD6, not by a further round
 disagreements_resolved_pending_codex_review: [RC-01-scope]
-owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b), RC-60 and RC-64..RC-71 (OD10), RC-56-early-confirmation-option (OD4), RC-68-accrual-cutoff and RC-69-estimand-naming and RC-70-shock-amplitude (OD4)]
+owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b), RC-60 and RC-64..RC-79 (OD10), RC-56-early-confirmation-option (OD4), RC-68-accrual-cutoff and RC-69-estimand-naming and RC-70-shock-amplitude and RC-72-skew-bound (OD4), RC-76-cohort-start (OD1), RC-77-latency-windows and RC-78-inclusion-predicate (OD5), RC-74-external-store (OD6)]
 owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b, OD10]
 prerequisites_for_A0: [OD1, OD2, OD9a]
 experiments_required: [H1, H3, H5, H6, transfer-claim, persistent-regime-dependence-model (OD4/OD5)]
 p0_status:
-  e_process_protocol: remedy proposed; fixed-horizon paired cluster test primary at one 24-month cut-off, e-process monitor of the conditional null, positive controls per kernel; tests T-02, T-10..T-13, T-16, T-17, T-19, T-36 specified, not implemented; cluster-weighted statistic, maturation rule, partial-VOID arithmetic and 24-period power pending OD10 (RC-67..RC-70)
+  e_process_protocol: remedy proposed; fixed-horizon paired cluster test primary at one 24-month cut-off, e-process monitor of the conditional null, positive controls per kernel; tests T-02, T-10..T-13, T-16, T-17, T-19, T-36 specified, not implemented; cluster-weighted statistic, maturation rule, partial-VOID arithmetic, 24-period power, conditional-validity statement and skew bound, scoring-slot key, logical-finality knowable_at, common evidence cutoff and eligible-population predicate pending OD10 (RC-67..RC-70, RC-72, RC-75..RC-78)
   rare_probability_and_intervals: remedy proposed, tests T-20 (point and interval oracles)..T-22 specified, blocked on OD9a, not implemented
-  enforcement_boundaries: remedy proposed incl. anchor boundary, clock rollback, atomic nonce consumption, action-boundary enforcement, full-tuple signatures; T-34 secret-confinement wording and T-35 rejected-check watermark pending OD10 (RC-60, RC-65); tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
+  enforcement_boundaries: remedy proposed incl. anchor boundary, clock rollback, atomic nonce consumption, action-boundary enforcement, full-tuple signatures; T-34 secret-confinement wording, T-35 monotonic clock and boot id, T-30 nonce durability before acknowledgement and T-15 as-of interface pending OD10 (RC-60, RC-65, RC-73, RC-74, RC-79); tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
 implementation_authorised: false
 ```
 
@@ -2453,5 +2519,456 @@ Output:
     }
   },
   "python": "3.11.17"
+}
+```
+
+## Appendix G. Round-6 checks (REPRODUCED; evidence only, nothing applied)
+
+Needs no reference code and no network. Run with `python -I round6_checks.py` in an isolated venv (Python 3.11.17,
+numpy 2.4.6, scipy 1.17.1; 6 s), extracting the block between the `round6-script` markers as in Appendix A.
+Seeds are fixed; two consecutive runs produced byte-identical output. The RC-72 block computes the exact size of
+the one-sided t test over two-point block means in closed form (the statistic depends only on the count of
+positive blocks), scans zero-mean two-point nulls, and runs the archived GRAPA rule of Appendix A over the block
+means as the distribution-free comparison, with the D1 generator of Appendix E for power. The RC-73 and RC-74
+blocks are toy state machines with the v4 wording beside the candidate repairs; RC-75 and RC-77 are arithmetic.
+
+<!-- round6-script:start -->
+```python
+"""Round-6 checks for the Codex findings on PR #4 at 4de18e5 (no reference code, no network).
+
+Evidence only: the findings are recorded, not applied (16 section 4.6, OD10). The D1 generator, the archived
+GRAPA rule and the block t test are those of 16 Appendix A, D and E.
+"""
+import json, math, sys
+import numpy as np
+from scipy.stats import beta, binom, t as student_t
+
+out = {}
+ALPHA, LAM_MAX = 0.05, 0.5
+
+def binom_upper(k, n, conf):
+    return 1.0 if k >= n else float(beta.ppf(conf, k + 1, n - k))
+
+def grapa_paths(xs, lam_max=LAM_MAX):
+    """Archived GRAPA rule (16 Appendix A): predictable lambda, wealth and running maximum."""
+    n_paths, n_steps = xs.shape
+    s1 = np.zeros(n_paths); s2 = np.zeros(n_paths); wealth = np.ones(n_paths); peak = np.ones(n_paths)
+    for n in range(n_steps):
+        if n < 2:
+            lam = np.zeros(n_paths)
+        else:
+            mean = s1 / n
+            var = np.maximum(0.0, (s2 - s1 * s1 / n) / (n - 1))
+            den = var + mean * mean
+            lam = np.divide(mean, den, out=np.zeros(n_paths), where=den > 0) * n / (n + 10)
+            lam = np.clip(lam, 0.0, lam_max)
+        wealth = wealth * (1 + lam * xs[:, n]); peak = np.maximum(peak, wealth)
+        s1 += xs[:, n]; s2 += xs[:, n] ** 2
+    return wealth, peak
+
+# ================= r4297109177 (RC-72): one-sided t test over 24 two-point block means =================
+# Every cluster in a calendar block shares one outcome Y; baseline 0.9518, FULL 0.0518.
+# X = (b - Y)^2 - (p - Y)^2 = +0.90324 if Y = 0 (probability 0.4982), -0.89676 if Y = 1 (0.5018).
+def two_point_values(b, p):
+    return (b - 0) ** 2 - (p - 0) ** 2, (b - 1) ** 2 - (p - 1) ** 2   # X(Y=0), X(Y=1)
+
+def t_size_two_point(a, c, q0, g, alpha=ALPHA):
+    """Exact size of the one-sided t test over g iid block means taking value a (prob q0) or c (prob 1 - q0).
+    With two-point values the statistic depends only on the count k of a-valued blocks (closed form)."""
+    crit = float(student_t.ppf(1 - alpha, g - 1))
+    k = np.arange(g + 1)
+    m = (k * a + (g - k) * c) / g
+    var = (k * (a - m) ** 2 + (g - k) * (c - m) ** 2) / (g - 1)
+    # A sample with every block equal has no sample variance; the statistic is undefined and is counted as
+    # no rejection here (an implementation that maps a zero denominator to +inf would add P(all blocks equal)).
+    var = np.where(var < 1e-12, 0.0, var)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        tk = np.where(var > 0, m / np.sqrt(var / g), -np.inf)
+    rej = tk > crit
+    size = float(binom.pmf(k[rej], g, q0).sum())
+    kmin = int(k[rej].min()) if rej.any() else None
+    return size, kmin, crit
+
+a, c = two_point_values(0.9518, 0.0518)
+q0 = 0.4982
+mean_null = q0 * a + (1 - q0) * c
+size24, kmin24, crit24 = t_size_two_point(a, c, q0, 24)
+rc72 = {'codex_null': {'X_if_Y0': round(a, 5), 'X_if_Y1': round(c, 5), 'P_Y0': q0, 'mean': round(mean_null, 6),
+                       'G': 24, 't_crit_23df': round(crit24, 4), 'min_positive_blocks_to_reject': kmin24,
+                       'exact_size': round(size24, 5), 'exceeds_A3_ceiling_0.06': bool(size24 > 0.06)}}
+# The same count under a symmetric two-point null (+/- 0.9, P = 0.5): where does the threshold fall?
+size_sym, kmin_sym, _ = t_size_two_point(0.9, -0.9, 0.5, 24)
+rc72['symmetric_two_point_null_G24'] = {'exact_size': round(size_sym, 5), 'min_positive_blocks_to_reject': kmin_sym}
+# Maximum exact size over zero-mean two-point nulls (a in (0, 1], c = -a q0 / (1 - q0) >= -1) as G grows.
+grid = {}
+for g in (24, 36, 48, 72, 96, 120, 240):
+    worst = (0.0, None)
+    for a_ in np.linspace(0.02, 1.0, 50):
+        for q in np.linspace(0.02, 0.98, 97):
+            c_ = -a_ * q / (1 - q)
+            if c_ < -1:
+                continue
+            s, _, _ = t_size_two_point(a_, c_, q, g)
+            if s > worst[0]:
+                worst = (s, {'a': round(float(a_), 3), 'c': round(float(c_), 4), 'P_a': round(float(q), 3),
+                             'P_all_blocks_equal': round(float(q) ** g, 4)})
+    grid[f'G={g}'] = {'max_exact_size': round(worst[0], 4), 'at': worst[1]}
+rc72['max_size_of_t_over_two_point_zero_mean_nulls'] = grid
+# Deterministic ceiling of the bounded betting test at G = 24: lambda = 0 for the first two blocks, then at most
+# 0.5; with every block mean at +x the final wealth is (1 + 0.5 x)^22, which must reach 1/alpha = 20 to reject.
+rc72['betting_test_wealth_ceiling_G24'] = {f'all_block_means_{x}': round((1 + 0.5 * x) ** 22, 3) for x in (0.02, 0.05, 0.1, 0.2, 0.3)}
+rc72['betting_test_smallest_constant_block_mean_reaching_20_at_G24'] = round(2 * (20 ** (1 / 22) - 1), 4)
+
+# A finite-sample-valid alternative on the same block means: the archived GRAPA betting test run over the G
+# block means (bounded in [-1, 1]), evaluated at the fixed horizon G, reject iff final wealth >= 1/alpha.
+# Ville's inequality makes it valid for every bounded null with E[X_g | past] <= 0, at any G.
+rng = np.random.default_rng(61)
+R = 20000
+ys = (rng.random((R, 24)) < (1 - q0)).astype(float)       # Y = 1 with probability 0.5018
+xs_null = np.where(ys == 0, a, c)
+wealth, peak = grapa_paths(xs_null)
+k_bet = int((wealth >= 1 / ALPHA).sum()); k_bet_peak = int((peak >= 1 / ALPHA).sum())
+# t test on the same paths (Monte Carlo check of the exact value above)
+tb = xs_null.mean(axis=1) / (xs_null.std(axis=1, ddof=1) / math.sqrt(24))
+k_t = int((tb > crit24).sum())
+rc72['monte_carlo_on_codex_null_20000'] = {
+    't_test_rejections': k_t, 't_test_rate': round(k_t / R, 4), 't_test_99pct_upper': round(binom_upper(k_t, R, 0.99), 4),
+    'betting_test_final_wealth_rejections': k_bet, 'betting_rate': round(k_bet / R, 4),
+    'betting_99pct_upper': round(binom_upper(k_bet, R, 0.99), 4),
+    'betting_running_max_rejections': k_bet_peak, 'betting_running_max_rate': round(k_bet_peak / R, 4)}
+
+# Power cost of the valid alternative under the Appendix E/F alternative with 24 periods:
+# D1 generator, b = 0.5, independent clusters, n_per clusters per period, block = one period.
+def d1_increments(b, delta, n_cl, rng_):
+    p = b + math.sqrt(delta)
+    y = (rng_.random(n_cl) < p).astype(float)
+    return (b - y) ** 2 - (p - y) ** 2
+power = {}
+for delta in (0.02, 0.05, 0.08):
+    for per in (25, 50):
+        rej_t = 0; rej_bet = 0
+        bm = np.empty((R, 24))
+        for r in range(R):
+            x = d1_increments(0.5, delta, 24 * per, rng).reshape(24, per).mean(axis=1)
+            bm[r] = x
+        tb = bm.mean(axis=1) / (bm.std(axis=1, ddof=1) / math.sqrt(24))
+        rej_t = int((tb > crit24).sum())
+        w, _ = grapa_paths(bm)
+        rej_bet = int((w >= 1 / ALPHA).sum())
+        power[f'delta={delta}_clusters_per_period={per}'] = {'t_power': round(rej_t / R, 3), 'betting_power': round(rej_bet / R, 3)}
+rc72['power_at_24_periods_b0.5_independent_clusters'] = power
+out['RC72_t_test_on_two_point_block_means'] = rc72
+
+# ================= r4297109194 (RC-73): clock rollback across an idle expiry window =================
+# Toy state machine. Variant A: v4 wording (watermark advanced by admissions). Variant B: RC-65 wording
+# (watermark advanced by every check). Variant C: the check also persists the monotonic clock and the boot id
+# with the wall clock; a wall-minus-monotonic drift beyond the tolerance, or a new boot id, is an unverifiable
+# discontinuity that invalidates every outstanding capability until re-authorisation.
+def run_idle_variant(variant):
+    state = {'watermark': 0.0, 'mono_ref': None, 'wall_ref': None, 'boot': None, 'reauth_needed': False}
+    log = []
+    def check(wall, mono, boot, expiry):
+        if variant == 'C':
+            if state['boot'] is not None and (boot != state['boot'] or abs((wall - mono) - (state['wall_ref'] - state['mono_ref'])) > 1.0):
+                state['reauth_needed'] = True
+            state['wall_ref'], state['mono_ref'], state['boot'] = wall, mono, boot
+            if state['reauth_needed']:
+                verdict = 'rejected_clock_discontinuity_reauthorise'
+                log.append((wall, mono, verdict)); return verdict
+        if wall < state['watermark']:
+            verdict = 'rejected_rollback'
+        elif wall >= expiry:
+            verdict = 'rejected_expired'
+        else:
+            verdict = 'admitted'
+        if verdict == 'admitted' or variant in ('B', 'C'):
+            state['watermark'] = max(state['watermark'], wall)
+        log.append((wall, mono, verdict)); return verdict
+    check(10, 100, 'boot-1', 100)        # last observed time t0 = 10 (an unrelated admission)
+    # capability expires at t1 = 20; machine idle until real time 30; no check occurs in between
+    replay = check(15, 120, 'boot-1', 20)  # wall clock rolled back to 15 (monotonic clock has advanced 20)
+    restart = check(15, 3, 'boot-2', 20)   # same, after a reboot (monotonic clock reset, new boot id)
+    return replay, restart, log
+rc73 = {}
+for v, name in (('A', 'A_v4_watermark_on_admission'), ('B', 'B_RC65_watermark_on_every_check'), ('C', 'C_monotonic_clock_and_boot_id')):
+    replay, restart, log = run_idle_variant(v)
+    rc73[name] = {'replay_after_idle_rollback': replay, 'replay_after_reboot': restart,
+                  'log': [f'wall={w} mono={m} {vd}' for w, m, vd in log]}
+out['RC73_idle_expiry_window_rollback'] = rc73
+
+# ================= r4297109203 (RC-74): nonce consumed after the last anchor, then restored away =================
+# Toy ledger: records carry consumed nonces; an anchor covers a prefix; restore truncates the local ledger to the
+# anchored prefix. Variant A (v4): acknowledge inside the writer transaction, anchor asynchronously.
+# Variant B: acknowledge only after the record is in an externally anchored prefix. Variant C: the epoch is
+# rotated and anchored synchronously on every process start; capabilities carry the epoch.
+class Ledger:
+    def __init__(self):
+        self.records = []; self.anchored_len = 0; self.external_anchor_digest = None; self.epoch = 1
+    def anchor(self):
+        self.anchored_len = len(self.records); self.external_anchor_digest = ('anchor', tuple(self.records))
+    def restore_to_anchor(self):
+        self.records = list(self.external_anchor_digest[1]); self.anchored_len = len(self.records)
+        self.epoch = max([r[2] for r in self.records if r[0] == 'epoch'] + [1])
+
+def protected_action(ledger, nonce, cap_epoch, variant):
+    if cap_epoch != ledger.epoch:
+        return 'rejected_stale_epoch'
+    if any(r[0] == 'nonce' and r[1] == nonce for r in ledger.records):
+        return 'rejected_nonce_consumed'
+    ledger.records.append(('nonce', nonce, cap_epoch))
+    if variant == 'B':
+        ledger.anchor()                       # durable externally before the acknowledgement
+    return 'acknowledged'
+
+def run_restore_variant(variant):
+    led = Ledger(); log = []
+    if variant == 'C':
+        led.epoch += 1; led.records.append(('epoch', 'start-1', led.epoch)); led.anchor()
+    led.records.append(('event', 'e1', led.epoch)); led.anchor()           # last asynchronous anchor
+    cap = ('nonce-7', led.epoch)                                            # capability signed for this epoch
+    log.append(('first presentation', protected_action(led, cap[0], cap[1], variant)))
+    led.restore_to_anchor()                                                 # SQLite and JSONL suffix restored to the anchor
+    if variant == 'C':
+        led.epoch += 1; led.records.append(('epoch', 'start-2', led.epoch)); led.anchor()   # process restarts after the restore
+    log.append(('replay after restore', protected_action(led, cap[0], cap[1], variant)))
+    return log
+rc74 = {name: dict(run_restore_variant(v)) for v, name in (('A', 'A_v4_ack_in_transaction_async_anchor'),
+                                                            ('B', 'B_ack_after_external_anchor'),
+                                                            ('C', 'C_epoch_rotated_and_anchored_on_start'))}
+out['RC74_unanchored_nonce_restored_away'] = rc74
+
+# ================= r4297109207 (RC-75): two eligible revisions, one scored after the outcome =================
+# Event with true P(Y = 1) = q; two eligible FULL forecasts 0.3 and 0.7 (different ids, both before t*_k).
+# Baseline forecasts q itself. Expected paired increment when the scored revision is the one nearest Y.
+rc75 = {}
+for q in (0.5, 0.3):
+    exp_honest = {}
+    for p in (0.3, 0.7):
+        exp_honest[f'p={p}'] = round(q * ((q - 1) ** 2 - (p - 1) ** 2) + (1 - q) * (q ** 2 - p ** 2), 4)
+    nearest = q * ((q - 1) ** 2 - (0.7 - 1) ** 2) + (1 - q) * (q ** 2 - 0.3 ** 2)
+    rc75[f'q={q}'] = {'expected_increment_scoring_each_revision_honestly': exp_honest,
+                      'expected_increment_scoring_the_revision_nearest_Y': round(nearest, 4)}
+out['RC75_revision_selected_after_outcome'] = rc75
+
+# ================= r4297109220 (RC-77): NO by logical finality before the source's formal record =================
+# Eventually-by-deadline event, deadline D = 100, declared latency window L = 10, no timely occurrence.
+# The source's formal 'did not occur' record is received at 118. A forecast is received at 113.
+D, L, receipt, forecast_receipt = 100, 10, 118, 113
+knowable_v4 = receipt                     # v4: knowable_at = publication (the formal record) or occurrence
+knowable_proposed = min(receipt, D + L)   # proposed: logical finality at D + L
+out['RC77_logical_finality'] = {'deadline': D, 'latency_window': L, 'formal_record_received': receipt,
+                                'forecast_received': forecast_receipt,
+                                'v4_knowable_at': knowable_v4, 'v4_forecast_eligible': forecast_receipt < knowable_v4,
+                                'proposed_knowable_at': knowable_proposed, 'proposed_forecast_eligible': forecast_receipt < knowable_proposed}
+
+out['environment'] = {'python': sys.version.split()[0], 'numpy': np.__version__, 'scipy': __import__('scipy').__version__}
+print(json.dumps(out, indent=2))
+```
+<!-- round6-script:end -->
+
+Output:
+
+```json
+{
+  "RC72_t_test_on_two_point_block_means": {
+    "codex_null": {
+      "X_if_Y0": 0.90324,
+      "X_if_Y1": -0.89676,
+      "P_Y0": 0.4982,
+      "mean": -0.0,
+      "G": 24,
+      "t_crit_23df": 1.7139,
+      "min_positive_blocks_to_reject": 16,
+      "exact_size": 0.0733,
+      "exceeds_A3_ceiling_0.06": true
+    },
+    "symmetric_two_point_null_G24": {
+      "exact_size": 0.03196,
+      "min_positive_blocks_to_reject": 17
+    },
+    "max_size_of_t_over_two_point_zero_mean_nulls": {
+      "G=24": {
+        "max_exact_size": 0.1522,
+        "at": {
+          "a": 0.02,
+          "c": -0.1467,
+          "P_a": 0.88,
+          "P_all_blocks_equal": 0.0465
+        }
+      },
+      "G=36": {
+        "max_exact_size": 0.1556,
+        "at": {
+          "a": 0.02,
+          "c": -0.23,
+          "P_a": 0.92,
+          "P_all_blocks_equal": 0.0497
+        }
+      },
+      "G=48": {
+        "max_exact_size": 0.1572,
+        "at": {
+          "a": 0.02,
+          "c": -0.3133,
+          "P_a": 0.94,
+          "P_all_blocks_equal": 0.0513
+        }
+      },
+      "G=72": {
+        "max_exact_size": 0.1587,
+        "at": {
+          "a": 0.02,
+          "c": -0.48,
+          "P_a": 0.96,
+          "P_all_blocks_equal": 0.0529
+        }
+      },
+      "G=96": {
+        "max_exact_size": 0.1595,
+        "at": {
+          "a": 0.02,
+          "c": -0.6467,
+          "P_a": 0.97,
+          "P_all_blocks_equal": 0.0537
+        }
+      },
+      "G=120": {
+        "max_exact_size": 0.1423,
+        "at": {
+          "a": 0.02,
+          "c": -0.38,
+          "P_a": 0.95,
+          "P_all_blocks_equal": 0.0021
+        }
+      },
+      "G=240": {
+        "max_exact_size": 0.132,
+        "at": {
+          "a": 0.02,
+          "c": -0.98,
+          "P_a": 0.98,
+          "P_all_blocks_equal": 0.0078
+        }
+      }
+    },
+    "betting_test_wealth_ceiling_G24": {
+      "all_block_means_0.02": 1.245,
+      "all_block_means_0.05": 1.722,
+      "all_block_means_0.1": 2.925,
+      "all_block_means_0.2": 8.14,
+      "all_block_means_0.3": 21.645
+    },
+    "betting_test_smallest_constant_block_mean_reaching_20_at_G24": 0.2918,
+    "monte_carlo_on_codex_null_20000": {
+      "t_test_rejections": 1454,
+      "t_test_rate": 0.0727,
+      "t_test_99pct_upper": 0.0771,
+      "betting_test_final_wealth_rejections": 12,
+      "betting_rate": 0.0006,
+      "betting_99pct_upper": 0.0011,
+      "betting_running_max_rejections": 31,
+      "betting_running_max_rate": 0.0015
+    },
+    "power_at_24_periods_b0.5_independent_clusters": {
+      "delta=0.02_clusters_per_period=25": {
+        "t_power": 0.966,
+        "betting_power": 0.0
+      },
+      "delta=0.02_clusters_per_period=50": {
+        "t_power": 0.999,
+        "betting_power": 0.0
+      },
+      "delta=0.05_clusters_per_period=25": {
+        "t_power": 1.0,
+        "betting_power": 0.0
+      },
+      "delta=0.05_clusters_per_period=50": {
+        "t_power": 1.0,
+        "betting_power": 0.0
+      },
+      "delta=0.08_clusters_per_period=25": {
+        "t_power": 1.0,
+        "betting_power": 0.0
+      },
+      "delta=0.08_clusters_per_period=50": {
+        "t_power": 1.0,
+        "betting_power": 0.0
+      }
+    }
+  },
+  "RC73_idle_expiry_window_rollback": {
+    "A_v4_watermark_on_admission": {
+      "replay_after_idle_rollback": "admitted",
+      "replay_after_reboot": "admitted",
+      "log": [
+        "wall=10 mono=100 admitted",
+        "wall=15 mono=120 admitted",
+        "wall=15 mono=3 admitted"
+      ]
+    },
+    "B_RC65_watermark_on_every_check": {
+      "replay_after_idle_rollback": "admitted",
+      "replay_after_reboot": "admitted",
+      "log": [
+        "wall=10 mono=100 admitted",
+        "wall=15 mono=120 admitted",
+        "wall=15 mono=3 admitted"
+      ]
+    },
+    "C_monotonic_clock_and_boot_id": {
+      "replay_after_idle_rollback": "rejected_clock_discontinuity_reauthorise",
+      "replay_after_reboot": "rejected_clock_discontinuity_reauthorise",
+      "log": [
+        "wall=10 mono=100 admitted",
+        "wall=15 mono=120 rejected_clock_discontinuity_reauthorise",
+        "wall=15 mono=3 rejected_clock_discontinuity_reauthorise"
+      ]
+    }
+  },
+  "RC74_unanchored_nonce_restored_away": {
+    "A_v4_ack_in_transaction_async_anchor": {
+      "first presentation": "acknowledged",
+      "replay after restore": "acknowledged"
+    },
+    "B_ack_after_external_anchor": {
+      "first presentation": "acknowledged",
+      "replay after restore": "rejected_nonce_consumed"
+    },
+    "C_epoch_rotated_and_anchored_on_start": {
+      "first presentation": "acknowledged",
+      "replay after restore": "rejected_stale_epoch"
+    }
+  },
+  "RC75_revision_selected_after_outcome": {
+    "q=0.5": {
+      "expected_increment_scoring_each_revision_honestly": {
+        "p=0.3": -0.04,
+        "p=0.7": -0.04
+      },
+      "expected_increment_scoring_the_revision_nearest_Y": 0.16
+    },
+    "q=0.3": {
+      "expected_increment_scoring_each_revision_honestly": {
+        "p=0.3": 0.0,
+        "p=0.7": -0.16
+      },
+      "expected_increment_scoring_the_revision_nearest_Y": 0.12
+    }
+  },
+  "RC77_logical_finality": {
+    "deadline": 100,
+    "latency_window": 10,
+    "formal_record_received": 118,
+    "forecast_received": 113,
+    "v4_knowable_at": 118,
+    "v4_forecast_eligible": true,
+    "proposed_knowable_at": 110,
+    "proposed_forecast_eligible": false
+  },
+  "environment": {
+    "python": "3.11.17",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1"
+  }
 }
 ```
