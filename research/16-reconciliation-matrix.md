@@ -6,9 +6,13 @@ and is the single place where positions, evidence, dispositions and remaining bl
 original research under `research/original/` is unchanged. Nothing here authorises implementation, merges,
 capital, broker connectivity or policy changes.
 
-**Version:** v2, 2026-10-16. **Round:** 1 of 3 complete (Claude response). **Awaiting:** Codex round 2 on the
-exact commit of this document. **No disposition in this matrix is a Codex agreement** until Codex has reviewed
-that commit; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2).
+**Version:** v3, 2026-10-16. **Round:** 2 of 3 (Codex round 2 = the automatic review of PR #4 at `10d1581`,
+thirteen findings; this version is the Claude response). **Awaiting:** Codex round 3 on the exact commit of
+this document. **No disposition in this matrix is a Codex agreement** until Codex has reviewed that commit;
+"Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment
+named in §3a. Codex's PR #4 review is a diff review of the two new documents; it did not address RC-01 (remedy
+scope), RC-07 (n_eff retention) or RC-20 (hosting timing), so those remain open exactly as in v2. Silence in a
+diff review is not agreement.
 
 Labels follow `research/README.md`. Disposition statuses used here, per the protocol in issue #3:
 
@@ -29,30 +33,44 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Owner protocol comment | PR #2 comment `6215215092` | round 1 |
 | Claude round-1 response (matrix v1) | PR #2 comment `6215369656` | superseded by this document |
 | Coordination issue | #3 (no comments at time of writing) | round 1 |
+| Codex review of PR #4 | review `5548201046` on commit `10d1581595b2d1ea6a8689e0f94b33bd68a59d66`, thirteen inline findings, comment IDs `4294987374`, `4294987389`, `4294987395`, `4294987398`, `4294987403`, `4294987415`, `4294987422`, `4294987435`, `4294987446`, `4294987458`, `4294987465`, `4294987471`, `4294987476` | round 2 (§3a) |
+| Owner trigger | PR #4 comment `6218467449` ("@codex review", 15:09 UTC); the resulting second review of `10d1581` was still running when this version was written and is **not** processed here | round 2 (noted) |
+| Own posts | PR #2 comment `6216071592`, issue #3 comment `6216073335` (handoff 1 note) | not inputs |
+| Automation | PR #5 (`automation/claude-review-dispatch`, merged to `main` 15:09 UTC) | not a scientific input |
 
-No Codex comment, commit or review newer than the above existed when this document was written. A later
-round processes only inputs not listed here.
+No Codex comment, commit or review newer than the above existed when this document was written, other than
+the second review still running on `10d1581`. A later round processes only inputs not listed here; if the
+second review repeats a finding listed above, it is deduplicated by content and not processed twice.
 
-## 2. Executed in this session (REPRODUCED)
+## 2. Executed (REPRODUCED)
 
-Environment: Linux, Python 3.11.17, numpy 2.4.6, scipy 1.17.1, pytest 9.1.1, httpx 0.28.1, isolated venv in a
-scratch directory outside the repository; the reference code was copied from
+Environment, both rounds: Linux, Python 3.11.17, numpy 2.4.6, scipy 1.17.1, pytest 9.1.1, httpx 0.28.1,
+isolated venv in a scratch directory outside the repository; the reference code was copied from
 `research/original/.../source_v0_2/` to scratch and never modified in place. No network call other than
 package installation; no provider, broker or Jev call; no credential.
 
-| Check | Command | Result |
+| Check | Command | Result (round 1 → round 2) |
 |---|---|---|
-| Archived v0.2 suite | `python -m pytest -q` in the scratch copy | `31 passed in 2.12s` |
-| Reconciliation probes | `python -I claude_probes.py <scratch v0.2>` (script in Appendix A, written independently of Codex's Appendix 1) | output in Appendix B |
+| Archived v0.2 suite | `python -m pytest -q` in the scratch copy | `31 passed in 2.12s` → `31 passed in 2.18s` |
+| Reconciliation probes | `python -I reconciliation_probes.py <scratch v0.2>` (script in Appendix A, written for this matrix without importing or copying Codex's Appendix 1; renamed and re-run in round 2 with the exact binomial bound, RC-28, RC-31) | output in Appendix B; every round-1 value reproduced unchanged except the corrected bound |
+| Round-2 arithmetic (binomial bound, VOID imputation, IUT check design) | `python -I round2_checks.py` (script in Appendix C) | output in Appendix C |
 
-Key reproduced values (all from Appendix B):
+Key reproduced values (all from Appendix B unless stated):
 
 - Cloned-outcome e-process: 30 pairs (0.25 vs 0.75), one shared fair outcome → e = 475.0986 on the favourable
   path, 1.0 on the other; crossing probability 0.5 under the marginal no-skill null. Matches Codex B4.
 - Clustered no-skill null (120 clusters × 5 events, 2,000 replications, archived GRAPA rule, threshold 20):
   false-alarm rate **0.3335** with one increment per event, **0.0000** with one increment per cluster
-  (one-sided 95 % Monte Carlo upper bound 0.0008). **New:** interleaving the 600 events in a random order
-  still gives **0.1345**, so the dependence is not cured by resolution order; only the betting unit cures it.
+  (exact one-sided 95 % binomial upper bound **0.0015** = 1 − 0.05^(1/2000); round 1 printed 0.0008 from a
+  pseudo-count inserted into a normal standard-error formula, which is not a valid bound at the boundary;
+  corrected per Codex RC-31). Interleaving the 600 events in a random order still gives **0.1345**, so the
+  dependence is not cured by resolution order; only the betting unit cures it.
+- Round 2 (Appendix C): a single-run "conjunction does not reject" check passes a correct level-0.05 IUT only
+  with probability 0.95 and passes an implementation of size 0.10 with probability 0.90; with 20,000
+  least-favourable-null replications and an exact 99 % upper bound ≤ 0.06, a correct test passes with
+  probability 0.99995, size 0.06 passes with 0.010 and size 0.07 never (RC-30). Imputing VOID as NO adds +0.8
+  to the paired Brier increment when FULL says 0.1 and the baseline 0.9, while Y = 1 gives −0.8, so it is a
+  one-sided imputation, not a conservative one (RC-38).
 - Codex power rows re-derived with an independently written vectorised recurrence (checked equal to the
   reference implementation to 1e-12 on a random path): b = 0.5, δ = 0.01 → 67 / 6,000 by n = 300 and
   1,623 / 6,000 by n = 600; b = 0.5, δ = 0.02 → 1,584 and 4,883; b = 0.2, δ = 0.01 → 21 and 1,881. All
@@ -69,8 +87,10 @@ Key reproduced values (all from Appendix B):
   failed append, and a new registry on the same ledger knows zero events. A rehashed unanchored suffix passes
   anchor verification. A valid promotion record replays after demotion.
 
-Not executed: Lean (no toolchain), any external fetch. Codex's primary-source reads of 2026-10-16 remain
-PACKAGE-VERIFIED by Codex and UNVERIFIED by Claude.
+Not executed: Lean (no toolchain), any external fetch. Codex's primary-source reads of 2026-10-16 (Saxo
+SIM-linking article, OpenAI non-interactive-mode documentation) remain **UNVERIFIED** here; Codex reports the
+reads in `15` §E2 and §G. Round 1 wrote "PACKAGE-VERIFIED by Codex", which misused a label defined for the
+delivered package (RC-36); corrected in this document, `08` §6 and the PR description.
 
 ## 3. Matrix v2
 
@@ -95,7 +115,7 @@ is empty until Codex reviews this commit.
 | RC-13 | `12` Phase 1: "anchor detects any byte change" | rehashed unanchored suffix passes (REPRODUCED) | A (overclaim withdrawn, `12` Amendments) | CONFIRMED-DEFECT | property: any change inside the anchored prefix, or truncation below it, is detected; the unanchored window is reported explicitly by the restore test | T-07 | anchoring cadence vs hindsight window | none | `FALSIFIED`; `PROPOSED` |
 | RC-14 | linear gate enum RESEARCH_ONLY → LIVE | SHADOW_LIVE_QUOTES would inherit SIM execution; halt vs reconciliation conflated | A | capability model | explicit capabilities × environment; halt denies new risk but preserves reconciliation and explicitly authorised cancellation | T-33 | none | none | `PROPOSED` |
 | RC-15 | "token never propagates"; payload validated | `__context__` keeps the bearer header; hand-built `Cfd` payload reaches transport; NaN price and non-multiple lot accepted; fusion accepts NaN / reversed / > 1 (REPRODUCED) | A | CONFIRMED-DEFECT | typed payload objects only; `__context__ = None` set explicitly; synthetic-canary redaction tests on structured and encoded paths; full input validation (finite, ordered, in range) at every public function | T-26, T-27, T-34 | none | none | `FALSIFIED`; `PROPOSED` |
-| RC-16 | `08` §4–§5: fresh `x-request-id` per retry; host allow-list separates SIM from LIVE | defeats Saxo's 15-second duplicate guard; same host, different path (Codex primary-source read, PACKAGE-VERIFIED) | A (foundation repeated it; amended in `08` §6) | CONFIRMED-DEFECT | no automatic placement retry; reconcile by durable identifiers or halt; path- and credential-based SIM/LIVE policy at the adapter | later phase; recorded in `08` §6 | Saxo idempotency facts (Q3) | none | `PROPOSED` |
+| RC-16 | `08` §4–§5: fresh `x-request-id` per retry; host allow-list separates SIM from LIVE | defeats Saxo's 15-second duplicate guard; same host, different path (Codex primary-source read reported in `15` §E2; UNVERIFIED here) | A (foundation repeated it; amended in `08` §6) | CONFIRMED-DEFECT | no automatic placement retry; reconcile by durable identifiers or halt; path- and credential-based SIM/LIVE policy at the adapter | later phase; recorded in `08` §6 | Saxo idempotency facts (Q3) | none | `PROPOSED` |
 | RC-17 | three models + Jev mandatory; Jev gates research | recall over Jev-approved items is not funnel recall | A | retain membership; soften routing authority; stratified reject audit | mandatory three round-1 outputs plus Jev record on every issued forecast; absence holds issuance; ablations are evaluation forecaster ids only; stratified random audit of Jev rejects with known inclusion probabilities; thresholds development-only, then frozen and validated on fresh strata | T-28 (schema) ; Phase 2 design | H1, H3 untested; shared-judge bias in the Jev benchmark (UNVERIFIED) | OD8 | `PROPOSED`; H1/H3 `EXPERIMENT_REQUIRED` |
 | RC-18 | proposer/promoter with canaries and frozen holdouts | side channels: feedback, runtime, cache, logs, parser execution; holdout exhaustion | A | agree and extend | isolated network-less secret-less evaluator with pinned environment hash; evaluator/scorer separation; bounded feedback and capped proposals per period; canary namespace; rolling prospective cohorts; lifetime α-spending | Phase 6; exfiltration canary tests specified in 17 §7 | none | OD3 | `PROPOSED` |
 | RC-19 | D9: never force-liquidate thesis-intact; never sell a later winner for price reasons | hindsight rule; delay ≠ failure; a 30 % cash floor is unreachable by non-purchase alone; cap vs appreciation undefined | A | amend D9 | predicate kinds `milestone-deadline` vs `terminal-falsifier` in the schema now; precedence hard risk limits > terminal falsifier > valuation/opportunity review > hazard throttle; price drawdown triggers review, never a mechanical sale; counterfactual policy arms evaluated on all entries | T-29 (schema); Phase 5 experiment | H6 power | OD7 | `PROPOSED`; H6 `EXPERIMENT_REQUIRED` |
@@ -104,9 +124,38 @@ is empty until Codex reviews this commit.
 | RC-22 | D5: position 20 %, worst loss 15 % (R ≥ −0.75 assumed), cash floor 10 %, gross 100 %, Kelly 0.5 after optimisation | fully paid equity can lose 100 %; limits jointly inconsistent | A | clarify D5 | full-loss position cap ≤ 15 %; gross ≤ 90 % with the floor; Kelly fraction inside the constrained objective, not after it | later phase (allocator tests) | Q6 commissions | none | `PROPOSED` |
 | RC-23 | `03/04`: cost comparison via −ln(1 − c) | exact only under a multiplicative fee convention | A | ESTABLISHED / REVISION | cost model as a component with declared conventions, lots, FX, taxes; independent post-solve check | later phase | none | none | `PROPOSED` |
 | RC-24 | `04/03` §7: 300–600 events give the year-one read-out | δ = 0.01 has ≈ 27–31 % power at 600 independent observations; ≈ 1 % at δ = 0.005 (REPRODUCED) | A | P1 | power report with clusters, missingness and abstention before the Phase 2 contract; the year-one criterion is set after supply is measured | T-16 | real supply and cluster structure | OD4, OD5 | `PROPOSED`; criterion `OWNER_DECISION` |
-| RC-25 | D10: OpenAI only as an owner-started daily batch | Codex reads OpenAI's non-interactive-mode documentation as a supported scheduled route (PACKAGE-VERIFIED by Codex; UNVERIFIED by Claude) | P: verify on setup day | UNVERIFIED | setup-day verification with dated screenshots in the ledger; batch remains the fallback under R11's non-editing protocol | none in Phase 1 | provider terms | OD8 | `OWNER_DECISION` after verification |
+| RC-25 | D10: OpenAI only as an owner-started daily batch | Codex reads OpenAI's non-interactive-mode documentation as a supported scheduled route (UNVERIFIED here; Codex reports the read in `15` §G) | P: verify on setup day | UNVERIFIED | setup-day verification with dated screenshots in the ledger; batch remains the fallback under R11's non-editing protocol | none in Phase 1 | provider terms | OD8 | `OWNER_DECISION` after verification |
 | RC-26 | `.githooks/commit-msg` and `.claude/settings.json` enforce the attribution policy | local hook is bypassable; a tool server appended a footer to PR #1's body and to PR #2 comment `6215369656` before correction | A | CONFIRMED-DEFECT | provider-neutral CI check on commit and PR text; read-back after every tool mutation (`AGENTS.md` §7 already requires it); branch protection where available | T-09 | branch-protection visibility (API returned 403) | OD9 | `PROPOSED` |
 | RC-27 (new) | `07` §6 item 1: pilot limits "mutually infeasible" until Q6 | cash is always feasible; with a 15 % full-loss cap a ticket is ≤ USD 150, so commission ≤ 1 % needs c_min ≤ USD 1.50 (Codex F; arithmetic re-derived) | A (overstatement withdrawn, `07` §7) | ESTABLISHED / REVISION | feasibility statement replaced by the exact condition; decision after Q6 | documentation | Q6 | none | `PROPOSED` |
+
+### 3a. Round 2: Codex's review of PR #4 (commit `10d1581`, review `5548201046`)
+
+Thirteen inline findings, each with a Codex-assigned severity (P1 or P2). Every one was examined against the
+documents and, where it carries a number or a logical claim, reproduced (Appendix C). Positions as before:
+**A** agree, **P** partly, **D** disagree. "Resolved in" names the change made in this commit; every
+disposition is `PROPOSED` until Codex reviews this commit.
+
+| ID | Codex finding (comment ID, severity) | Parent | Claude position and evidence | Resolved in (this commit) | Validation test | Status |
+|---|---|---|---|---|---|---|
+| RC-28 | Probe docstring and file name brand the artefact as a Claude product; `AGENTS.md` §7 prohibits AI marking in documentation (`4294987374`, P1) | RC-26 | **P.** The file name and docstring carry no information a reviewer needs; renamed `reconciliation_probes.py`, docstring neutral (Appendix A). The reviewer names in the matrix columns ("Claude position", "Codex position") and in the statuses are **required provenance**: the owner's protocol (PR #2 comment `6215215092` item 4) prescribes those columns, `AGENTS.md` §7 puts required provenance "in content, not in trailers", and §9 requires knowing which reviewer authored what. They stay. The branch prefix `claude/` is prescribed by issue #3 and the dispatch workflow of PR #5 | Appendix A, B; PR description | scan of changed files for attribution patterns (RC-26, T-09) | `PROPOSED`; owner may rule on the column names under OD9b |
+| RC-29 | Cluster closure undefined: membership could change after outcomes arrive, or an increment could be emitted from a partial cluster, making the increment outcome-dependent (`4294987389`, P1) | RC-01 | **A.** v2 said "declared at registration before any member resolves" and "at the cluster's resolution time" without defining either. Selection of members or of the emission time after seeing outcomes is exactly the hindsight channel RC-02 closes for single events. Added: immutable membership complete before the earliest member `not_before`; one increment only when every member is resolved or pre-declared VOID; λ_k frozen at the cluster's first outcome receipt (a stronger condition than Codex asked for, needed so that no partial information of cluster k enters its own λ); closure-time ordering; later-discovered cross-cluster dependence VOIDs the later cluster. Stated limit: the rule does not cover dependence between clusters open at the same time, which remains the RC-01 open point (§4.1) | `17` §3 item 3, §2 table | T-17 (new), T-02 (reworded) | `PROPOSED` |
+| RC-30 | T-13 single-run IUT check is flaky (a correct test rejects a null comparator with probability α) and a lucky seed passes an over-sized implementation (`4294987395`, P1) | RC-08 | **A.** REPRODUCED (Appendix C): 0.95 pass for a correct test, 0.90 pass for size 0.10. Replaced by (a) a deterministic oracle for the conjunction logic and (b) 20,000 least-favourable-null replications with an exact 99 % upper bound ≤ 0.06, which passes a correct test with probability 0.99995 and a size-0.06 test with 0.010. The same reasoning fixes the margin and replication count of A3, which v2 left implicit | `17` T-13, A3 | T-13 | `PROPOSED` |
+| RC-31 | Monte Carlo bound 0.0008 for 0 of 2,000 is wrong; exact one-sided 95 % bound is 1 − 0.05^(1/2000) ≈ 0.0015 (`4294987398`, P2) | RC-01 | **A.** REPRODUCED: 0.001497 (closed form and Clopper–Pearson agree). The round-1 formula inserted a pseudo-count into a normal approximation, which is not a bound at the boundary. Corrected in the probe (`binom_upper`), §2, Appendix B, and A3 now names the exact binomial bound. The conclusion (bound ≤ 0.06) is unchanged | §2, Appendix A, B; `17` A3 | T-10, T-11 | `PROPOSED` |
+| RC-32 | T-25 requires an exact credal instance and an inner LP although the credal network is out of Phase 1 scope (`4294987403`, P2) | RC-10 | **A.** Inconsistent as written. T-25 moved to `17` §7 (Phase 5); T-21 reduced to the arithmetic chain-rule identity with no LP; "out of scope" now names every credal LP explicitly. Adding the LP to Phase 1 was the alternative; it would add a solver dependency for no reduction of scientific uncertainty | `17` §3 out of scope, T-21, §7 | T-21 (Phase 1), T-25 (Phase 5) | `PROPOSED` |
+| RC-33 | A0 lets implementation start on OD1–OD2 while the shrinkage estimator contradicts the still-binding `AGENTS.md` §2 item 7 floor and OD9 is open (`4294987415`, P1) | RC-03, RC-09 | **A.** The same contradiction holds for item 10 ("time-shifted holdouts") and the leak detector T-15. Building the floor knowingly would implement a FALSIFIED rule; building the replacement before the governance text changes would contradict §2. OD9 is split: **OD9a** (items 7 and 10 wording) becomes a prerequisite of A0; until it is recorded, T-20 and T-15 are not built and the floor is neither built nor removed. **OD9b** (item 9, §3 secrets wording, CI enforcement) can follow | §6 (OD9a/OD9b), `17` A0, §2 table; `12` amendments item 6 | A0 is a reviewed artefact, not a test | `PROPOSED`; `OWNER_DECISION` (OD9a) |
+| RC-34 | Committed-prefix digest detects tampering only if the trusted anchor cannot be rewritten; scope specifies no external anchor and tests no simultaneous ledger-and-anchor replacement (`4294987422`, P1) | RC-13 | **A.** The property proved by T-07 is "detects changes relative to an anchor the verifier trusts"; v2 did not say where that anchor lives. Added an `AnchorStore` interface held by a principal other than the writer (Phase 1: a test double the writer cannot open for writing, plus an owner-committable export; the production holder is part of OD6); verification against a local copy is reported as "self-attested" | `17` §3 item 2, §2 table | T-18 (new), T-07 | `PROPOSED`; production holder `OWNER_DECISION` (OD6) |
+| RC-35 | Mandatory acceptance cases are defined in `15-codex-review.md`, which is absent from this tree (`4294987435`, P2) | new | **A.** `15` is on `review/codex-20261016` (PR #2) and not in `research/claude-handoff`; merging it is not Claude's to do. Restated the twenty fixtures with exact inputs, reference-code behaviour and required behaviour in `17` §5.1, each tied to a T-id. P1–P5 were already in-tree (`01-architecture.md` §3) and are now cited there | `17` §5.1, §3 item 6 | every T-id in §5.1 | `PROPOSED` |
+| RC-36 | "PACKAGE-VERIFIED by Codex" misuses a label defined for the delivered package (`4294987446`, P2) | RC-16, RC-25 | **A.** The README defines `PACKAGE-VERIFIED` as "the package reports checking it"; a reviewer's read is a different fact. Rather than add a label (the label list is in `AGENTS.md` §8 and is the owner's), the claims are `UNVERIFIED` here with the reviewer's report cited by section and date, as Codex's first option proposes. Corrected in `08` §6, §2 and §3 of this document, README label note, PR description | `08` §6; §2, RC-16, RC-25; `research/README.md` | none (documentation) | `PROPOSED` |
+| RC-37 | Capability expiry depends on wall-clock time; after a clock rollback an expired unused capability can validate again because no consumed nonce or newer epoch need exist (`4294987458`, P1) | RC-12 | **A.** Correct as a logical argument; the reference code has no expiry at all, so it is a design gap in v2, not a reproduced defect. Added a persisted high-water mark of observed receipt time; admissions and capability checks below it fail closed; expiry is evaluated against max(current clock, high-water mark) | `17` §3 items 2 and 5, §2 table | T-35 (new), T-30 | `PROPOSED` |
+| RC-38 | "Sensitivity with VOID as NO" is not conservative for a paired Brier difference; excluding VOIDs changes the estimand when missingness is informative (`4294987465`, P1) | RC-24 | **A.** REPRODUCED (+0.8 vs −0.8 on the 0.1 / 0.9 example). The estimand is now stated on the resolvable population with the VOID rate as a capped co-primary quantity; the sensitivity is a worst-case interval in both directions (each VOID imputed with the outcome least favourable to FULL, then most favourable); a missingness model only with a documented per-source mechanism. The cap value joins OD4 | `17` §6 estimand and missing-data rows | Phase 2 contract (reviewed artefact); generator with informative missingness in T-16 | `PROPOSED`; cap `OWNER_DECISION` (OD4) |
+| RC-39 | Measuring supply in Phase 2 months 1–3 before freezing OD4–OD5 lets the design change after confirmatory outcomes are visible while the cohort stays in the estimand (`4294987471`, P1) | RC-24 | **A.** Months 1–3 become a blinded burn-in cohort: registered and committed, outcomes sealed until the contract is frozen, permanently excluded from the primary test; only counts, cluster sizes and source metadata inform OD4–OD5 | `17` §6 planned-supply row | Phase 2 contract; registry test that burn-in clusters carry a non-primary flag that replay preserves | `PROPOSED` |
+| RC-40 | T-41 "tree hash unchanged" has no recorded reference value or procedure (`4294987476`, P2) | integrity | **A.** Recorded: `git rev-parse HEAD:research/original/CPE_Forschungspaket_2026-10-16` = `122a1619cdad4f1c7f577e26f86709c34ce86298` at `8b2dba7`, `10d1581` and this commit (REPRODUCED); kept beside the manifest because the Git tree object also detects added or renamed files, which `sha256sum -c` cannot | `17` T-41 | T-41 | `PROPOSED` |
+
+Not addressed by Codex's PR #4 review and therefore unchanged: RC-01 remedy scope (§4.1), RC-20 hosting
+timing (§4.2), RC-07 n_eff retention (§4.3), and every `PROPOSED` disposition of §3. Relevant to issue #3
+acceptance item 2: on a Markdown-only diff the automatic review produced substantive statistical findings
+(RC-29, RC-30, RC-31, RC-38, RC-39), not only style findings; it did not engage the open disagreements, which
+still need Codex's full response.
 
 ## 4. Open disagreements (what would settle each)
 
@@ -136,6 +185,12 @@ Codex's position if Codex objects to retaining the diagnostic on the next round.
 4.4 **RC-08 α-spending level.** Shape agreed (summable sequence); level is a policy choice with a stated power
 cost (α_10 ≈ 0.00045 under 0.05/[j(j+1)]). Not a scientific disagreement; **OD3**.
 
+4.5 **RC-28 reviewer names in the matrix.** Codex reads `AGENTS.md` §7 as prohibiting the probe's "Claude"
+name; Claude accepts that for the file and docstring (done) and holds that the reviewer-position columns and
+the "which reviewer verified what" statements are the provenance §7 and §9 require and the owner's protocol
+prescribes. Not a scientific disagreement. **Settles it:** the owner's reading of §7, recorded under OD9b if
+the owner wants the wording clarified; Claude will adopt whichever reading the owner states.
+
 ## 5. Open hypotheses with bounded experiments (not disagreements)
 
 | Hypothesis | Experiment (as amended) | Earliest read-out |
@@ -158,9 +213,10 @@ cost (α_10 ≈ 0.00045 under 0.05/[j(j+1)]). Not a scientific disagreement; **O
 | OD6 | Hosting at the Phase 2 gate: minimal cloud, hybrid (cloud trusted writer + local stateless GPU compute), or local-only | Codex's illustrative envelope ≈ USD 1,000 / year; local-only is the weakest boundary |
 | OD7 | Position caps for appreciated compounders (cost basis with a review ceiling vs market value with forced trims); precedence of hard limits over the thesis-intact veto | affects turnover, tax classification risk (Q9) and compounding |
 | OD8 | Provider access route per provider after setup-day verification of terms; human duties implied | batch route adds a human to the loop and latency |
-| OD9 | `AGENTS.md` wording changes (proposed text below) and CI enforcement of the attribution rule | governance change; owner approves personally |
+| OD9a | `AGENTS.md` §2 item 7 (floor → shrinkage) and §2 item 10 (time-shifted holdouts → forbidden-future-information controls) wording, proposed text below; **prerequisite of A0** because the Phase 1 shrinkage estimator (T-20) and leak detector (T-15) would otherwise contradict binding product requirements (RC-33) | governance change; owner approves personally; until recorded, T-20 and T-15 are not built |
+| OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28) | governance change; owner approves personally; not a prerequisite of A0 |
 
-**Proposed `AGENTS.md` wording (for OD9; not applied here):**
+**Proposed `AGENTS.md` wording (for OD9a and OD9b; not applied here):**
 
 - §2 item 7: replace "floored by cohort base rates" with "shrunk toward a declared reference-class rate with
   pre-registered weights; never floored; never elicited directly below 5 %".
@@ -173,31 +229,44 @@ cost (α_10 ≈ 0.00045 under 0.05/[j(j+1)]). Not a scientific disagreement; **O
 ## 7. Machine-readable state
 
 ```yaml
-matrix_version: 2
+matrix_version: 3
 date: 2026-10-16
-round: 1
+round: 2
 round_budget: 3
 inputs_processed:
   research_head: 8b2dba79fe9077df53a96a6b61b1823b80930ee8
   codex_review_commit: 59206fe5f652cc3ea63114ad1c2b0fd7252962c2
   pr2_comments: [6215215092, 6215369656]
-  issue3_comments: []
-awaiting: codex_round_2_on_this_commit
+  issue3_comments: [6216073335]
+  pr4_reviews:
+    - review_id: 5548201046
+      commit: 10d1581595b2d1ea6a8689e0f94b33bd68a59d66
+      comment_ids: [4294987374, 4294987389, 4294987395, 4294987398, 4294987403, 4294987415, 4294987422,
+                    4294987435, 4294987446, 4294987458, 4294987465, 4294987471, 4294987476]
+      items: [RC-28, RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40]
+  pr4_comments_seen_not_processed: [6218467449]
+awaiting: codex_round_3_on_this_commit
+round2_items:
+  accepted: [RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40]
+  partly: [RC-28]
 disagreements_open: [RC-01-scope, RC-20-timing, RC-07-retention]
-owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9]
+owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b]
+prerequisites_for_A0: [OD1, OD2, OD9a]
 experiments_required: [H1, H3, H5, H6, transfer-claim]
 p0_status:
-  e_process_protocol: remedy proposed, tests T-10..T-12 specified, not implemented
-  rare_probability_and_intervals: remedy proposed, tests T-20..T-22 specified, not implemented
-  enforcement_boundaries: remedy proposed, tests T-01..T-09 and T-30..T-34 specified, not implemented
+  e_process_protocol: remedy proposed incl. cluster closure, tests T-10..T-13, T-17 specified, not implemented
+  rare_probability_and_intervals: remedy proposed, tests T-20..T-22 specified, blocked on OD9a, not implemented
+  enforcement_boundaries: remedy proposed incl. anchor boundary and clock rollback, tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
 implementation_authorised: false
 ```
 
 ## Appendix A. Reconciliation probe script (REPRODUCED)
 
-Written independently in this session; imports only the scratch copy of the reference code; no network, no
-credentials. Extract and run from the repository root after copying `source_v0_2` to a scratch directory
-with numpy, scipy, httpx and pytest installed in an isolated venv:
+Written for this matrix without importing or copying the script in `15` Appendix 1; imports only the scratch
+copy of the reference code; no network, no credentials. Round 2 renamed it, neutralised the docstring (RC-28)
+and replaced the pseudo-count bound by the exact binomial bound (RC-31); nothing else changed. Extract and run
+from the repository root after copying `source_v0_2` to a scratch directory with numpy, scipy, httpx and
+pytest installed in an isolated venv:
 
 ```sh
 python - <<'PY_EXTRACT'
@@ -206,19 +275,20 @@ text = Path('research/16-reconciliation-matrix.md').read_text()
 start = text.rindex('<!-- probe-script:start -->')
 end = text.index('<!-- probe-script:end -->', start)
 block = text[start:end].split('```python\n', 1)[1].rsplit('```', 1)[0]
-Path('/path/to/scratch/claude_probes.py').write_text(block)
+Path('/path/to/scratch/reconciliation_probes.py').write_text(block)
 PY_EXTRACT
-/path/to/scratch/venv/bin/python -I /path/to/scratch/claude_probes.py /path/to/scratch/v02
+/path/to/scratch/venv/bin/python -I /path/to/scratch/reconciliation_probes.py /path/to/scratch/v02
 ```
 
 <!-- probe-script:start -->
 ```python
-"""Claude reconciliation probes, written independently in this session.
+"""Reconciliation probes for research/16-reconciliation-matrix.md (round 1, re-run in round 2).
 
 Runs against a scratch copy of the archived v0.2 reference code (path = argv[1]).
 No network, no credentials. Reproduces the counterexamples the reconciliation
 matrix relies on and evaluates the two proposed remedies (cluster-level betting,
-second-moment simplex pooling).
+second-moment simplex pooling). Written for the matrix independently of the
+script in 15-codex-review.md Appendix 1; it does not import or copy it.
 """
 import json, math, sys, tempfile, warnings
 from datetime import datetime, timedelta, timezone
@@ -227,6 +297,7 @@ from pathlib import Path
 from unittest.mock import patch
 import numpy as np
 from scipy.optimize import minimize
+from scipy.stats import beta
 
 sys.path.insert(0, sys.argv[1])
 from cpe.ledger import AppendOnlyLedger, _canonical
@@ -352,6 +423,10 @@ ref = run_path(list(check[0])).evalue
 vec = grapa_paths(check)[0][0]
 out['RC01_vectorised_recurrence_matches_reference'] = bool(np.isclose(ref, vec, rtol=1e-12))
 
+def binom_upper(k, n, conf=0.95):
+    """One-sided exact (Clopper-Pearson) upper confidence bound for a binomial proportion."""
+    return 1.0 if k >= n else float(beta.ppf(conf, k + 1, n - k))
+
 # Clustered no-skill null: baseline 0.4, challenger 0.6, outcome Y~Bern(0.5) shared by every
 # event in a cluster. X = (0.4-Y)^2 - (0.6-Y)^2 = +0.2 if Y=1 else -0.2. Marginal mean zero.
 REPS, CLUSTERS, PER = 2000, 120, 5
@@ -365,7 +440,7 @@ fa_event = float((peak_event >= 20).mean()); fa_cluster = float((peak_cluster >=
 out['RC01_clustered_null'] = {'replications': REPS, 'clusters': CLUSTERS, 'events_per_cluster': PER,
                               'false_alarm_per_event_betting': fa_event,
                               'false_alarm_per_cluster_betting': fa_cluster,
-                              'mc_upper_95_per_cluster': round(fa_cluster + 1.645 * math.sqrt(max(fa_cluster, 1 / REPS) * (1 - fa_cluster) / REPS), 4)}
+                              'mc_upper_95_per_cluster_exact_binomial': round(binom_upper(int(round(fa_cluster * REPS)), REPS), 6)}
 # Same with a shuffled (interleaved) order of events across clusters: dependence persists.
 perm = rng.permutation(CLUSTERS * PER)
 _, peak_shuf, _ = grapa_paths(x_event[:, perm])
@@ -393,7 +468,10 @@ print(json.dumps(out, indent=2, allow_nan=False))
 ```
 <!-- probe-script:end -->
 
-## Appendix B. Probe output (REPRODUCED, this session)
+## Appendix B. Probe output (REPRODUCED, round 2 re-run)
+
+Identical to the round-1 output except the key `mc_upper_95_per_cluster_exact_binomial` (was
+`mc_upper_95_per_cluster: 0.0008`).
 
 ```json
 {
@@ -447,7 +525,7 @@ print(json.dumps(out, indent=2, allow_nan=False))
     "events_per_cluster": 5,
     "false_alarm_per_event_betting": 0.3335,
     "false_alarm_per_cluster_betting": 0.0,
-    "mc_upper_95_per_cluster": 0.0008,
+    "mc_upper_95_per_cluster_exact_binomial": 0.001497,
     "false_alarm_per_event_betting_interleaved_order": 0.1345
   },
   "RC24_power_rows": {
@@ -473,3 +551,134 @@ print(json.dumps(out, indent=2, allow_nan=False))
   "RC08_sum_to_infinity": 0.05
 }
 ```
+
+## Appendix C. Round-2 arithmetic checks (REPRODUCED)
+
+Needs no reference code. Run with `python -I round2_checks.py` in the same venv (extract the block as in
+Appendix A, between the `round2-script` markers).
+
+<!-- round2-script:start -->
+```python
+"""Round-2 arithmetic checks for the Codex findings on PR #4 (no reference code needed)."""
+import json, math
+import numpy as np
+from scipy.stats import beta, binom
+
+out = {}
+# Finding r4294987398: exact one-sided 95 % upper bound with 0 of 2000.
+n = 2000
+out['exact_upper_0_of_2000'] = round(1 - 0.05 ** (1 / n), 6)
+out['clopper_pearson_0_of_2000'] = round(float(beta.ppf(0.95, 1, n)), 6)
+out['round1_pseudocount_normal_value'] = round(0 + 1.645 * math.sqrt((1 / n) * 1 / n), 6)
+# How many crossings would still satisfy A3 (bound <= 0.06) at n = 2000?
+k_max = max(k for k in range(0, 200) if beta.ppf(0.95, k + 1, n - k) <= 0.06)
+out['max_crossings_of_2000_with_upper_bound_le_0.06'] = k_max
+out['upper_bound_at_that_k'] = round(float(beta.ppf(0.95, k_max + 1, n - k_max)), 5)
+
+# Finding r4294987465: VOID imputed as NO is not conservative for a paired Brier difference.
+def paired_brier_increment(p_full, p_base, y):
+    return (p_base - y) ** 2 - (p_full - y) ** 2   # positive favours FULL
+out['void_example'] = {'p_full': 0.1, 'p_base': 0.9,
+                       'impute_Y0': round(paired_brier_increment(0.1, 0.9, 0), 3),
+                       'impute_Y1': round(paired_brier_increment(0.1, 0.9, 1), 3)}
+out['worst_case_rule'] = 'impute Y=1 if p_full < p_base else Y=0 gives the increment least favourable to FULL'
+# Worst-case bound over m VOIDs with |X| <= 1: mean increment shifts by at most m/N.
+out['void_bound_shift_example'] = {'N': 300, 'm_void': 15, 'max_shift_of_mean_increment': round(15 / 300, 4)}
+
+# Finding r4294987395: a single-run IUT check is flaky and can pass a wrong implementation.
+alpha = 0.05
+out['iut_single_run'] = {
+    'P_correct_impl_rejects_null_comparator_once': alpha,
+    'P_wrong_impl_size_0.10_passes_single_run': 1 - 0.10,
+    'P_wrong_impl_size_0.10_passes_MC_bound_check_n2000': round(float(binom.cdf(k_max, 2000, 0.10)), 8),
+    'P_correct_impl_fails_MC_bound_check_n2000': round(1 - float(binom.cdf(k_max, 2000, 0.05)), 6)}
+# Deterministic oracle: conjunction rejects iff every component rejects.
+import itertools
+comps = [0.01, 0.20, 0.03]
+out['iut_oracle_example'] = {'component_p': comps, 'reject_all_at_0.05': all(p <= alpha for p in comps),
+                             'min_e_value_rule': 'reject iff min_j e_j >= 1/alpha'}
+
+# T-13 design: replications and margin so that a correct level-alpha test passes with high
+# probability while an over-sized implementation fails.
+design = {}
+for n_rep, margin, conf in [(2000, 0.01, 0.95), (10000, 0.01, 0.99), (20000, 0.01, 0.99)]:
+    k_max_d = max(k for k in range(0, int(n_rep * 0.2)) if beta.ppf(conf, k + 1, n_rep - k) <= alpha + margin)
+    design[f'n={n_rep},margin={margin},conf={conf}'] = {
+        'k_max': k_max_d,
+        'P_pass_size_0.05': round(float(binom.cdf(k_max_d, n_rep, 0.05)), 6),
+        'P_pass_size_0.06': round(float(binom.cdf(k_max_d, n_rep, 0.06)), 6),
+        'P_pass_size_0.07': float(binom.cdf(k_max_d, n_rep, 0.07)),
+        'P_pass_size_0.10': float(binom.cdf(k_max_d, n_rep, 0.10))}
+out['t13_design'] = design
+
+# Finding r4294987471 / r4294987415: no arithmetic; design-level.
+print(json.dumps(out, indent=2))
+```
+<!-- round2-script:end -->
+
+Output:
+
+```json
+{
+  "exact_upper_0_of_2000": 0.001497,
+  "clopper_pearson_0_of_2000": 0.001497,
+  "round1_pseudocount_normal_value": 0.000822,
+  "max_crossings_of_2000_with_upper_bound_le_0.06": 102,
+  "upper_bound_at_that_k": 0.05984,
+  "void_example": {
+    "p_full": 0.1,
+    "p_base": 0.9,
+    "impute_Y0": 0.8,
+    "impute_Y1": -0.8
+  },
+  "worst_case_rule": "impute Y=1 if p_full < p_base else Y=0 gives the increment least favourable to FULL",
+  "void_bound_shift_example": {
+    "N": 300,
+    "m_void": 15,
+    "max_shift_of_mean_increment": 0.05
+  },
+  "iut_single_run": {
+    "P_correct_impl_rejects_null_comparator_once": 0.05,
+    "P_wrong_impl_size_0.10_passes_single_run": 0.9,
+    "P_wrong_impl_size_0.10_passes_MC_bound_check_n2000": 0.0,
+    "P_correct_impl_fails_MC_bound_check_n2000": 0.393261
+  },
+  "iut_oracle_example": {
+    "component_p": [
+      0.01,
+      0.2,
+      0.03
+    ],
+    "reject_all_at_0.05": false,
+    "min_e_value_rule": "reject iff min_j e_j >= 1/alpha"
+  },
+  "t13_design": {
+    "n=2000,margin=0.01,conf=0.95": {
+      "k_max": 102,
+      "P_pass_size_0.05": 0.606739,
+      "P_pass_size_0.06": 0.047114,
+      "P_pass_size_0.07": 0.0003050828854872164,
+      "P_pass_size_0.10": 1.0460703080855882e-15
+    },
+    "n=10000,margin=0.01,conf=0.99": {
+      "k_max": 544,
+      "P_pass_size_0.05": 0.978355,
+      "P_pass_size_0.06": 0.008995,
+      "P_pass_size_0.07": 1.308824218554986e-10,
+      "P_pass_size_0.10": 2.645531303440866e-61
+    },
+    "n=20000,margin=0.01,conf=0.99": {
+      "k_max": 1122,
+      "P_pass_size_0.05": 0.999953,
+      "P_pass_size_0.06": 0.009982,
+      "P_pass_size_0.07": 9.812816862921764e-16,
+      "P_pass_size_0.10": 4.181300507765669e-111
+    }
+  }
+}
+```
+
+The `iut_single_run` block shows why T-13 needs its own margin: at 2,000 replications a correct level-0.05
+test fails an "upper bound ≤ 0.06" check 39 % of the time. The `t13_design` block fixes the chosen design
+(20,000 replications, exact one-sided 99 % upper bound ≤ 0.06, reached at 1,122 rejections): pass probability
+0.99995 for a test of size 0.05, 0.0100 for size 0.06, below 10⁻¹⁵ for size 0.07.

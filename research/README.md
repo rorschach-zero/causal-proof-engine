@@ -26,9 +26,10 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix, reproduced evidence,
-   open disagreements and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 and its acceptance-test matrix.
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v3, round 2), reproduced
+   evidence, open disagreements and owner decisions.
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 2) and its acceptance-test
+    matrix, including the restated mandatory counterexample fixtures (§5.1).
 
 Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
 2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.
@@ -44,6 +45,10 @@ Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended
 | `REPRODUCED` | re-executed or re-derived in this session (details in `00-research-inventory.md` §4) |
 | `CONFIRMED-DEFECT` | a defect in the reference code demonstrated by a probe in this session |
 | `REVISION` | a proposal of this review, not part of the original research |
+
+A claim that only the other reviewer checked (for example a primary-source read reported in
+`15-codex-review.md`) stays `UNVERIFIED` in documents on this branch, with the reviewer's report cited by
+section and date; no label is borrowed for it (`16-reconciliation-matrix.md` RC-36).
 
 Three kinds of evidence are never mixed, following the package's own rule: **formally proved** (Lean,
 conditional on hypotheses), **statistically shown** (e-processes, proper scores), **empirically supported**

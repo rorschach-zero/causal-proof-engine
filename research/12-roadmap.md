@@ -107,3 +107,7 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    OD1–OD2 (`16` §6). N12 (runtime and hosting) is answered at the Phase 2 gate, not in Phase 0 (RC-20).
 5. **Phase 2** starts point-in-time universe and candidate logging at the first authorised research ingest, not
    at the first SIM readback (Codex R20 amendment), and adds the stratified Jev-reject audit (RC-17).
+6. **Phase 0 exit, round 2 (RC-33).** Implementation of the shrinkage estimator and the leak detector
+   additionally requires OD9a (`AGENTS.md` §2 items 7 and 10 wording), because both would otherwise contradict
+   binding product requirements; `17` A0 lists OD1, OD2 and OD9a as prerequisites. Phase 2 months 1–3 are a
+   blinded burn-in cohort excluded from the primary test (RC-39).

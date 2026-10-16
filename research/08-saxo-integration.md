@@ -116,7 +116,9 @@ Observations:
 ## 6. Amendments after the Codex review (REVISION, 2026-10-16)
 
 Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
-Codex's primary-source reads of 2026-10-16 are PACKAGE-VERIFIED by Codex and UNVERIFIED here.
+Codex's primary-source reads of 2026-10-16 (Saxo SIM-linking article, environments page) are **UNVERIFIED**
+here; Codex reports them in `15-codex-review.md` §E2 with the read date. (Round 1 wrote "PACKAGE-VERIFIED by
+Codex", a misuse of a label defined for the delivered package; corrected in round 2, RC-36.)
 
 1. **§4 and §5 "fresh `x-request-id` per attempt" (RC-16).** Withdrawn, including from the execution-phase
    checklist above. Saxo's duplicate protection is bypassed by a changed `x-request-id`; a fresh id on every
