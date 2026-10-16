@@ -6,7 +6,7 @@ Status: **proposed, disabled until merged and configured**. No trading or model 
 
 When Codex submits a review on a `claude/*` pull request in this repository, the workflow sends a **single notification** to an existing Claude Code Routine via Anthropic's official `/fire` endpoint. The payload carries only the PR number, review ID and commit SHA. It does not include GitHub comment text or run PR code.
 
-The Claude routine must already be configured to fetch PR reviews, deduplicate reviewed IDs, obey a three-round issue limit, and stop without committing when no new actionable finding exists. Keep the routine's daily scheduled trigger as an independent fallback.
+The Claude routine must already be configured to fetch PR reviews, deduplicate reviewed IDs, obey a three-round issue limit, and stop without committing when no new actionable finding exists. Keep the routine's daily scheduled trigger as an independent fallback. **Disable Claude's separate Auto-fix PR behavior during the first webhook test** to avoid launching two independent Claude sessions for the same Codex review; re-enable only after verified deduplication and cost controls.
 
 GitHub's native routine trigger covers pull-request and release events, **not PR review comments**. This bridge uses the `pull_request_review.submitted` event, which groups multiple inline comments into one review and avoids firing once for every finding.
 
@@ -18,7 +18,7 @@ GitHub's native routine trigger covers pull-request and release events, **not PR
    - `CPE_CLAUDE_ROUTINE_URL` — complete Anthropic-generated HTTPS routine `/fire` URL.
    - `CPE_CLAUDE_ROUTINE_TOKEN` — generated bearer token.
 4. Review and merge this workflow PR only after its security review. A workflow must exist on the default branch for review webhooks to invoke it.
-5. Test on a **documentation-only Claude branch PR**. Request Codex review and check the GitHub Actions run plus the Claude Routine run history. Verify that no branch is merged and no duplicate review ID is processed.
+5. Before testing, temporarily turn **Auto-fix pull requests** off in the routine's Behavior panel; leave the scheduled run enabled. Test on a **documentation-only Claude branch PR**. Request Codex review and check the GitHub Actions run plus the Claude Routine run history. Verify that no branch is merged and no duplicate review ID is processed.
 6. Rotate/delete the Anthropic token or disable this GitHub Actions workflow to stop dispatch immediately.
 
 ## Boundaries
