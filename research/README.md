@@ -26,9 +26,9 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v5, round 4; every item
-   Codex has touched has used its three-round budget), reproduced evidence, the one remaining disagreement
-   (hosting timing, an owner decision) and owner decisions.
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v6, round 5 recorded
+   without revision; every item Codex has touched has used its three-round budget), reproduced evidence, the
+   one remaining disagreement (hosting timing, an owner decision) and owner decisions.
 10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 4) and its acceptance-test
     matrix, including the restated mandatory counterexample fixtures (§5.1).
 

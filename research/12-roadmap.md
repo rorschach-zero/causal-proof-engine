@@ -122,3 +122,11 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    holder still stores the secret) is reproduced but not applied because the RC-15 budget is spent (OD10).
    Every item Codex has touched has now used its budget; later automatic reviews are recorded for the owner
    without revision (`16` §4.6). Phase 0 exit waits on OD1, OD2, OD9a and, for T-34, OD10.
+9. **Phase 0 exit, round 5 (RC-64 to RC-71, recorded only).** Codex's review of `88abaa4` is recorded in `16`
+   §3d without revision. Three findings reproduce against Claude's own earlier remedies (`16` Appendix F): the
+   clock watermark must advance on rejected checks too (RC-65), the primary statistic must be cluster-weighted
+   with calendar blocks used only for the variance (RC-69), and the round-4 power figure under period shocks
+   was computed over 120 periods where the design has 24 (47 % is 18 %, RC-70). The others define partial-VOID
+   arithmetic, a maturation rule, membership tests from registration, the late-YES label and the A0/OD10
+   conflict. All nine recorded findings (RC-60, RC-64 to RC-71) wait on OD10; Phase 0 exit waits on OD1, OD2,
+   OD9a and OD10.

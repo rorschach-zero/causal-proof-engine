@@ -6,18 +6,7 @@ and is the single place where positions, evidence, dispositions and remaining bl
 original research under `research/original/` is unchanged. Nothing here authorises implementation, merges,
 capital, broker connectivity or policy changes.
 
-**Version:** v5, 2026-10-16. **Round:** 4 (Codex round 4 = automatic review `5550366107` of PR #4 at
-`d46c204`, eight findings, processed in §3c under the §4.6 rule written in v4: one bounded revision per finding
-on an item with budget left, record only on a budget-spent item; round 3 was review `5550048687` of `43754cc`;
-round 2 the two reviews of `10d1581`). After this version every item Codex has touched has used its three-round
-budget (§4.6). **Awaiting:** Codex's automatic review of the exact commit of this document, which is recorded
-in §3d for the owner without revision, and owner decisions OD1, OD2, OD9a and OD10. **No disposition in this
-matrix is a Codex agreement** until Codex has reviewed that commit; "Codex position" quotes
-`research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3c.
-Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); round 4 found two
-defects in Claude's own remedies (RC-56 on the two cut-offs, RC-60 on the redacting holder), both reproduced
-(Appendix E), one applied and one blocked by the budget. No Codex review addressed RC-07 (n_eff retention) or
-RC-20 (hosting timing). Silence in a diff review is not agreement.
+**Version:** v6, 2026-10-16. **Round:** 5, record only (Codex round 5 = automatic review `5550735335` of PR #4 at `88abaa4`, eight findings, recorded in §3d under the §4.6 rule written in v5: no revision to `17` or to any foundation document until the owner records OD1, OD2 and OD9a or extends the budget on issue #3, OD10; round 4 was review `5550366107` of `d46c204`, round 3 review `5550048687` of `43754cc`, round 2 the two reviews of `10d1581`). Three of the eight round-5 findings carry checkable claims and all three reproduce (Appendix F): the round-2 clock remedy admits an expired capability after a rollback (RC-65), equal calendar-block means can reverse the sign of the per-cluster estimate (RC-69), and the round-4 power figure under period shocks was computed over 120 periods where the design has 24, so 47 % is 18 % (RC-70). None of the eight is applied here. **Awaiting:** owner decisions OD1, OD2, OD9a and OD10 (now covering all nine recorded-not-applied findings, RC-60 and RC-64 to RC-71). **No disposition in this matrix is a Codex agreement** until Codex has reviewed the commit that carries it; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3d. Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); round 4 found two defects in Claude's own remedies (RC-56, RC-60; Appendix E); round 5 found three more (RC-65, RC-69, RC-70; Appendix F). No Codex review addressed RC-07 (n_eff retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
 
 Labels follow `research/README.md`. Disposition statuses used here, per the protocol in issue #3:
 
@@ -43,7 +32,8 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Third Codex review of PR #4 (round 3) | review `5550048687` on commit `43754cc29add7ed47235ed9dd595ca950497ae4c`, run after the round-2 push, seven inline findings, comment IDs `4296395259`, `4296395273`, `4296395286`, `4296395298`, `4296395308`, `4296395324`, `4296395335`; none duplicates rounds 1–2 | round 3 (§3b, RC-48 to RC-54) |
 | Issue #3 comments | `6218571025` (owner: controlled rollout, hardening gates; no scientific content), `6218965225` (routine, concurrent execution: supplementary evidence on RC-15/RC-47, folded in as RC-55) | round 3 |
 | Fourth Codex review of PR #4 (round 4) | review `5550366107` on commit `d46c2042a47457ee254582c682c2b17e6803c8bc`, run after the round-3 push, eight inline findings, comment IDs `4296649357`, `4296649368`, `4296649378`, `4296649389`, `4296649399`, `4296649412`, `4296649421`, `4296649427`; none duplicates rounds 1–3 | round 4 (§3c, RC-56 to RC-63) |
-| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
+| Fifth Codex review of PR #4 (round 5) | review `5550735335` on commit `88abaa4f15bd0e1e1ea7035a32094c7a5113285c`, run after the round-4 push (summary comment `6216072575` edited 16:31 UTC), eight inline findings, all P1, comment IDs `4296914293`, `4296914298`, `4296914307`, `4296914319`, `4296914330`, `4296914341`, `4296914351`, `4296914363`; none duplicates rounds 1–4 | round 5 (§3d, RC-64 to RC-71; recorded, not applied) |
+| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3), `6219896670` (handoff 4); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
 | Automation | PR #5 (`automation/claude-review-dispatch`, merged to `main` 15:09 UTC) | not a scientific input |
 
 No Codex comment, commit or review newer than the above existed when this document was written. A later
@@ -244,6 +234,40 @@ automatic review on a Markdown-only diff again produced statistical and security
 inflation, a hindsight window, partial signatures, inert-kernel detection), two of which (RC-56, RC-60)
 identified defects in Claude's own round-1 and round-3 remedies.
 
+### 3d. Round 5: Codex's review of PR #4 at `88abaa4` (review `5550735335`), recorded without revision
+
+Eight inline findings, all P1, none repeating rounds 1–4. Per §4.6 as written in v5 and announced to the owner
+in handoff 4, this round **records** each finding with Claude's assessment and the wording that would resolve
+it, and **applies nothing**: `17-phase1-amended-specification.md` stays at version 4 and no foundation document
+changes. Where a finding carries a number or a logical claim it was reproduced anyway (Appendix F; evidence,
+not revision), because the owner needs the evidence to decide OD10. Two findings (RC-65, RC-71) fall on families
+that have formally used one round only (RC-37, RC-11); they are nonetheless recorded only, because the v5 rule
+was unconditional and changing it from inside the loop is what the protocol forbids. The owner can apply all
+eight, or any subset, with one line on issue #3 (OD10). Every disposition is `PROPOSED` wording and
+`OWNER_DECISION` status.
+
+| ID | Codex finding (comment ID, severity) | Parent | Claude assessment and evidence | Wording that would resolve it (not applied) | Validation test | Status |
+|---|---|---|---|---|---|---|
+| RC-64 | A0 lets implementation start after OD1, OD2 and OD9a while OD10 is open, although Appendix E shows the T-34 holder still retains the secret and `12` now says Phase 0 waits on OD10 for T-34; the prerequisite documents conflict and Phase 1 could begin with a knowingly ineffective secret-leak test (`4296914293`, P1) | RC-33 (A0), RC-15 family (budget spent) | **A.** Documentation conflict, correctly identified: A0 (`17` §4) names three decisions, `12` amendments item 8 names four, and the OD10 row said the defect "matters only once Phase 1 is built", which is exactly when A0 would already have released the build. Nothing numeric | A0 adds: "OD10 recorded (the RC-60 wording applied to T-34, or the owner's explicit acceptance of the v3 wording) before T-34 and the secret-handling code of §3 item 5 are built; the rest of Phase 1 is not held by OD10". `12` item 8 unchanged | none (documentation) | `OWNER_DECISION` (OD10) |
+| RC-65 | The persisted high-water mark advances only on admissions: an unused capability expiring at t1 is rejected at t2 > t1, the clock is rolled back to t0 < t < t1, and the unchanged watermark t0 lets the same capability pass; persist the observed time on every clock-dependent check, rejected ones included, and replay this in T-35 (`4296914298`, P1) | RC-37 (round 2; one round used) | **A on the defect; REPRODUCED** (Appendix F, toy state machine): under the v4 wording ("persists the maximum receipt time it has ever observed", which only admissions produce) the sequence admission at 10, expired capability rejected at 30, rollback to 15, same capability presented gives `admitted`; persisting max(watermark, now) on every check gives `rejected_rollback`. A defect in Claude's round-2 remedy, not in the original research. The fix is one sentence and one fixture | `17` §3 item 2 monotonic clock: "every clock-dependent check, admitted or rejected, persists max(watermark, now) in the same transaction before it returns its verdict"; T-35 gains the replay (admission at t0; expired capability rejected at t2 > t1; rollback to t0 < t < t1; same capability refused as a rollback, logged) | T-35 | `OWNER_DECISION` (OD10) |
+| RC-66 | T-17 tests membership mutation only after t*_k although the contract freezes the member list at registration; an implementation that allows additions or removals between registration and t*_k, including after forecasts reveal which members favour FULL, passes every listed test (`4296914307`, P1) | RC-29, RC-52, RC-53 (budget spent) | **A.** Test-coverage gap, not a contract gap: `17` §3 item 3 already says "immutable from its registration record onward", T-17 exercises only the post-t*_k case. Codex's channel is real: a removal after the first forecasts are received but before t*_k changes the cluster mean and the confirmatory population without touching any outcome | T-17 gains: addition and removal attempted immediately after registration, before the earliest `not_before`, and between the first forecast receipt and t*_k; all rejected; replay reproduces the refusals | T-17 | `OWNER_DECISION` (OD10) |
+| RC-67 | For a cluster with one resolved and one pre-declared VOID member the text says it emits "the previously defined mean increment", but a VOID member has no Y_i and so no X_i, and t*_k is undefined if it has no outcome timestamps; dropping the member, dropping the cluster or imputing give different estimands and e-process factors and all fit the text; define the arithmetic and add closure fixtures (`4296914319`, P1) | RC-29, RC-38, RC-41 (budget spent) | **A.** Genuine ambiguity. The reading consistent with §6 ("VOID excluded from the primary and counted against the cap") is: X̄_k is the mean over the **resolved** members only, so the cluster keeps weight one with fewer members; t*_k is taken over resolved members' timestamps (a pre-declared VOID has no outcome and no `knowable_at`); a cluster whose members are all VOID emits nothing and its member count goes against the cap; the worst-case bounds impute each VOID member and recompute the mean over all members. The alternative (drop the cluster) would make the increment depend on the VOID declaration of a sibling and is rejected. No number to reproduce | `17` §3 item 3 states the four rules above; fixture F-24: members (resolved X = +0.1, pre-declared VOID) emit +0.1 with worst-case bounds from the imputed sibling; a two-member all-VOID cluster emits nothing and counts two against the cap; T-17 gains both | T-17, T-12 (sensitivity bounds) | `OWNER_DECISION` (OD10) |
+| RC-68 | At a cut-off 24 months after first cohort entry, clusters registered late or with long horizons may still be unresolved and emit nothing, but the missing-data contract covers only declared VOIDs; if resolution speed correlates with difficulty or error, analysing only matured clusters changes the estimand; pre-register an accrual cut-off and a maximum horizon that guarantee maturation, or count pending clusters under a capped missingness rule (`4296914330`, P1) | RC-01 (budget spent), RC-38, RC-56 | **A.** "Maturation" was in Codex's round-1 list for RC-01 (§4.1) and rounds 1–4 never specified it; the gap is Claude's. Silent exclusion at the cut-off is an outcome-correlated selection of the analysed population, the same class of channel as RC-52 and RC-57. No number to reproduce | `17` §6: accrual cut-off = 24 months minus H_max, where H_max is the maximum declared horizon including the source's declared latency window (both OD4 fields); a cluster is eligible for the primary only if every member's `expires_at` plus latency window is at or before the cut-off; clusters eligible but still pending at the cut-off (possible only through source latency) are counted as missing under the VOID cap and enter the worst-case bounds; registrations after the accrual cut-off feed the monitor and the next cohort, never this primary | T-12 (pending-cluster family), T-02 (eligibility) | `OWNER_DECISION` (OD10; H_max and the cut-off are OD4 fields) |
+| RC-69 | The fixed-horizon oracle and every simulated family use equal blocks of five clusters and a t test over block means; with real, unequal supply that weights periods rather than clusters, contradicting the per-cluster estimand and possibly reversing the sign when supply and skill covary; specify a cluster-weighted estimate with blocks used only for the variance, and add an unequal-block oracle (`4296914341`, P1) | RC-49, RC-56, RC-63 (budget spent) | **A on the statistic; REPRODUCED** (Appendix F). Oracle: blocks of sizes 1 and 9 with values +0.5 and nine times −0.1 give an equal-block-mean estimate of +0.20 and a per-cluster estimate of −0.04 (sign reversed). The cluster-weighted estimate θ̂ = (1/N) Σ X_k with the block-sum variance Σ_b (Σ_{k∈b}(X_k − θ̂))² / N² · G/(G − 1) on G − 1 df holds size under Poisson-varying supply with and without ± 0.3 period shocks (5.2 % and 5.5 %; exact 99 % upper bounds 0.055 and 0.059, inside A3's 0.06). When supply covaries with the shock (8 clusters in a +0.3 period, 2 in a −0.3 period) the two statistics test different hypotheses: the per-cluster estimand is +0.070 and the period average is 0, so the cluster-weighted test rejects in 88 % and the block-mean test in 5.7 %. The Appendix D/E size and power figures are unaffected (equal supply by construction), but the §6 primary-test row and T-36 (b) specify the statistic incompletely. What this adds for OD4: under supply–shock covariance the per-cluster estimand itself contains the shock, so OD4 must name the estimand (per cluster, as `17` §6 says, or period-balanced) and the dependence model together | `17` §6 primary test: "point estimate = mean over clusters; variance = block-sum form above; G − 1 df"; T-36 (b) gains oracle 2, blocks (0.10, 0.00), (0.05, 0.15, 0.10), (0.00, 0.05, 0.05, 0.10), (0.20): θ̂ = 0.08, t = 3.651484 on 3 df, one-sided p = 0.017728, while the equal-block-mean statistic gives 0.10 and t = 2.828427, so an implementation of the wrong statistic fails; T-12 gains the Poisson-supply and covarying-supply families | T-36, T-12 | `OWNER_DECISION` (OD10; estimand naming OD4) |
+| RC-70 | Appendix E groups five clusters per period, so its 600-cluster rows span 120 independent periods although the analysis ends after 24 months; the 47 % power under period shocks averages over 120 shocks, not 24, and cannot support OD4; re-run with exactly 24 periods, varying clusters per period (`4296914351`, P1) | RC-24, RC-61 (budget spent) | **A; REPRODUCED; the round-4 figure is a CONFIRMED-DEFECT of Claude's own Appendix E** (Appendix F). With independent clusters the 24-period rows barely move (δ = 0.01 at 600 clusters: 78 % at b = 0.5, 92 % at b = 0.2, against 80 % and 93 % over 120 periods), because blocks then only set the degrees of freedom. Under independent ± 0.3 period shocks over 24 periods the power at δ = 0.02 is **18 %** at 600 clusters and 18 % at 1,200, not 47 %: the shock variance averages over periods only, so the detectable effect at 80 % power is about δ = 0.065 at any supply (normal theory 0.066 at 25 per period, 0.063 in the limit; simulation 59 % at δ = 0.05 and 93 % at δ = 0.08). Size holds at 24 periods (4.9–5.3 %). Consequence: under this dependence model the number of independent blocks inside the 24-month window and the shock amplitude set the detectable effect, and supply cannot buy it back; the ± 0.3 amplitude is a stress assumption to be replaced by reference-class history (OD4). The 47 % figure in `17` §6, A6, T-16 and `16` §6 OD4 stays in the text until OD10 and is superseded by this row | `17` §6 "smallest useful effect" and OD4: replace the 47 % sentence with the 24-period table (Appendix F) and the plateau statement; T-12 and T-16 fix the period count at the design's 24 and vary clusters per period | T-12, T-16 | `OWNER_DECISION` (OD10; amplitude and block length OD4) |
+| RC-71 | When the source reports that the event occurred but gives no occurrence time, absence of evidence that it met the deadline is not evidence that it was late; F-02 forces `EXPIRED_NO`, a potentially false label that enters the Brier comparison; resolve such cases VOID or unresolved under a pre-registered source rule and reserve `EXPIRED_NO` for evidence of lateness or definitive non-occurrence (`4296914363`, P1) | RC-11 (round 1; one round used) | **A in principle.** Round 1 fixed the opposite error (a late YES scored as YES, RC-11) by requiring evidence of timely occurrence, and F-02's "otherwise `EXPIRED_NO`" converts every timestamp-less YES into a NO; that error is one-directional and so biases the paired Brier difference whenever the two designs differ on such events. Remaining uncertainty: a VOID here is outcome-dependent (only a YES can lack a time), so it is carried by the cap and the worst-case bounds, never by the primary alone, and sources that do not publish occurrence times should be excluded at OD5 rather than handled at resolution | `17` §3 resolution rules and F-02: each EventSpec names its source's pre-registered occurrence-time rule; a reported occurrence with no occurrence time and no evidence of lateness resolves VOID (cap, bounds); `EXPIRED_NO` requires evidence that occurrence was after the deadline or that the event had definitively not occurred by it; F-02 splits into F-02a (occurrence time after the deadline, `EXPIRED_NO`) and F-02b (no occurrence time, VOID); T-03 and T-04 gain F-02b | T-03, T-04 | `OWNER_DECISION` (OD10; source exclusion OD5) |
+
+Assessment across the eight: none is a misunderstanding; every finding identifies text that an implementation
+could satisfy while defeating the stated purpose, or a figure that was computed under the wrong design
+parameter. Three are defects in Claude's own earlier remedies (RC-65 in round 2, RC-69 and RC-70 in rounds 3–4),
+one is a gap Codex named in round 1 that four rounds left open (RC-68), and the remaining four are
+specification ambiguities (RC-64, RC-66, RC-67, RC-71). Nothing was changed in `17` or in any foundation
+document, including the superseded 47 % figure, so that the owner sees the v4 wording Codex reviewed beside the
+wording proposed here. Not addressed by Codex in round 5: RC-07 and RC-20. Relevant to issue #3 acceptance
+item 2: the fifth automatic review on a Markdown-only diff produced eight substantive findings on statistics,
+missing-data handling and a security control, three of them reproducible with numbers, and found a wrong
+figure in the matrix's own evidence appendix.
+
 ## 4. Open disagreements (what would settle each)
 
 4.1 **RC-01 remedy scope: withdrawn by Claude in round 3.** Rounds 1–2: Codex asked for estimand, filtration,
@@ -299,6 +323,15 @@ the deliverable of the owner's protocol (amended specification, acceptance-test 
 choices) is complete as `PROPOSED`, and what remains is the owner's. The three P0 families stay blocked on
 OD1, OD2 and OD9a regardless.
 
+Round 5 followed that rule: review `5550735335` of `88abaa4` is recorded in §3d and nothing is applied. For the
+owner's accounting, the eight findings sit on these families: RC-64 on A0/RC-33 and the spent RC-15 family;
+RC-66, RC-67 and RC-68 on the spent RC-01 and RC-29 families; RC-69 and RC-70 on the spent RC-49/RC-56/RC-63 and
+RC-24/RC-61 families; **RC-65 (RC-37, clock) and RC-71 (RC-11, late YES) on families that have used one round
+only**, which a strict reading of the budget would allow to be revised. They were not, because the v5 rule was
+written unconditionally and announced in handoff 4; the routine does not loosen its own stopping rule. Codex's
+automatic review of this commit will run on the push; if it produces findings, the next execution records them
+in a §3e in the same way and still applies nothing. OD10 now covers RC-60 and RC-64 to RC-71 together.
+
 ## 5. Open hypotheses with bounded experiments (not disagreements)
 
 | Hypothesis | Experiment (as amended) | Earliest read-out |
@@ -323,7 +356,7 @@ OD1, OD2 and OD9a regardless.
 | OD8 | Provider access route per provider after setup-day verification of terms; human duties implied | batch route adds a human to the loop and latency |
 | OD9a | `AGENTS.md` §2 item 7 (floor → shrinkage) and §2 item 10 (time-shifted holdouts → forbidden-future-information controls) wording, proposed text below; **prerequisite of A0** because the Phase 1 shrinkage estimator (T-20) and leak detector (T-15) would otherwise contradict binding product requirements (RC-33) | governance change; owner approves personally; until recorded, T-20 and T-15 are not built |
 | OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28) | governance change; owner approves personally; not a prerequisite of A0 |
-| OD10 | Round budget: extend the RC-15 family by one round so that the RC-60 wording (§3c) is applied to T-34 and the §3 RC-15 row; state whether the propagation fixes RC-57 and RC-59 stand or are reverted; state whether any later Codex finding may be applied without a further extension | no cost beyond review time; without the extension T-34 keeps a pass condition that a holder storing the raw secret satisfies (REPRODUCED, Appendix E), which matters only once Phase 1 is built (OD1) |
+| OD10 | Round budget: state which of the nine recorded-not-applied findings are applied (RC-60 wording to T-34 and the §3 RC-15 row, §3c; RC-64 to RC-71 wording, §3d), whether the propagation fixes RC-57 and RC-59 stand or are reverted, and whether any later Codex finding may be applied without a further extension | no cost beyond review time; without it T-34 keeps a pass condition that a holder storing the raw secret satisfies (RC-60), the clock remedy admits an expired capability after a rollback (RC-65), the primary-test statistic is unspecified for unequal supply (RC-69), the §6 and OD4 power figure under period shocks is wrong by a factor of 2.6 (RC-70), and the A0 prerequisites conflict with `12` (RC-64); all REPRODUCED or documented in §3d and Appendix F; every one matters only once Phase 1 is built (OD1), except RC-70 which already misstates the evidence offered to OD4 |
 
 **Proposed `AGENTS.md` wording (for OD9a and OD9b; not applied here):**
 
@@ -338,15 +371,15 @@ OD1, OD2 and OD9a regardless.
 ## 7. Machine-readable state
 
 ```yaml
-matrix_version: 5
+matrix_version: 6
 date: 2026-10-16
-round: 4
+round: 5   # record only
 round_budget: 3
 inputs_processed:
   research_head: 8b2dba79fe9077df53a96a6b61b1823b80930ee8
   codex_review_commit: 59206fe5f652cc3ea63114ad1c2b0fd7252962c2
   pr2_comments: [6215215092, 6215369656]
-  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639]
+  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670]
   pr4_reviews:
     - review_id: 5548201046
       commit: 10d1581595b2d1ea6a8689e0f94b33bd68a59d66
@@ -366,7 +399,13 @@ inputs_processed:
       commit: d46c2042a47457ee254582c682c2b17e6803c8bc
       comment_ids: [4296649357, 4296649368, 4296649378, 4296649389, 4296649399, 4296649412, 4296649421, 4296649427]
       items: [RC-56, RC-57, RC-58, RC-59, RC-60, RC-61, RC-62, RC-63]
-awaiting: codex_review_of_this_commit_record_only_no_revision
+    - review_id: 5550735335
+      commit: 88abaa4f15bd0e1e1ea7035a32094c7a5113285c
+      summary_comment: 6216072575
+      comment_ids: [4296914293, 4296914298, 4296914307, 4296914319, 4296914330, 4296914341, 4296914351, 4296914363]
+      items: [RC-64, RC-65, RC-66, RC-67, RC-68, RC-69, RC-70, RC-71]
+      handling: recorded_not_applied
+awaiting: owner_decisions_OD1_OD2_OD9a_OD10; codex_review_of_this_commit_record_only_no_revision
 round2_items:
   accepted: [RC-29, RC-30, RC-31, RC-32, RC-33, RC-34, RC-35, RC-36, RC-37, RC-38, RC-39, RC-40,
              RC-41, RC-42, RC-43, RC-44, RC-45, RC-46, RC-47]
@@ -382,24 +421,30 @@ round4_items:
   propagation_only: [RC-57, RC-59]
   recorded_not_applied_budget: [RC-60]
   round1_and_round3_remedies_found_defective: [RC-08-two-cutoffs, RC-55-redacting-holder]
+round5_items:
+  recorded_not_applied: [RC-64, RC-65, RC-66, RC-67, RC-68, RC-69, RC-70, RC-71]
+  reproduced: [RC-65, RC-69, RC-70]
+  own_earlier_remedies_found_defective: [RC-37-watermark-on-admission-only, RC-63-equal-block-means, RC-61-power-over-120-periods]
+  on_families_with_budget_formally_left: [RC-65, RC-71]
+  superseded_figure_still_in_17: '47 % power at delta = 0.02, 600 clusters under +/- 0.3 period shocks; 24-period value 18 % (Appendix F)'
 budget_spent_items: [RC-01, RC-29, RC-41, RC-49, RC-50, RC-51, RC-52, RC-53, RC-57, RC-59,
                      RC-15, RC-47, RC-55, RC-60,
                      RC-08, RC-30, RC-48, RC-56, RC-63, RC-24, RC-45, RC-61, RC-12, RC-43, RC-46, RC-62,
                      RC-03, RC-54, RC-58]
 next_execution:
-  on_codex_review_of_this_commit: record_in_section_3d_status_owner_decision; update_sections_1_and_7; no_revision
-  on_owner_budget_extension_or_OD1_OD2_OD9a: apply_RC-60_wording_to_T-34; then process recorded findings
+  on_codex_review_of_this_commit: record_in_section_3e_status_owner_decision; update_sections_1_and_7; no_revision
+  on_owner_budget_extension_or_OD1_OD2_OD9a: apply_the_wording_the_owner_names_from_RC-60_and_RC-64..RC-71; then process recorded findings
   on_no_new_input: do_nothing
 disagreements_open: [RC-20-timing]   # both positions recorded; settled by OD6, not by a further round
 disagreements_resolved_pending_codex_review: [RC-01-scope]
-owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b), RC-60 (OD10), RC-56-early-confirmation-option (OD4)]
+owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b), RC-60 and RC-64..RC-71 (OD10), RC-56-early-confirmation-option (OD4), RC-68-accrual-cutoff and RC-69-estimand-naming and RC-70-shock-amplitude (OD4)]
 owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b, OD10]
 prerequisites_for_A0: [OD1, OD2, OD9a]
 experiments_required: [H1, H3, H5, H6, transfer-claim, persistent-regime-dependence-model (OD4/OD5)]
 p0_status:
-  e_process_protocol: remedy proposed; fixed-horizon paired cluster test primary at one 24-month cut-off, e-process monitor of the conditional null, positive controls per kernel; tests T-02, T-10..T-13, T-16, T-17, T-19, T-36 specified, not implemented
+  e_process_protocol: remedy proposed; fixed-horizon paired cluster test primary at one 24-month cut-off, e-process monitor of the conditional null, positive controls per kernel; tests T-02, T-10..T-13, T-16, T-17, T-19, T-36 specified, not implemented; cluster-weighted statistic, maturation rule, partial-VOID arithmetic and 24-period power pending OD10 (RC-67..RC-70)
   rare_probability_and_intervals: remedy proposed, tests T-20 (point and interval oracles)..T-22 specified, blocked on OD9a, not implemented
-  enforcement_boundaries: remedy proposed incl. anchor boundary, clock rollback, atomic nonce consumption, action-boundary enforcement, full-tuple signatures; T-34 secret-confinement wording pending OD10; tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
+  enforcement_boundaries: remedy proposed incl. anchor boundary, clock rollback, atomic nonce consumption, action-boundary enforcement, full-tuple signatures; T-34 secret-confinement wording and T-35 rejected-check watermark pending OD10 (RC-60, RC-65); tests T-01..T-09, T-18, T-30..T-35 specified, not implemented
 implementation_authorised: false
 ```
 
@@ -1971,3 +2016,442 @@ probabilities. `RC62_partial_signature`: a verifier over two fields accepts five
 over the whole tuple rejects all seven. `RC60_object_state_canary`: the round-3 `repr` probe clears the
 redacting holder while the object-state probe finds the secret in it; confining the secret to a frame that has
 returned clears both probes; returning the exception object as the outcome leaks under both.
+
+## Appendix F. Round-5 checks (REPRODUCED; evidence only, nothing applied)
+
+Needs no reference code and no network. Run with `python -I round5_checks.py` in an isolated venv (Python 3.11.17,
+numpy 2.4.6, scipy 1.17.1; 31 s), extracting the block between the `round5-script` markers as in Appendix A.
+Seeds are fixed; two consecutive runs produced byte-identical output. The generators and the block-of-one-period
+t test are those of Appendix D and E. The RC-65 block is a toy state machine with the two watermark policies; the
+RC-69 block adds the cluster-weighted estimate with the block-sum variance beside the Appendix D/E equal-block-mean
+statistic; the RC-70 block fixes the period count at the design's 24 and varies clusters per period, which is
+what Appendix E should have done.
+
+<!-- round5-script:start -->
+```python
+"""Round-5 checks for the Codex findings on PR #4 at 88abaa4 (no reference code, no network).
+
+Evidence only: the findings are recorded, not applied (16 section 4.6, OD10). Generators and the
+block-of-one-period t test are those of 16 Appendix D and E.
+"""
+import json, math, sys
+import numpy as np
+from scipy.stats import beta, t as student_t
+
+out = {}
+ALPHA, THRESHOLD, LAM_MAX = 0.05, 20.0, 0.5
+
+def binom_upper(k, n, conf):
+    return 1.0 if k >= n else float(beta.ppf(conf, k + 1, n - k))
+def binom_lower(k, n, conf):
+    return 0.0 if k <= 0 else float(beta.ppf(1 - conf, k, n - k + 1))
+
+def grapa_paths(xs, lam_max=LAM_MAX):
+    n_paths, n_steps = xs.shape
+    s1 = np.zeros(n_paths); s2 = np.zeros(n_paths); wealth = np.ones(n_paths); peak = np.ones(n_paths)
+    for n in range(n_steps):
+        if n < 2:
+            lam = np.zeros(n_paths)
+        else:
+            mean = s1 / n
+            var = np.maximum(0.0, (s2 - s1 * s1 / n) / (n - 1))
+            den = var + mean * mean
+            lam = np.divide(mean, den, out=np.zeros(n_paths), where=den > 0) * n / (n + 10)
+            lam = np.clip(lam, 0.0, lam_max)
+        wealth = wealth * (1 + lam * xs[:, n]); peak = np.maximum(peak, wealth)
+        s1 += xs[:, n]; s2 += xs[:, n] ** 2
+    return wealth, peak
+
+def block_t(xs, per_period, block_periods=1):
+    """Appendix D/E statistic: one-sided t over equal-sized calendar-block MEANS."""
+    n_paths, k = xs.shape
+    periods = k // per_period
+    g = periods // block_periods
+    bm = xs[:, :g * block_periods * per_period].reshape(n_paths, g, -1).mean(axis=2)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        tb = bm.mean(axis=1) / (bm.std(axis=1, ddof=1) / math.sqrt(g))
+    return tb, g - 1
+
+def block_t_rejects(xs, per_period, alpha=ALPHA, block_periods=1):
+    tb, df = block_t(xs, per_period, block_periods)
+    return tb > student_t.ppf(1 - alpha, df)
+
+def increments(q, rng_):
+    y = (rng_.random(q.shape) < q).astype(float)
+    return 0.4 * y - 0.2
+
+# ================= r4296914298 (RC-65): watermark advanced only by admissions =================
+# Toy state machine. A capability is valid iff now < expiry and now >= watermark (fail closed on rollback).
+# Variant A persists the watermark only when a check is admitted; variant B persists max(now) on every
+# clock-dependent check, admitted or rejected. Codex's replay: last admission at t0 = 10, capability expires
+# at t1 = 20, presented at t2 = 30 (rejected: expired), clock rolled back to t = 15, presented again.
+def run_clock_variant(advance_on_reject):
+    watermark = 0.0; log = []
+    def check(now, expiry):
+        nonlocal watermark
+        if now < watermark:
+            verdict = 'rejected_rollback'
+        elif now >= expiry:
+            verdict = 'rejected_expired'
+        else:
+            verdict = 'admitted'
+        if verdict == 'admitted' or advance_on_reject:
+            watermark = max(watermark, now)
+        log.append((now, expiry, verdict, watermark))
+        return verdict
+    check(10, 100)            # an unrelated admission at t0 = 10
+    check(30, 20)             # the expired capability presented at t2 = 30
+    replay = check(15, 20)    # clock rolled back to t = 15 < t1 = 20, same capability
+    return replay, log
+clock = {}
+for name, flag in (('A_watermark_on_admission_only_(v4_text)', False), ('B_watermark_on_every_check', True)):
+    verdict, log = run_clock_variant(flag)
+    clock[name] = {'replay_after_rollback': verdict, 'log': [f'now={n} expiry={e} {v} watermark={w}' for n, e, v, w in log]}
+out['RC65_clock_watermark_replay'] = clock
+
+# ================= r4296914341 (RC-69): equal block means versus the per-cluster estimand =================
+# Deterministic oracle 1: two calendar blocks of sizes 1 and 9.
+blocks = [np.array([0.5]), np.full(9, -0.1)]
+allx = np.concatenate(blocks)
+equal_block_mean_estimate = float(np.mean([b.mean() for b in blocks]))
+cluster_weighted_estimate = float(allx.mean())
+def cluster_weighted_t(blocks):
+    """theta = mean over clusters; variance = sum over blocks of (sum within block of (X - theta))^2 / N^2,
+    with the G/(G-1) small-sample factor; G-1 degrees of freedom (block-sum / cluster-robust form)."""
+    allx = np.concatenate(blocks); n = len(allx); g = len(blocks)
+    theta = allx.mean()
+    v = sum(((b - theta).sum()) ** 2 for b in blocks) / n ** 2 * g / (g - 1)
+    return float(theta), float(theta / math.sqrt(v)) if v > 0 else float('inf'), g - 1
+rc69 = {'oracle_1_block_sizes_1_and_9': {'values': 'block 1: one cluster at +0.5; block 2: nine clusters at -0.1',
+                                         'equal_block_mean_estimate': round(equal_block_mean_estimate, 6),
+                                         'cluster_weighted_estimate': round(cluster_weighted_estimate, 6),
+                                         'sign_reversed': (equal_block_mean_estimate > 0) != (cluster_weighted_estimate > 0)}}
+# Deterministic oracle 2: four unequal blocks, for T-36 (b).
+blocks2 = [np.array([0.10, 0.00]), np.array([0.05, 0.15, 0.10]), np.array([0.00, 0.05, 0.05, 0.10]), np.array([0.20])]
+theta2, t2, df2 = cluster_weighted_t(blocks2)
+bm2 = [float(b.mean()) for b in blocks2]
+t_equal2 = float(np.mean(bm2) / (np.std(bm2, ddof=1) / math.sqrt(4)))
+rc69['oracle_2_block_sizes_2_3_4_1'] = {'blocks': [list(map(float, b)) for b in blocks2],
+                                       'cluster_weighted_estimate': round(theta2, 6), 'cluster_weighted_t': round(t2, 6), 'df': df2,
+                                       'one_sided_p': round(float(1 - student_t.cdf(t2, df2)), 6),
+                                       'equal_block_mean_estimate': round(float(np.mean(bm2)), 6), 'equal_block_mean_t': round(t_equal2, 6)}
+# Simulation: unequal supply per period. (i) supply independent of the period shock (Poisson mean 5, at least 1)
+# under the valid null and under independent period shocks of +/- 0.3: both statistics should hold size.
+# (ii) supply covarying with the shock (8 clusters in a +0.3 period, 2 in a -0.3 period): the per-cluster
+# estimand of 17 section 6 is then E[X] = (8*0.12 - 2*0.12)/10 = +0.072 > 0 while the period-average is 0,
+# so the two statistics test different hypotheses; reported, not bounded.
+REPS, PERIODS = 20000, 24
+rng = np.random.default_rng(5026)
+def sim_unequal(rng_, shock_amp, covary, delta=0.0):
+    rej_equal = np.zeros(REPS, bool); rej_cw = np.zeros(REPS, bool); est_cw = np.zeros(REPS); est_eq = np.zeros(REPS)
+    for rpt in range(REPS):
+        sh = rng_.choice([-shock_amp, shock_amp], size=PERIODS) if shock_amp > 0 else np.zeros(PERIODS)
+        if covary:
+            sizes = np.where(sh > 0, 8, 2)
+        else:
+            sizes = np.maximum(1, rng_.poisson(5, size=PERIODS))
+        blocks = []
+        for tt in range(PERIODS):
+            q = 0.5 + 2.5 * delta + sh[tt]
+            blocks.append(increments(np.full(sizes[tt], q), rng_))
+        bm = np.array([b.mean() for b in blocks])
+        t_eq = bm.mean() / (bm.std(ddof=1) / math.sqrt(PERIODS))
+        theta, t_cw, df = cluster_weighted_t(blocks)
+        crit = student_t.ppf(1 - ALPHA, PERIODS - 1)
+        rej_equal[rpt] = t_eq > crit; rej_cw[rpt] = t_cw > crit; est_cw[rpt] = theta; est_eq[rpt] = bm.mean()
+    return {'equal_block_mean_t_reject': round(float(rej_equal.mean()), 5),
+            'cluster_weighted_block_sum_t_reject': round(float(rej_cw.mean()), 5),
+            'exact_upper_99_equal': round(binom_upper(int(rej_equal.sum()), REPS, 0.99), 5),
+            'exact_upper_99_cluster_weighted': round(binom_upper(int(rej_cw.sum()), REPS, 0.99), 5),
+            'mean_estimate_equal_block': round(float(est_eq.mean()), 5), 'mean_estimate_cluster_weighted': round(float(est_cw.mean()), 5)}
+rc69['size_poisson_supply_valid_null'] = sim_unequal(rng, 0.0, False)
+rc69['size_poisson_supply_iid_period_shocks'] = sim_unequal(rng, 0.3, False)
+rc69['supply_covarying_with_shock_(estimands_differ)'] = sim_unequal(rng, 0.3, True)
+out['RC69_unequal_blocks'] = rc69
+
+# ================= r4296914351 (RC-70): power at exactly 24 calendar periods =================
+# Appendix E used five clusters per period, so 600 clusters spanned 120 periods. Here PERIODS = 24 and the
+# cluster count sets the clusters per period. Independent clusters (D1 generator) first.
+POW_REPS = 10000
+def d1_paths(b, delta, kk, r):
+    p = b + math.sqrt(delta) * r.choice([-1., 1.], size=(POW_REPS, kk))
+    yy = (r.random(p.shape) < p).astype(float)
+    return (b - yy) ** 2 - (p - yy) ** 2
+power24 = {}
+for b in (0.5, 0.2):
+    for delta in (0.005, 0.01, 0.02):
+        for per_period in (5, 12, 25):
+            kk = PERIODS * per_period
+            r = np.random.default_rng(2400 + int(b * 10) * 100 + int(delta * 1000) * 10 + per_period)
+            xs = d1_paths(b, delta, kk, r)
+            fh = int(block_t_rejects(xs, per_period).sum())
+            ep = int((grapa_paths(xs)[1] >= THRESHOLD).sum())
+            power24[f'b={b},delta={delta},clusters={kk}(24x{per_period})'] = {
+                'fixed_horizon_block1_power_24_periods': round(fh / POW_REPS, 4), 'eprocess_monitor_crossing_rate': round(ep / POW_REPS, 4)}
+out['RC70_power_independent_clusters_24_periods'] = power24
+# Independent period shocks of +/- 0.3 over exactly 24 periods (Appendix D/E generator, X in {-0.2, +0.2}).
+shock24 = {}
+for amp in (0.0, 0.3):
+    for delta in (0.0, 0.01, 0.02, 0.03, 0.05, 0.08):
+        for per_period in (5, 12, 25, 50):
+            kk = PERIODS * per_period
+            r = np.random.default_rng(7400 + int(delta * 1000) * 10 + per_period + int(amp * 10) * 1000)
+            sh = r.choice([-amp, amp], size=(POW_REPS, PERIODS))
+            q = np.repeat(0.5 + 2.5 * delta + sh, per_period, axis=1)
+            xs = increments(q, r)
+            fh = int(block_t_rejects(xs, per_period).sum())
+            shock24[f'shock=+/-{amp},delta={delta},clusters={kk}(24x{per_period})'] = round(fh / POW_REPS, 4)
+out['RC70_power_macro_shock_24_periods'] = {
+    'generator': 'baseline 0.4, challenger 0.6, q_t = 0.5 + 2.5 delta +/- shock per period, 24 periods; block-of-one-period t, 23 df',
+    'appendix_E_comparison': 'Appendix E shock=0.3, delta=0.02, 600 clusters over 120 periods: 0.47',
+    'cells': shock24}
+# Normal-theory check of the plateau: block means have sd sqrt(0.12^2 + 0.04/n) over 24 blocks; the
+# detectable delta at 80 % power with 24 blocks is about (1.714 + 0.856) * se, se = sd / sqrt(24).
+plateau = {}
+for per_period in (5, 25, 50, 1000):
+    sd = math.sqrt(0.12 ** 2 + 0.04 / per_period)
+    se = sd / math.sqrt(PERIODS)
+    plateau[f'24x{per_period}'] = {'block_mean_sd': round(sd, 5), 'se_of_mean': round(se, 5),
+                                   'delta_at_80pct_power_normal_theory': round((student_t.ppf(0.95, 23) + student_t.ppf(0.80, 23)) * se, 4)}
+out['RC70_detectable_delta_plateau_normal_theory'] = plateau
+
+out['python'] = sys.version.split()[0]
+print(json.dumps(out, indent=2))
+```
+<!-- round5-script:end -->
+
+Output:
+
+```json
+{
+  "RC65_clock_watermark_replay": {
+    "A_watermark_on_admission_only_(v4_text)": {
+      "replay_after_rollback": "admitted",
+      "log": [
+        "now=10 expiry=100 admitted watermark=10",
+        "now=30 expiry=20 rejected_expired watermark=10",
+        "now=15 expiry=20 admitted watermark=15"
+      ]
+    },
+    "B_watermark_on_every_check": {
+      "replay_after_rollback": "rejected_rollback",
+      "log": [
+        "now=10 expiry=100 admitted watermark=10",
+        "now=30 expiry=20 rejected_expired watermark=30",
+        "now=15 expiry=20 rejected_rollback watermark=30"
+      ]
+    }
+  },
+  "RC69_unequal_blocks": {
+    "oracle_1_block_sizes_1_and_9": {
+      "values": "block 1: one cluster at +0.5; block 2: nine clusters at -0.1",
+      "equal_block_mean_estimate": 0.2,
+      "cluster_weighted_estimate": -0.04,
+      "sign_reversed": true
+    },
+    "oracle_2_block_sizes_2_3_4_1": {
+      "blocks": [
+        [
+          0.1,
+          0.0
+        ],
+        [
+          0.05,
+          0.15,
+          0.1
+        ],
+        [
+          0.0,
+          0.05,
+          0.05,
+          0.1
+        ],
+        [
+          0.2
+        ]
+      ],
+      "cluster_weighted_estimate": 0.08,
+      "cluster_weighted_t": 3.651484,
+      "df": 3,
+      "one_sided_p": 0.017728,
+      "equal_block_mean_estimate": 0.1,
+      "equal_block_mean_t": 2.828427
+    },
+    "size_poisson_supply_valid_null": {
+      "equal_block_mean_t_reject": 0.0488,
+      "cluster_weighted_block_sum_t_reject": 0.0517,
+      "exact_upper_99_equal": 0.05246,
+      "exact_upper_99_cluster_weighted": 0.05546,
+      "mean_estimate_equal_block": 2e-05,
+      "mean_estimate_cluster_weighted": 1e-05
+    },
+    "size_poisson_supply_iid_period_shocks": {
+      "equal_block_mean_t_reject": 0.04995,
+      "cluster_weighted_block_sum_t_reject": 0.05465,
+      "exact_upper_99_equal": 0.05365,
+      "exact_upper_99_cluster_weighted": 0.0585,
+      "mean_estimate_equal_block": -7e-05,
+      "mean_estimate_cluster_weighted": -0.00017
+    },
+    "supply_covarying_with_shock_(estimands_differ)": {
+      "equal_block_mean_t_reject": 0.05715,
+      "cluster_weighted_block_sum_t_reject": 0.8812,
+      "exact_upper_99_equal": 0.06108,
+      "exact_upper_99_cluster_weighted": 0.88647,
+      "mean_estimate_equal_block": 8e-05,
+      "mean_estimate_cluster_weighted": 0.07008
+    }
+  },
+  "RC70_power_independent_clusters_24_periods": {
+    "b=0.5,delta=0.005,clusters=120(24x5)": {
+      "fixed_horizon_block1_power_24_periods": 0.1904,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.5,delta=0.005,clusters=288(24x12)": {
+      "fixed_horizon_block1_power_24_periods": 0.3214,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.5,delta=0.005,clusters=600(24x25)": {
+      "fixed_horizon_block1_power_24_periods": 0.5217,
+      "eprocess_monitor_crossing_rate": 0.0167
+    },
+    "b=0.5,delta=0.01,clusters=120(24x5)": {
+      "fixed_horizon_block1_power_24_periods": 0.2831,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.5,delta=0.01,clusters=288(24x12)": {
+      "fixed_horizon_block1_power_24_periods": 0.5084,
+      "eprocess_monitor_crossing_rate": 0.0091
+    },
+    "b=0.5,delta=0.01,clusters=600(24x25)": {
+      "fixed_horizon_block1_power_24_periods": 0.78,
+      "eprocess_monitor_crossing_rate": 0.272
+    },
+    "b=0.5,delta=0.02,clusters=120(24x5)": {
+      "fixed_horizon_block1_power_24_periods": 0.4767,
+      "eprocess_monitor_crossing_rate": 0.0017
+    },
+    "b=0.5,delta=0.02,clusters=288(24x12)": {
+      "fixed_horizon_block1_power_24_periods": 0.7774,
+      "eprocess_monitor_crossing_rate": 0.2427
+    },
+    "b=0.5,delta=0.02,clusters=600(24x25)": {
+      "fixed_horizon_block1_power_24_periods": 0.967,
+      "eprocess_monitor_crossing_rate": 0.8141
+    },
+    "b=0.2,delta=0.005,clusters=120(24x5)": {
+      "fixed_horizon_block1_power_24_periods": 0.2416,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.2,delta=0.005,clusters=288(24x12)": {
+      "fixed_horizon_block1_power_24_periods": 0.4397,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.2,delta=0.005,clusters=600(24x25)": {
+      "fixed_horizon_block1_power_24_periods": 0.6889,
+      "eprocess_monitor_crossing_rate": 0.0068
+    },
+    "b=0.2,delta=0.01,clusters=120(24x5)": {
+      "fixed_horizon_block1_power_24_periods": 0.3989,
+      "eprocess_monitor_crossing_rate": 0.0
+    },
+    "b=0.2,delta=0.01,clusters=288(24x12)": {
+      "fixed_horizon_block1_power_24_periods": 0.6883,
+      "eprocess_monitor_crossing_rate": 0.0036
+    },
+    "b=0.2,delta=0.01,clusters=600(24x25)": {
+      "fixed_horizon_block1_power_24_periods": 0.9217,
+      "eprocess_monitor_crossing_rate": 0.3104
+    },
+    "b=0.2,delta=0.02,clusters=120(24x5)": {
+      "fixed_horizon_block1_power_24_periods": 0.6503,
+      "eprocess_monitor_crossing_rate": 0.0002
+    },
+    "b=0.2,delta=0.02,clusters=288(24x12)": {
+      "fixed_horizon_block1_power_24_periods": 0.9306,
+      "eprocess_monitor_crossing_rate": 0.2582
+    },
+    "b=0.2,delta=0.02,clusters=600(24x25)": {
+      "fixed_horizon_block1_power_24_periods": 0.9981,
+      "eprocess_monitor_crossing_rate": 0.9449
+    }
+  },
+  "RC70_power_macro_shock_24_periods": {
+    "generator": "baseline 0.4, challenger 0.6, q_t = 0.5 + 2.5 delta +/- shock per period, 24 periods; block-of-one-period t, 23 df",
+    "appendix_E_comparison": "Appendix E shock=0.3, delta=0.02, 600 clusters over 120 periods: 0.47",
+    "cells": {
+      "shock=+/-0.0,delta=0.0,clusters=120(24x5)": 0.0521,
+      "shock=+/-0.0,delta=0.0,clusters=288(24x12)": 0.0478,
+      "shock=+/-0.0,delta=0.0,clusters=600(24x25)": 0.0478,
+      "shock=+/-0.0,delta=0.0,clusters=1200(24x50)": 0.0531,
+      "shock=+/-0.0,delta=0.01,clusters=120(24x5)": 0.134,
+      "shock=+/-0.0,delta=0.01,clusters=288(24x12)": 0.1974,
+      "shock=+/-0.0,delta=0.01,clusters=600(24x25)": 0.3175,
+      "shock=+/-0.0,delta=0.01,clusters=1200(24x50)": 0.5185,
+      "shock=+/-0.0,delta=0.02,clusters=120(24x5)": 0.278,
+      "shock=+/-0.0,delta=0.02,clusters=288(24x12)": 0.499,
+      "shock=+/-0.0,delta=0.02,clusters=600(24x25)": 0.7761,
+      "shock=+/-0.0,delta=0.02,clusters=1200(24x50)": 0.9563,
+      "shock=+/-0.0,delta=0.03,clusters=120(24x5)": 0.4886,
+      "shock=+/-0.0,delta=0.03,clusters=288(24x12)": 0.8011,
+      "shock=+/-0.0,delta=0.03,clusters=600(24x25)": 0.9705,
+      "shock=+/-0.0,delta=0.03,clusters=1200(24x50)": 0.9999,
+      "shock=+/-0.0,delta=0.05,clusters=120(24x5)": 0.8522,
+      "shock=+/-0.0,delta=0.05,clusters=288(24x12)": 0.9932,
+      "shock=+/-0.0,delta=0.05,clusters=600(24x25)": 1.0,
+      "shock=+/-0.0,delta=0.05,clusters=1200(24x50)": 1.0,
+      "shock=+/-0.0,delta=0.08,clusters=120(24x5)": 0.9974,
+      "shock=+/-0.0,delta=0.08,clusters=288(24x12)": 1.0,
+      "shock=+/-0.0,delta=0.08,clusters=600(24x25)": 1.0,
+      "shock=+/-0.0,delta=0.08,clusters=1200(24x50)": 1.0,
+      "shock=+/-0.3,delta=0.0,clusters=120(24x5)": 0.0485,
+      "shock=+/-0.3,delta=0.0,clusters=288(24x12)": 0.0492,
+      "shock=+/-0.3,delta=0.0,clusters=600(24x25)": 0.0492,
+      "shock=+/-0.3,delta=0.0,clusters=1200(24x50)": 0.0492,
+      "shock=+/-0.3,delta=0.01,clusters=120(24x5)": 0.0981,
+      "shock=+/-0.3,delta=0.01,clusters=288(24x12)": 0.0989,
+      "shock=+/-0.3,delta=0.01,clusters=600(24x25)": 0.1038,
+      "shock=+/-0.3,delta=0.01,clusters=1200(24x50)": 0.1058,
+      "shock=+/-0.3,delta=0.02,clusters=120(24x5)": 0.1719,
+      "shock=+/-0.3,delta=0.02,clusters=288(24x12)": 0.1716,
+      "shock=+/-0.3,delta=0.02,clusters=600(24x25)": 0.1811,
+      "shock=+/-0.3,delta=0.02,clusters=1200(24x50)": 0.1781,
+      "shock=+/-0.3,delta=0.03,clusters=120(24x5)": 0.2597,
+      "shock=+/-0.3,delta=0.03,clusters=288(24x12)": 0.2944,
+      "shock=+/-0.3,delta=0.03,clusters=600(24x25)": 0.2986,
+      "shock=+/-0.3,delta=0.03,clusters=1200(24x50)": 0.302,
+      "shock=+/-0.3,delta=0.05,clusters=120(24x5)": 0.5229,
+      "shock=+/-0.3,delta=0.05,clusters=288(24x12)": 0.5621,
+      "shock=+/-0.3,delta=0.05,clusters=600(24x25)": 0.5937,
+      "shock=+/-0.3,delta=0.05,clusters=1200(24x50)": 0.6126,
+      "shock=+/-0.3,delta=0.08,clusters=120(24x5)": 0.8587,
+      "shock=+/-0.3,delta=0.08,clusters=288(24x12)": 0.9057,
+      "shock=+/-0.3,delta=0.08,clusters=600(24x25)": 0.9255,
+      "shock=+/-0.3,delta=0.08,clusters=1200(24x50)": 0.9319
+    }
+  },
+  "RC70_detectable_delta_plateau_normal_theory": {
+    "24x5": {
+      "block_mean_sd": 0.14967,
+      "se_of_mean": 0.03055,
+      "delta_at_80pct_power_normal_theory": 0.0786
+    },
+    "24x25": {
+      "block_mean_sd": 0.12649,
+      "se_of_mean": 0.02582,
+      "delta_at_80pct_power_normal_theory": 0.0664
+    },
+    "24x50": {
+      "block_mean_sd": 0.12329,
+      "se_of_mean": 0.02517,
+      "delta_at_80pct_power_normal_theory": 0.0647
+    },
+    "24x1000": {
+      "block_mean_sd": 0.12017,
+      "se_of_mean": 0.02453,
+      "delta_at_80pct_power_normal_theory": 0.0631
+    }
+  },
+  "python": "3.11.17"
+}
+```
