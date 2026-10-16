@@ -1,10 +1,12 @@
 # Claude ↔ Codex review dispatch
 
-Status: **proposed; requires independent review and owner approval**. No execution or trading code is enabled.
+Status: **controlled test only** (subject to final independent review and owner approval). No execution or trading code is enabled.
 
 ## Objective and trust model
 
 The Codex bot writes a `Codex Review Summary` **issue comment** on a pull request and edits it when the review is complete. The `issue_comment.edited` GitHub Actions event executes the workflow from the **trusted default branch**, unlike `pull_request_review`, which executes the PR's merge-commit workflow file.
+
+**Initial rollout scope:** the GitHub job explicitly permits **PR #4 only**. Every other PR is ignored at the workflow condition before reading the Routine secrets. Remove this allowlist only in a separately reviewed follow-up PR after end-to-end validation.
 
 The dispatch job never checks out pull-request code. It starts only for the authenticated `chatgpt-codex-connector[bot]` summary comment, verifies the complete review-state marker, then uses the read-only GitHub API to confirm the pull request is open, is in this repository, has a `claude/` source branch and still points at the reviewed SHA. It then calls the **official Claude Code Routine API** and passes only a locator.
 
@@ -30,7 +32,7 @@ GitHub Actions secrets must **never** be used by workflows from untrusted PR mer
 ## Verification
 
 - Synthetic tests: valid finished Codex review triggers a single request; running review, no findings, stale SHA and non-Claude branch trigger none. Tests are not a claim of an actual paid API invocation.
-- After approval and merge, open a **documentation-only** PR with a `claude/` source branch and ask Codex for a review that contains an actionable finding. Inspect https://github.com/rorschach-zero/causal-proof-engine/actions and https://claude.ai/code/routines for the matching session.
+- After approval and merge, use existing research-documentation **PR #4** (a `claude/` source branch with recorded Codex findings) to request a fresh review, without modifying its research contents. Validate that an authenticated Codex summary edit triggers exactly the expected flow. If Codex reports no new unresolved finding, record the attempt as a trigger-negative test rather than claiming a complete end-to-end pass. Inspect https://github.com/rorschach-zero/causal-proof-engine/actions and https://claude.ai/code/routines for the matching session.
 - The routine must deduplicate review IDs/commit SHAs, stop after at most three substantial rounds per issue, and terminate on repeated findings, exhausted usage, unverifiable claims or blocked security conditions.
 - To stop triggering immediately, disable the GitHub Actions workflow, remove either secret, or delete the routine's API token. The daily routine can remain active separately.
 
