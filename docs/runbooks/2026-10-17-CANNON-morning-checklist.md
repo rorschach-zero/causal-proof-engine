@@ -9,7 +9,7 @@
 ### 0. Open these links (5 min)
 
 - Main CPE project: https://github.com/rorschach-zero/causal-proof-engine
-- **CANNON proposal and tomorrow plan:** this PR (see its description after creation).
+- **CANNON proposal and tomorrow plan:** https://github.com/rorschach-zero/causal-proof-engine/pull/10
 - Current real-science reconciler PR #4: https://github.com/rorschach-zero/causal-proof-engine/pull/4
 - Rust-first research PR #7: https://github.com/rorschach-zero/causal-proof-engine/pull/7
 - Existing Claude↔Codex dispatch issue #3: https://github.com/rorschach-zero/causal-proof-engine/issues/3
@@ -24,7 +24,7 @@
 
 ### 1. Make one narrow owner approval (5 min)
 
-On the new CANNON PR (or issue #3, cross-linked from it), post:
+On **CANNON PR #10** (or issue #3, cross-linked from it), post:
 
 > I approve **CANNON-001 as the design and test target**, not as an implemented or already verified system. The review/repair duty must persist across sessions; retry budgets pause/replan but **never close unresolved problems**. Authorize a documentation-only and synthetic, secret-free pilot of the durable lease/idempotent replay and independent test gates on a separate branch. No provider API spend, changes to main, unattended merge, customer deployment, Saxo/broker access, trading or changed CPE risk policy are authorized. For the Rust migration and scientific method changes, prepare the exact OD1/OD2/OD9a/OD10 decision diff for my separate approval.
 
