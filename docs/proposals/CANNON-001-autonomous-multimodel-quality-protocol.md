@@ -119,7 +119,7 @@ Recommended pilot implementation **after** policy approval:
 
 ## 8. CPE pilot: measurable acceptance tests before scaling
 
-The existing [issue #3](https://github.com/rorschach-zero/causal-proof-engine/issues/3) currently calls for six handoffs at most and stops; this RFC changes the **meaning of retry exhaustion**, not provider rate/safety caps.
+The existing [issue #3](https://github.com/rorschach-zero/causal-proof-engine/issues/3) specifies **a maximum of three review rounds**, although its history documents six subsequent Claude handoffs. This RFC changes the **meaning of retry exhaustion**, not provider rate/safety caps; previous unexpected additional rounds do not prove infinite autonomy.
 
 **Readiness matrix, default FAIL**:
 
@@ -136,7 +136,7 @@ The existing [issue #3](https://github.com/rorschach-zero/causal-proof-engine/is
 | All PR #7 P1 findings | Five P1 resolved or independently rejected with evidence against pinned SHA | **NO** |
 | Autonomous CANNON publication | Frozen acceptance criteria, verified combined SHA, no P0/P1, approved authority | **NO** |
 
-**Result:** CPE is **NOT CANNON**. The current Claude↔Codex review loop has shown valuable adversarial collaboration, but may pause while genuine faults remain; that must be fixed before it can be called autonomous high-quality delivery.
+**Result:** CPE is **NOT CANNON**. Proposal PR #10 is https://github.com/rorschach-zero/causal-proof-engine/pull/10; it is a documentation-only design for separate owner review. The current Claude↔Codex review loop has shown valuable adversarial collaboration, but may pause while genuine faults remain; that must be fixed before it can be called autonomous high-quality delivery.
 
 ### Proof-of-collaboration experiment (tomorrow, controlled, synthetic)
 
