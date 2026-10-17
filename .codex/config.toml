@@ -1,0 +1,17 @@
+# Project-scoped Codex MCP configuration; loaded only by trusted Codex projects.
+# OAuth is completed interactively in each Codex environment, never stored here.
+[mcp_servers.graphify]
+url = "https://api.graphify.com/mcp"
+enabled = true
+required = false
+default_tools_approval_mode = "writes"
+enabled_tools = [
+  "list_repositories", "list_workspaces", "graph_stats",
+  "query_graph", "graphify_find", "graphify_node", "graphify_rank_files",
+  "graphify_callers", "graphify_callees", "graphify_trace",
+  "shortest_path", "graphify_impact", "impact_and_risk",
+  "graphify_tests_for", "graphify_file_neighbors",
+  "graphify_imports_exports", "graphify_references",
+  "graphify_expand", "graphify_render_subgraph",
+  "search", "fetch", "recall", "memories_about"
+]
