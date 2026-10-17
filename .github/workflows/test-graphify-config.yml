@@ -1,0 +1,37 @@
+name: Check Graphify agent configuration (offline)
+
+on:
+  pull_request:
+    branches:
+      - research/claude-handoff
+    paths:
+      - ".mcp.json"
+      - ".codex/config.toml"
+      - ".gemini/settings.json"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "GEMINI.md"
+      - "docs/runbooks/agent-mcp-onboarding.md"
+      - "docs/runbooks/graphify-agent-review.md"
+      - "scripts/check_graphify_snapshot.py"
+      - "tests/test_agent_mcp_configuration.py"
+      - "tests/test_graphify_snapshot.py"
+      - ".github/workflows/test-graphify-config.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Check Graphify configurations and snapshot provenance
+        run: |
+          python3 --version
+          python3 -m unittest discover -s tests -p "test_*graphify*.py" -v
+          python3 -m unittest discover -s tests -p "test_agent_mcp_configuration.py" -v
+          python3 -m py_compile scripts/check_graphify_snapshot.py tests/test_graphify_snapshot.py tests/test_agent_mcp_configuration.py
