@@ -5,6 +5,7 @@ import json
 import tomllib
 import unittest
 from pathlib import Path
+from typing import Any
 
 from scripts.check_mcp_config import credential_paths, scan_file
 
@@ -23,6 +24,10 @@ ALLOWED = {
 
 
 class AgentMcpConfigurationTests(unittest.TestCase):
+    claude: dict[str, Any]
+    codex: dict[str, Any]
+    gemini: dict[str, Any]
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.claude = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
