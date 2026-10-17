@@ -25,6 +25,8 @@ Never paste provider keys, OAuth tokens, Saxo secrets, private research data, or
 
 The Codex CLI and cloud UI have different environments. A passing Codex GitHub PR review confirms review service activity, **not** that Graphify was accessible inside that review. A completed OAuth in ChatGPT confirms only that current connector.
 
+**Codex Cloud / app plugin path (official alternative to local CLI config):** Open the Codex task's **Sources → Use plugins**, select **Graphify**, install/connect it if available and complete Graphify OAuth for the selected account/workspace; or in Codex desktop open **Plugins → Graphify → Connect**. Then initiate a fresh Codex task explicitly asking for `list_repositories` and `graph_stats` through the Graphify plugin. A Codex task without this connection must continue with GitHub files and tests. The user must perform OAuth; repository authors cannot sign in on their behalf. Reference: https://graphify.com/blog/graphify-chatgpt-plugin and https://help.openai.com/en/articles/20001256 .
+
 ## Mandatory per-session smoke test
 
 1. Identify the agent product, host, workspace, access permissions and exact GitHub PR head SHA.
