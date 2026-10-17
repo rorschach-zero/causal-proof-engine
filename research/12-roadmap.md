@@ -183,3 +183,14 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
     increments in pre-registered maturity order** (RC-95), which changes no phase but the Phase 1 kernel.
     Phase 0 exit waits on OD1, OD2, OD9a and OD10, where OD10 now covers versions 5, 6 and 7 of `17`; the
     owner-reserved fields added this round are listed in `16` §6 under OD4, OD5, OD8 and OD9b.
+14. **Phase 0 exit, round 10 (RC-108 to RC-115 applied in `17` version 8).** Codex's review of `922956b` found
+    eight defects in the version-7 text, five of them in round-9 remedies, all reproduced where checkable and
+    applied (`16` §3i, Appendix K). No phase of this roadmap changes. The null class over which the primary's
+    critical value is calibrated is now a committed generator family with a parameter box that includes the
+    serial dependence of the block shocks (RC-108: four scalar bounds admitted a persistent-regime law with
+    15–22 % size at every calibrated value); the baseline arm's primary slot is a registry computation from the
+    Design C base rate committed in Phase 2 as reference data, never a submission, and submissions are sealed
+    until the issuance window closes (RC-109); the model knowledge cutoff lives in an immutable arm version record
+    created before any event is registered under it (RC-112); the Phase 4 burn-in blinding bounds the earliest
+    knowable time of every member, not only its maturity (RC-110). Phase 0 exit waits on OD1, OD2, OD9a and OD10,
+    where OD10 now covers versions 5 to 8 of `17`; the fields added to OD4 and OD5 this round are listed in `16` §6.

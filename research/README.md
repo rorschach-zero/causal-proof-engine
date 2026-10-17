@@ -26,14 +26,16 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v10, round 9: the
-   twenty-one findings of Codex's two reviews of the version-6 specification under the owner's directive, six
-   of them defects in round-7 and round-8 remedies and one a monitor-ordering rule carried since round 2, all
-   reproduced where checkable and applied; round 8 applied two defects in round-7 remedies; round 7 applied the
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v11, round 10: the eight
+   findings of Codex's review of the version-7 specification, five of them defects in round-9 remedies, among
+   them a null class stated as four scalars that a persistent-regime law satisfies while oversized at every
+   calibrated critical value, all reproduced where checkable and applied; round 9 applied the twenty-one
+   findings of Codex's two reviews of the version-6 specification under the owner's directive, six of them
+   defects in round-7 and round-8 remedies and one a monitor-ordering rule carried since round 2; round 8 applied two defects in round-7 remedies; round 7 applied the
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 7; versions 5, 6 and 7 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 8; versions 5 to 8 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
 
