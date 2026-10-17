@@ -87,3 +87,11 @@ This tests exact-match, stale SHA, missing/short SHA, wrong repo, malformed payl
 - Graphify hosted MCP official connection instructions: https://graphify.com/mcp
 - Graphify Codex plugin integration: https://graphify.com/blog/graphify-chatgpt-plugin
 - Project review and cost constraints: GitHub Issue #6 and existing `AGENTS.md`
+
+## Multi-vendor extension and acceptance
+
+The cross-client configuration matrix, actual Codex and Gemini OAuth instructions, and connection acceptance checklist are maintained in `docs/runbooks/agent-mcp-onboarding.md`. This runbook applies identically to **every future AI agent**: each must demonstrate its own live MCP query before it is marked connected.
+
+Versioned project config now includes `.mcp.json`, `.codex/config.toml`, and `.gemini/settings.json`. Project config is not an OAuth session; a successful **Codex GitHub automated review** is not evidence that Codex Cloud had access to Graphify. Likewise, a Graphify bot review with a diverged index is not a current-PR verification.
+
+Offline configuration tests: `python3 -m unittest discover -s tests -p 'test_agent_mcp_configuration.py' -v`. GitHub workflow `.github/workflows/test-graphify-config.yml` checks both configuration and snapshot validation without credentials or external network calls; workflow execution must be verified separately.
