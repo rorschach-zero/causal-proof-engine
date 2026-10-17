@@ -26,14 +26,16 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v9, round 8: Codex's two
-   findings on the version-5 specification, both defects in round-7 remedies, reproduced and applied; round 7
-   applied the seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10
-   decision diff, on the owner's instruction that a round budget never closes a finding), reproduced evidence,
-   the one remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 6; versions 5 and 6 are the OD10
-    decision diff) and its acceptance-test matrix, including the restated mandatory counterexample fixtures
-    (§5.1).
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v10, round 9: the
+   twenty-one findings of Codex's two reviews of the version-6 specification under the owner's directive, six
+   of them defects in round-7 and round-8 remedies and one a monitor-ordering rule carried since round 2, all
+   reproduced where checkable and applied; round 8 applied two defects in round-7 remedies; round 7 applied the
+   seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
+   on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
+   remaining disagreement (hosting timing, an owner decision) and owner decisions.
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 7; versions 5, 6 and 7 are the
+    OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
+    fixtures (§5.1).
 
 Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
 2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.

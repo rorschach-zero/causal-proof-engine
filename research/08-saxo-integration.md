@@ -136,3 +136,8 @@ Codex", a misuse of a label defined for the delivered package; corrected in roun
    stored durably; capabilities are modelled explicitly per environment instead of a linear enum, so
    `SHADOW_LIVE_QUOTES` confers no SIM execution right, and a halt preserves reconciliation and authorised
    cancellation.
+5. **§3 gate, every phase (RC-107, round 9, 2026-10-17).** Item 4 applies to every gate promotion in every
+   roadmap phase, not only to the Phase 1 table: the `12-roadmap.md` Phase 3 (`SIM_READ_ONLY`) and Phase 5
+   (`SIM_PRECHECK`) rows that still named an owner MAC are superseded by `12` amendment 13; the capability tuple,
+   the consumed-authorisation store, the epoch rotation at process start and at every demotion (RC-74, RC-103)
+   and the anchored acknowledgement (RC-74) of `17` §3 items 2 and 5 are the single authorisation contract.

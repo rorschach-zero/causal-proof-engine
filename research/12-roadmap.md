@@ -163,3 +163,23 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
     that refuses every read passed it as written (RC-86). No phase of this roadmap changes; the per-source
     failure condition joins OD5. Phase 0 exit waits on OD1, OD2, OD9a and OD10, where OD10 now covers versions 5
     and 6 of `17`.
+13. **Phase 0 exit, round 9 (RC-87 to RC-107 applied in `17` version 7; RC-106 and RC-107 amend this document).**
+    Codex's two reviews of `8af2ae9` and the owner's directive on PR #4 (comment `6236238443`) produced
+    twenty-one findings, all applied (`16` §3h, Appendix J). Three amendments to this roadmap follow. **Phase 2
+    issues no forecast of any arm** (RC-106): `AGENTS.md` §2 item 1 admits no forecast with fewer than three
+    model outputs plus Jev triage, so the "Design-C baseline forecasts committed" of the Phase 2 table and the
+    "Design C track record" of amendment 11 are withdrawn; Phase 2 collects candidates under the pre-registered
+    predicate (T-37), registers events, measures supply and commits Design C **base rates as reference data**;
+    the baseline arm's forecasts are issued from Phase 4 inside the same issuance window as every other arm,
+    where the blinded burn-in and the primary cohort start (RC-76, RC-99). The Phase 2 exit criterion "≥ 100
+    registered events with Design-C forecasts committed" reads "≥ 100 registered events with Design-C base
+    rates recorded". An exploratory single-arm record in Phase 2 would need the owner to amend §2 item 1 and is
+    an `OWNER_DECISION` (OD9b), not assumed here. **Every gate promotion in every phase uses the signed
+    capability tuple** (RC-107): the Phase 3 row "promoted RESEARCH_ONLY → SIM_READ_ONLY by owner MAC" and the
+    Phase 5 row "SIM_PRECHECK promoted by owner MAC" are superseded by the owner public-key capability of `08`
+    amendment 4 and `17` §3 items 2 and 5 (capability, environment, release digest, evidence digest, epoch,
+    nonce, expiry; consumed-authorisation store; epoch rotated and anchored at process start and at every
+    demotion; acknowledgement only after the consumed nonce is in an anchored prefix). **The monitor consumes
+    increments in pre-registered maturity order** (RC-95), which changes no phase but the Phase 1 kernel.
+    Phase 0 exit waits on OD1, OD2, OD9a and OD10, where OD10 now covers versions 5, 6 and 7 of `17`; the
+    owner-reserved fields added this round are listed in `16` §6 under OD4, OD5, OD8 and OD9b.

@@ -142,4 +142,9 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
    δ = 0.01 at 600 independent clusters with 80 % (b = 0.5) to 93 % (b = 0.2) power and δ = 0.02 at 300
    clusters with 80 % to 94 % (REPRODUCED, `16` Appendix E), but under independent period shocks of ± 0.3 its
    power at δ = 0.02 and 600 clusters falls to 47 %, so the dependence model, not the cluster count alone,
-   determines the detectable effect (OD4).
+   determines the detectable effect (OD4). *Note, round 9 (RC-91, 2026-10-17):* the 47 % figure in this item is
+   **superseded**; it averaged over 120 periods where the design has 24 (RC-70, `16` Appendix F). Over the
+   design's 24 periods the power at δ = 0.02 under ± 0.3 independent period shocks is 18 % at 600 and at 1,200
+   clusters, so the detectable effect under that model is about δ = 0.065 at any supply; the figures OD4 uses
+   are those of `17` §6 and `16` §6, restated at the calibrated critical value of the pre-registered null class
+   (RC-94). The sentence above is left as the record of what round 4 stated.
