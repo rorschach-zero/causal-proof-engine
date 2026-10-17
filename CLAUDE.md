@@ -28,3 +28,7 @@ into the repository for that purpose.
 
 For changes involving code or CI, follow `AGENTS.md` §13 and `docs/runbooks/graphify-agent-review.md`.
 The repo-level `.mcp.json` points to the hosted Graphify MCP service; OAuth must be completed **in the actual Claude Code environment** and access verified there. Check graph freshness against the PR head before relying on impact/test lookups. If the service is unavailable or indexes a different commit, use GitHub sources and tests and report the limitation instead of claiming a current graph review.
+
+## Additional model-vendor onboarding and budget
+
+The project-scoped Codex and future Gemini MCP files, live connection checklist, and cross-vendor permissions are in `docs/runbooks/agent-mcp-onboarding.md`. Follow `AGENTS.md` §14: existing user subscriptions only, no separately billed model APIs or unattended cloud hosting. Do not independently request or store a broker credential.
