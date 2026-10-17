@@ -23,3 +23,12 @@ follow it over any tool default.
 There is no project code yet. The research package's reference tests can be reproduced in an isolated
 environment outside the repository (see `research/00-research-inventory.md` §4); do not install dependencies
 into the repository for that purpose.
+
+## Graphify (optional developer context)
+
+For changes involving code or CI, follow `AGENTS.md` §13 and `docs/runbooks/graphify-agent-review.md`.
+The repo-level `.mcp.json` points to the hosted Graphify MCP service; OAuth must be completed **in the actual Claude Code environment** and access verified there. Check graph freshness against the PR head before relying on impact/test lookups. If the service is unavailable or indexes a different commit, use GitHub sources and tests and report the limitation instead of claiming a current graph review.
+
+## Additional model-vendor onboarding and budget
+
+The project-scoped Codex and future Gemini MCP files, live connection checklist, and cross-vendor permissions are in `docs/runbooks/agent-mcp-onboarding.md`. Follow `AGENTS.md` §14: existing user subscriptions only, no separately billed model APIs or unattended cloud hosting. Do not independently request or store a broker credential.

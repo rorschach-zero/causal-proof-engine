@@ -1,0 +1,43 @@
+name: Check Graphify agent configuration (offline)
+
+on:
+  pull_request:
+    branches:
+      - research/claude-handoff
+      - main
+    paths:
+      - ".mcp.json"
+      - ".codex/config.toml"
+      - ".gemini/settings.json"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - "GEMINI.md"
+      - "docs/runbooks/agent-mcp-onboarding.md"
+      - "docs/runbooks/graphify-agent-review.md"
+      - "scripts/check_graphify_snapshot.py"
+      - "scripts/check_mcp_config.py"
+      - "tests/test_agent_mcp_configuration.py"
+      - "tests/test_graphify_snapshot.py"
+      - ".github/workflows/test-graphify-config.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # releases/v5, Node 24
+        with:
+          persist-credentials: false
+      - name: Check Graphify configurations, snapshot provenance and static types
+        run: |
+          python3 --version
+          python3 -m unittest discover -s tests -p "test_*graphify*.py" -v
+          python3 -m unittest discover -s tests -p "test_agent_mcp_configuration.py" -v
+          python3 scripts/check_mcp_config.py
+          python3 -m py_compile scripts/check_graphify_snapshot.py scripts/check_mcp_config.py tests/test_graphify_snapshot.py tests/test_agent_mcp_configuration.py
+          # Pinned static checker; installs no AI model APIs or persistent services.
+          python3 -m pip install --disable-pip-version-check --no-input mypy==2.4.0
+          python3 -m mypy --strict --namespace-packages --explicit-package-bases scripts/check_graphify_snapshot.py scripts/check_mcp_config.py tests/test_graphify_snapshot.py tests/test_agent_mcp_configuration.py
