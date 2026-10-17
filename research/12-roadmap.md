@@ -143,3 +143,14 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
     interface for T-15 (RC-79). All seventeen recorded findings (RC-60, RC-64 to RC-79) wait on OD10. Because
     each record-only push re-triggers a full automatic review of unchanged text, no further round is recorded
     by the routine on its own; Phase 0 exit waits on OD1, OD2, OD9a and OD10.
+11. **Phase 0 exit, round 7 (RC-60, RC-64 to RC-83 applied in `17` version 5).** On the owner's instruction
+    (issue #3 comment `6222759237`: a round budget never closes an unresolved finding), the seventeen recorded
+    findings and the four of Codex's review of `10f8829` are applied in `17` as the OD10 decision diff
+    (`16` §3f, §4.6). Two amendments to this roadmap follow from them. **Phase 2** registers events for the
+    Design C track record and the candidate log only; it holds no primary cohort and no burn-in cohort for the
+    primary test, because FULL forecasts exist only once the Phase 4 adapters operate and the two arms must
+    share one pre-registered issuance window and evidence cutoff per event (RC-76). **Phase 4** starts the
+    blinded burn-in cohort (RC-39) and then the primary cohort, each registration at or after the date on which
+    every arm of the comparator set is operational and frozen. The allocation-certificate tests that `17` A7
+    named belong to this document's Phase 5 verifier and are specified in `17` §7 as T-38 (RC-82). Phase 0 exit
+    waits on OD1, OD2, OD9a and OD10, where OD10 is now the approval or reversion of the version-5 diff.

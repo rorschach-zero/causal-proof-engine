@@ -26,12 +26,12 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v7, rounds 5 and 6
-   recorded without revision; every item Codex has touched has used its three-round budget and the automatic
-   record-only loop is closed), reproduced evidence, the one remaining disagreement (hosting timing, an owner
-   decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 4) and its acceptance-test
-    matrix, including the restated mandatory counterexample fixtures (§5.1).
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v8, round 7: the
+   seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review are applied in `17` as the
+   OD10 decision diff, on the owner's instruction that a round budget never closes a finding), reproduced
+   evidence, the one remaining disagreement (hosting timing, an owner decision) and owner decisions.
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 5, the OD10 decision diff) and
+    its acceptance-test matrix, including the restated mandatory counterexample fixtures (§5.1).
 
 Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
 2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.
