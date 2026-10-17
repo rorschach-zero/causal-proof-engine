@@ -154,3 +154,12 @@ Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text 
     every arm of the comparator set is operational and frozen. The allocation-certificate tests that `17` A7
     named belong to this document's Phase 5 verifier and are specified in `17` §7 as T-38 (RC-82). Phase 0 exit
     waits on OD1, OD2, OD9a and OD10, where OD10 is now the approval or reversion of the version-5 diff.
+12. **Phase 0 exit, round 8 (RC-85, RC-86 applied in `17` version 6).** Codex's review of `37ac018` found two
+    defects in round-7 remedies, both reproduced (`16` §3g, Appendix I). The version-5 VOID cutoff depended on a
+    resolved member and so did not exist for an all-VOID cluster, and a VOID cap bounds the share removed, not
+    the bias (removing the 5 % least favourable clusters under the null gives 23–95 % rejection where the bound
+    stays at 5 %); the VOID set is now frozen with the membership and a later VOID is an adjudication outcome
+    under the per-source rule, never a declaration (RC-85). T-15 gains positive as-of oracles because a reader
+    that refuses every read passed it as written (RC-86). No phase of this roadmap changes; the per-source
+    failure condition joins OD5. Phase 0 exit waits on OD1, OD2, OD9a and OD10, where OD10 now covers versions 5
+    and 6 of `17`.
