@@ -26,18 +26,25 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v11, round 10: the eight
-   findings of Codex's review of the version-7 specification, five of them defects in round-9 remedies, among
-   them a null class stated as four scalars that a persistent-regime law satisfies while oversized at every
-   calibrated critical value, all reproduced where checkable and applied; round 9 applied the twenty-one
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v12, round 11: the eight
+   findings of Codex's review of the version-8 specification, seven applied and one not reproduced, among them
+   the calibration criterion that admitted a size above α and the committed two-point critical values that were
+   exceeded between their own grid points and are replaced by exact-supremum values, with every power figure
+   restated at them; round 10: the eight findings of Codex's review of the version-7 specification, five of them
+   defects in round-9 remedies, among them a null class stated as four scalars that a persistent-regime law
+   satisfies while oversized at every calibrated critical value, all reproduced where checkable and applied;
+   round 9 applied the twenty-one
    findings of Codex's two reviews of the version-6 specification under the owner's directive, six of them
    defects in round-7 and round-8 remedies and one a monitor-ordering rule carried since round 2; round 8 applied two defects in round-7 remedies; round 7 applied the
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 8; versions 5 to 8 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 9; versions 5 to 9 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
+11. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
+    and `check_appendix_scripts.py`, which verifies each file byte for byte against its appendix block; evidence
+    scripts, not project code.
 
 Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
 2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.

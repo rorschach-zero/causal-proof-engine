@@ -6,7 +6,7 @@ and is the single place where positions, evidence, dispositions and remaining bl
 original research under `research/original/` is unchanged. Nothing here authorises implementation, merges,
 capital, broker connectivity or policy changes.
 
-**Version:** v11, 2026-10-17. **Round:** 10 (Codex round 10 = the automatic review `5558887072` of PR #4 at `922956b`, eight findings, §3i, Appendix K; round 9 = the two reviews of PR #4 at `8af2ae9`, automatic review `5556950582` and the owner-requested review `5558680831`, twenty-one findings, §3h, under the owner's directive on PR #4, comment `6236238443`; round 8 was automatic review `5556866013` of `37ac018`, two findings, §3g; round 7 was review `5551243905` of `10f8829`, round 6 review `5550966930` of `4de18e5`, round 5 review `5550735335` of `88abaa4`, round 4 review `5550366107` of `d46c204`, round 3 review `5550048687` of `43754cc`, round 2 the two reviews of `10d1581`). **The rule changed in this round, on the owner's instruction.** The owner's audit on issue #3 (comment `6222759237`, 2026-10-16 19:07 UTC) rejects "three rounds then park": the per-issue round budget is a per-execution quota safeguard, and the lifetime of a finding is governed by reproducible evidence, never by a retry count. Accordingly the seventeen findings that rounds 4–6 recorded without revision (RC-60, RC-64 to RC-79) and the four findings of round 7 (RC-80 to RC-83) are **applied in `17-phase1-amended-specification.md` version 5, commit `b19483a` (`b19483a909bc948f6775fb5ce3b510d2bdfe9261`), as the OD10 decision diff**: every change carries its matrix ID, the owner approves the diff by recording OD10 on issue #3 or names the items to revert, and the fields that are the owner's to set (OD4, OD5) are left as named fields (§4.6, §6). Round 7's own results (Appendix H): the round-6 sentence that generalised one kernel's zero power to every distribution-free test is replaced by a theorem, power ≤ α(1 + δ)^G for any finite-sample-valid bounded-mean test over G blocks (8 % at δ = 0.02 and 16 % at δ = 0.05 over 24 blocks; RC-80); the intersection-union conjunction over six comparators has 21 % to 77 % power at δ = 0.01 and 600 clusters depending on comparator error dependence, where the single comparison has 77 % (RC-83); the A7 certificate tests had no Phase 1 verifier (RC-82); Codex's claim that commit `10f8829` carries a non-owner identity is not reproduced in the repository, while its remedy, an identity check in T-09, is adopted, and the round-7 commits themselves carry a non-conforming identity that is disclosed in RC-81 for the owner's decision. Appendix F and G scripts were re-run in round 7 and reproduce byte for byte. **Round 8** (Appendix I): Codex's review of the version-5 text raised two findings, both defects in round-7 remedies, both reproduced and applied in `17` version 6 in the same commit as this matrix: the version-5 VOID cutoff was computed from resolved members and so did not exist for an all-VOID cluster, and inside a 5 % VOID cap outcome-dependent removal raises the primary's null rejection rate from 5 % to 23–95 % while the worst-case bound stays at 5 %, so the VOID set is now frozen with the membership and a later VOID is an adjudication outcome under the source rule, never a declaration (RC-85); T-15's refusal-only pass condition was met by a reader that refuses everything or returns the oldest vintage, so positive as-of oracles on fixture F-25 are added (RC-86). The same review raised nothing on the other nineteen items applied in version 5; under §4.6 rule 2 they are now **reviewed once by Codex at `37ac018` without objection**, which is not agreement and does not replace OD10. **Round 9** (Appendix J): the owner's directive of 2026-10-17 16:00 UTC asks for every live finding to be reconciled with its evidence and for the candidate specification to be amended on this branch; Codex's two reviews of the version-6 text raised twenty-one findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 7 in the same commit as this matrix. Six are defects in the round-7 and round-8 remedies (RC-87, RC-90, RC-92 on the VOID rule; RC-93 and RC-101 on the conjunction evidence; RC-96 on the slot key), two are defects in Claude's own evidence (RC-93: the IUT null check used a comparator whose increments were identically zero; RC-102: a hand-typed 140 where the computation gives 141), and one, RC-95, is a design rule carried since round 2: the monitor consumed increments in closure order, which on fair increments crosses 1/α in 5 % to 100 % of paths depending on how much later a NO resolves than a YES, because the knowable time of an eventually-by-deadline outcome is itself outcome-dependent; increments now enter in pre-registered maturity order (3.2–3.4 %). RC-94 makes the primary's critical value a calibration over a pre-registered null class with a pass condition (c* = 3.20, 2.63, 2.23 for catastrophe shares of at least 0.05, 0.2, 0.3; power at δ = 0.02 and 600 clusters 60 %, 79 %, 88 % against 96 % nominal). Every committed script of Appendix C to I was re-extracted and re-run in the round-9 environment: byte-identical, except Appendix H, which differs in the one corrected line. **Round 10** (Appendix K): Codex's review of the version-7 text raised eight findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 8 in the same commit as this matrix. Five are defects in round-9 remedies: the null class N was four scalars, and a persistent-regime law inside all four has 15–22 % size at every calibrated c* (RC-108 on RC-94); an empty baseline slot removed the member while every other arm's empty slot kept it, and a baseline failure correlated with event type turns a zero-average null into 18–49 % rejection (RC-109 on RC-104); the burn-in blinding bounded the latest finality time and not the earliest knowable time (RC-110 on RC-99); the T-36 oracle required rejection at the nominal value that a correct calibrated test fails (RC-111 on RC-94); the model cutoff sat on each `Forecast` with a correction path that let an outcome-chosen correction month raise the null rejection rate to 13 % (RC-112 on RC-98). One is a propagation gap (T-17 contradicted §3 and F-24 on pre-declared members, RC-115), one an open case the round-9 finality rules did not cover (observer outage plus late publication, RC-113), one an ambiguity in round-7 wording under which a third of the cohort would leave (RC-114). The round-9 script was re-extracted and re-run: byte-identical. **Awaiting:** Codex's review of this commit; owner decisions OD1, OD2, OD9a and OD10 (now: approve or revert the version-5 to version-8 diffs). **No disposition in this matrix is a Codex agreement** until Codex has reviewed the commit that carries it; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3g. Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); rounds 4–6 found defects in Claude's own remedies (RC-56, RC-60, RC-65, RC-69, RC-70, RC-72, RC-73; Appendix E–G); round 7 found one more, an over-general sentence in round 6's RC-72 response (RC-80); round 8 found two in round 7's remedies (RC-85 on RC-67, RC-86 on RC-79; Appendix I); round 9 found six in round 7's and round 8's remedies and two in Claude's own evidence (§3h, Appendix J); round 10 found five in round 9's remedies and one round-9 propagation gap (§3i, Appendix K). No Codex review addressed RC-07 (n_eff retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
+**Version:** v12, 2026-10-17. **Round:** 11 (Codex round 11 = the automatic review `5559035950` of PR #4 at `04bc122`, eight findings, §3j, Appendix L; round 10 = the automatic review `5558887072` of PR #4 at `922956b`, eight findings, §3i, Appendix K; round 9 = the two reviews of PR #4 at `8af2ae9`, automatic review `5556950582` and the owner-requested review `5558680831`, twenty-one findings, §3h, under the owner's directive on PR #4, comment `6236238443`; round 8 was automatic review `5556866013` of `37ac018`, two findings, §3g; round 7 was review `5551243905` of `10f8829`, round 6 review `5550966930` of `4de18e5`, round 5 review `5550735335` of `88abaa4`, round 4 review `5550366107` of `d46c204`, round 3 review `5550048687` of `43754cc`, round 2 the two reviews of `10d1581`). **The rule changed in this round, on the owner's instruction.** The owner's audit on issue #3 (comment `6222759237`, 2026-10-16 19:07 UTC) rejects "three rounds then park": the per-issue round budget is a per-execution quota safeguard, and the lifetime of a finding is governed by reproducible evidence, never by a retry count. Accordingly the seventeen findings that rounds 4–6 recorded without revision (RC-60, RC-64 to RC-79) and the four findings of round 7 (RC-80 to RC-83) are **applied in `17-phase1-amended-specification.md` version 5, commit `b19483a` (`b19483a909bc948f6775fb5ce3b510d2bdfe9261`), as the OD10 decision diff**: every change carries its matrix ID, the owner approves the diff by recording OD10 on issue #3 or names the items to revert, and the fields that are the owner's to set (OD4, OD5) are left as named fields (§4.6, §6). Round 7's own results (Appendix H): the round-6 sentence that generalised one kernel's zero power to every distribution-free test is replaced by a theorem, power ≤ α(1 + δ)^G for any finite-sample-valid bounded-mean test over G blocks (8 % at δ = 0.02 and 16 % at δ = 0.05 over 24 blocks; RC-80); the intersection-union conjunction over six comparators has 21 % to 77 % power at δ = 0.01 and 600 clusters depending on comparator error dependence, where the single comparison has 77 % (RC-83); the A7 certificate tests had no Phase 1 verifier (RC-82); Codex's claim that commit `10f8829` carries a non-owner identity is not reproduced in the repository, while its remedy, an identity check in T-09, is adopted, and the round-7 commits themselves carry a non-conforming identity that is disclosed in RC-81 for the owner's decision. Appendix F and G scripts were re-run in round 7 and reproduce byte for byte. **Round 8** (Appendix I): Codex's review of the version-5 text raised two findings, both defects in round-7 remedies, both reproduced and applied in `17` version 6 in the same commit as this matrix: the version-5 VOID cutoff was computed from resolved members and so did not exist for an all-VOID cluster, and inside a 5 % VOID cap outcome-dependent removal raises the primary's null rejection rate from 5 % to 23–95 % while the worst-case bound stays at 5 %, so the VOID set is now frozen with the membership and a later VOID is an adjudication outcome under the source rule, never a declaration (RC-85); T-15's refusal-only pass condition was met by a reader that refuses everything or returns the oldest vintage, so positive as-of oracles on fixture F-25 are added (RC-86). The same review raised nothing on the other nineteen items applied in version 5; under §4.6 rule 2 they are now **reviewed once by Codex at `37ac018` without objection**, which is not agreement and does not replace OD10. **Round 9** (Appendix J): the owner's directive of 2026-10-17 16:00 UTC asks for every live finding to be reconciled with its evidence and for the candidate specification to be amended on this branch; Codex's two reviews of the version-6 text raised twenty-one findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 7 in the same commit as this matrix. Six are defects in the round-7 and round-8 remedies (RC-87, RC-90, RC-92 on the VOID rule; RC-93 and RC-101 on the conjunction evidence; RC-96 on the slot key), two are defects in Claude's own evidence (RC-93: the IUT null check used a comparator whose increments were identically zero; RC-102: a hand-typed 140 where the computation gives 141), and one, RC-95, is a design rule carried since round 2: the monitor consumed increments in closure order, which on fair increments crosses 1/α in 5 % to 100 % of paths depending on how much later a NO resolves than a YES, because the knowable time of an eventually-by-deadline outcome is itself outcome-dependent; increments now enter in pre-registered maturity order (3.2–3.4 %). RC-94 makes the primary's critical value a calibration over a pre-registered null class with a pass condition (c* = 3.20, 2.63, 2.23 for catastrophe shares of at least 0.05, 0.2, 0.3; power at δ = 0.02 and 600 clusters 60 %, 79 %, 88 % against 96 % nominal). Every committed script of Appendix C to I was re-extracted and re-run in the round-9 environment: byte-identical, except Appendix H, which differs in the one corrected line. **Round 10** (Appendix K): Codex's review of the version-7 text raised eight findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 8 in the same commit as this matrix. Five are defects in round-9 remedies: the null class N was four scalars, and a persistent-regime law inside all four has 15–22 % size at every calibrated c* (RC-108 on RC-94); an empty baseline slot removed the member while every other arm's empty slot kept it, and a baseline failure correlated with event type turns a zero-average null into 18–49 % rejection (RC-109 on RC-104); the burn-in blinding bounded the latest finality time and not the earliest knowable time (RC-110 on RC-99); the T-36 oracle required rejection at the nominal value that a correct calibrated test fails (RC-111 on RC-94); the model cutoff sat on each `Forecast` with a correction path that let an outcome-chosen correction month raise the null rejection rate to 13 % (RC-112 on RC-98). One is a propagation gap (T-17 contradicted §3 and F-24 on pre-declared members, RC-115), one an open case the round-9 finality rules did not cover (observer outage plus late publication, RC-113), one an ambiguity in round-7 wording under which a third of the cohort would leave (RC-114). The round-9 script was re-extracted and re-run: byte-identical. **Round 11** (Appendix L): Codex's review of the version-8 text raised eight findings; seven are assessed as genuine, every checkable claim reproduces, and all seven are applied in `17` version 9 in the same commit as this matrix; the eighth, a provenance claim naming a commit that exists in no branch of the repository, is recorded and not applied. Three are defects in the round-9 calibration remedy and its round-10 extension: the calibration criterion was the A3 tolerance, which a family of true size 5.5 % passes three times in four while the text calls the test level 0.05 (RC-117); the size of the two-point family at a fixed critical value is a step function of the catastrophe share, so the committed grid values 3.20, 2.63 and 2.23 are exceeded between their own grid points (5.0–5.4 %) and the exact-supremum values 3.21, 2.69 and 2.25 replace them (RC-118, a CONFIRMED-DEFECT of Appendix J); and one pair's critical value does not make every IUT component level α (up to 11.4 % size for a component outside the pair's class, RC-121). One is a defect in the round-9 monitor-order remedy: the maturity buffer ordered only the clusters registered so far, which breaks the H-order in 64 % of random registration paths (RC-119). One is a propagation gap, the §6 power figures left at the nominal value (RC-120: at the illustrated critical values the single comparison at δ = 0.01 and 600 clusters falls from 78 % to 28–60 %, the conjunction from 21 % to 0–4 % under uncorrelated errors, the period-shock design from 18 % to 2–8 %); one an open case in the round-9 epoch remedy (RC-123: a demotion with the anchor store unavailable had no defined outcome, and a rollback let the pre-demotion capability act once the store returned); one on reproducibility (RC-122: the appendix scripts now exist as committed files under `research/reproduction/`, each checked byte-identical to its appendix block). The round-10 script was re-run: byte-identical. **Awaiting:** Codex's review of this commit; owner decisions OD1, OD2, OD9a and OD10 (now: approve or revert the version-5 to version-9 diffs). **No disposition in this matrix is a Codex agreement** until Codex has reviewed the commit that carries it; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3g. Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); rounds 4–6 found defects in Claude's own remedies (RC-56, RC-60, RC-65, RC-69, RC-70, RC-72, RC-73; Appendix E–G); round 7 found one more, an over-general sentence in round 6's RC-72 response (RC-80); round 8 found two in round 7's remedies (RC-85 on RC-67, RC-86 on RC-79; Appendix I); round 9 found six in round 7's and round 8's remedies and two in Claude's own evidence (§3h, Appendix J); round 10 found five in round 9's remedies and one round-9 propagation gap (§3i, Appendix K); round 11 found three in the round-9 calibration remedy and its round-10 extension, one in the round-9 monitor-order remedy and one open case in the round-9 epoch remedy, and one of them (RC-118) also falsifies committed numbers of Appendix J (§3j, Appendix L). No Codex review addressed RC-07 (n_eff retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
 
 Labels follow `research/README.md`. Disposition statuses used here, per the protocol in issue #3:
 
@@ -41,10 +41,11 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Owner directive on PR #4 | PR #4 comment `6236238443` (2026-10-17 16:00 UTC): complete the independent scientific reconciliation before implementation; Claude reconciles every live and historical unaddressed finding with ID, reviewed SHA, counterexample, reproduced command, disposition, correction, test and remaining assumptions, deduplicating outdated threads; amends the candidate specification on this branch; re-runs every claimed reproduction and labels what was not run; records owner-reserved choices as `OWNER_DECISION`; Codex falsifies independently on each candidate SHA; the acceptance gate is two SHA-pinned reports on the same final revision with zero unresolved verified defects in scope; no paid APIs, no new automation, no merge | round 9 (§3h, §4.6) |
 | Tenth Codex review of PR #4 (round 9) | review `5558680831` on the same commit `8af2ae9`, requested by the directive comment (summary comment `6216072575` edited 16:09 UTC; the scheduled execution was dispatched on that edit), twelve inline findings (eleven P1, one P2), comment IDs `4303397680`, `4303397684`, `4303397689`, `4303397692`, `4303397696`, `4303397700`, `4303397703`, `4303397708`, `4303397714`, `4303397718`, `4303397725`, `4303397727`; none duplicates rounds 1–8 or the ninth review (RC-96 extends RC-75, RC-101 extends RC-83) | round 9 (§3h, RC-94 to RC-105) |
 | Eleventh Codex review of PR #4 (round 10) | review `5558887072` on commit `922956b0a7c06dc8b10849f8146ad2d90f072262`, the automatic review of the round-9 push (summary comment `6216072575` edited 2026-10-17 16:50 UTC; the execution was dispatched on that edit), eight inline findings (seven P1, one P2), all on `17-phase1-amended-specification.md` version 7, comment IDs `4303569704`, `4303569710`, `4303569715`, `4303569722`, `4303569729`, `4303569735`, `4303569739`, `4303569744`; none duplicates rounds 1–9 (RC-108 and RC-111 extend RC-94, RC-109 extends RC-104, RC-110 extends RC-99, RC-112 extends RC-98, RC-113 extends RC-88 and RC-105) | round 10 (§3i, RC-108 to RC-115) |
+| Twelfth Codex review of PR #4 (round 11) | review `5559035950` on commit `04bc1223d099059bc9f47585281028f01ed023ae`, the automatic review of the round-10 push (summary comment `6216072575` edited 2026-10-17 17:18 UTC; the execution was dispatched on that edit), eight inline findings, all P1, six on `17` version 8 and two on this matrix, comment IDs `4303689619`, `4303689622`, `4303689629`, `4303689633`, `4303689635`, `4303689641`, `4303689645`, `4303689649`; none duplicates rounds 1–10 (RC-117, RC-118 and RC-121 extend RC-94 and RC-108; RC-119 extends RC-95; RC-120 extends RC-94 and RC-111; RC-123 extends RC-103; RC-116 extends RC-81 with a new SHA) | round 11 (§3j, RC-116 to RC-123) |
 | Owner's progress request on PR #4 | PR #4 comment `6236863824` (2026-10-17 16:41 UTC): resume the reconciliation against `8af2ae9`, post a brief progress or blocker update on PR #4; no owner decision | round 10 (the update is posted once; the round-9 commit `922956b` had already answered the technical part) |
 | Codex review of PR #7 (owner's Rust-first RFC) | review `5552078599` on `00642e3a1f5d3600cb169541c60d9736d39b08e7`, five findings, comment IDs `4297992981`, `4297992983`, `4297992988`, `4297993002`, `4297993009`; PR #7 is the owner's branch and is not revised here; the one finding that bears on `17` (`4297992983`: a fixed-horizon primary conflicts with the anytime-valid wording of `AGENTS.md` §2 item 3) is recorded as RC-84 | round 7 (§3f, RC-84; OD9b) |
 | Codex review of PR #10 (owner's CANNON protocol) | review `5552523817` on `b5d104cd25ee82a094cae1b4a04deb801e8ee674`, ten findings, comment IDs `4298363597` to `4298363703`; all on the protocol documents, none on the Phase 1 science; read for the §4.6 rule (durable finding state, pause not close, verification on the exact SHA), not reconciled here | round 7 (§4.6) |
-| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3), `6219896670` (handoff 4), `6220313901` (handoff 5), `6220770348` (handoff 6), `6231265852` (handoff 7), `6231483746` (handoff 8), `6236946882` (handoff 9); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
+| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3), `6219896670` (handoff 4), `6220313901` (handoff 5), `6220770348` (handoff 6), `6231265852` (handoff 7), `6231483746` (handoff 8), `6236946882` (handoff 9), `6237338855` (handoff 10); PR #4 comment `6237340628` (the one progress update the owner asked for); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
 | Automation | PR #5 (`automation/claude-review-dispatch`, merged to `main` 15:09 UTC) | not a scientific input |
 
 No Codex comment, commit or review newer than the above existed when this document was written. A later
@@ -58,6 +59,13 @@ isolated venv in a scratch directory outside the repository; the reference code 
 `research/original/.../source_v0_2/` to scratch and never modified in place. No network call other than
 package installation; no provider, broker or Jev call; no credential.
 
+Since round 11 every script named below is a committed file under `research/reproduction/` (RC-122), byte-identical
+to the fenced block of its appendix; `python -I research/reproduction/check_appendix_scripts.py` verifies the identity
+and fails on the first difference (output in Appendix L). The commands run from the repository root as
+`python -I research/reproduction/<script>` after `pip install -r research/reproduction/requirements.txt` in an
+isolated venv; the appendix markers and the extraction snippet of Appendix A remain the record of how each script was
+produced. `reconciliation_probes.py` additionally takes the path of a scratch copy of the archived v0.2 reference code.
+
 | Check | Command | Result (round 1 → round 2) |
 |---|---|---|
 | Archived v0.2 suite | `python -m pytest -q` in the scratch copy | `31 passed in 2.12s` → `31 passed in 2.18s` |
@@ -70,6 +78,9 @@ package installation; no provider, broker or Jev call; no credential.
 | Round-10 checks (persistent regime at the two-point c* values, baseline-slot selection, burn-in early YES, T-36 at c*, outcome-chosen cutoff correction, outage-plus-late-publication fixtures, accrual dates, T-17 against F-24) | `python -I round10_checks.py` (script in Appendix K; 12 s) | output in Appendix K; two runs byte-identical |
 | Round-10 re-run of the round-9 script | `python -I round9_checks.py` re-extracted from Appendix J (fresh isolated venv, Python 3.11.17, numpy 2.4.6, scipy 1.17.1; 58 s) | byte-identical to the committed Appendix J output |
 | Round-7 checks (distribution-free power bound with numerical check of the proof; IUT conjunction power under a joint generator; least-favourable-null size) | `python -I round7_checks.py` (script in Appendix H; no reference code; 70 s; two consecutive runs byte-identical) | output in Appendix H |
+| Round-11 checks (the A3 tolerance as a calibration criterion and the level-α criterion; the exact two-point supremum against the committed grid values; the registration watermark; every §6 power figure and the T-36 positive control at the calibrated cutoffs; per-component size at one pair's cutoff; the demotion toy with the anchor store unavailable) | `python -I research/reproduction/round11_checks.py` (script in Appendix L; 95 s) | output in Appendix L; two runs byte-identical |
+| Round-11 identity check of the committed scripts against their appendix blocks | `python -I research/reproduction/check_appendix_scripts.py` | `11 scripts checked, 0 differ` (Appendix L) |
+| Round-11 re-run of the round-10 script | `python -I research/reproduction/round10_checks.py` (fresh isolated venv, Python 3.11.17, numpy 2.4.6, scipy 1.17.1; 11 s) | byte-identical to the committed Appendix K output; the T-36 positive-control rates of Appendix K reproduce inside the round-11 script at the superseded values (0.9633, 0.6767, 0.8262, 0.9052) |
 
 Key reproduced values (all from Appendix B unless stated):
 
@@ -466,6 +477,44 @@ RC-103 and the rest are reviewed once at `922956b` without objection, which is n
 acceptance item 2: the eleventh automatic review read the version-7 text and returned eight findings, every one
 substantive and none a repeat; the count per pass fell from twenty-one to eight.
 
+### 3j. Round 11: Codex's review of PR #4 at `04bc122` (review `5559035950`)
+
+Eight inline findings on the version-8 text and this matrix (all P1), posted 2026-10-17 17:18 UTC. None repeats a
+comment ID of rounds 1–10; seven extend an earlier item with a new channel and are distinct claims. Seven are
+assessed as genuine; every checkable claim reproduces (Appendix L, `python -I research/reproduction/round11_checks.py`);
+every one of the seven is **applied in `17` version 9 under the §4.6 rule** in the same commit as this matrix.
+Three are defects in the round-9 calibration remedy RC-94 and its round-10 extension RC-108 (RC-117, RC-118,
+RC-121), and RC-118 also falsifies committed numbers of Appendix J; one is a defect in the round-9 monitor-order
+remedy RC-95 (RC-119); one a propagation gap of round 9 (RC-120 on RC-94 and RC-111); one an open case in the
+round-9 epoch remedy RC-103 (RC-123); one a reproducibility defect of this matrix since round 1 (RC-122). RC-116 is
+recorded with its evidence and not applied: the commit it names exists in no branch of the repository. Every
+disposition is `PROPOSED` until Codex reviews the commit that carries it.
+
+| ID | Codex finding (comment ID, severity) | Parent | Claude position and evidence | Resolved in | Validation test | Status |
+|---|---|---|---|---|---|---|
+| RC-116 | The Git object `50897415d0fd85e29a4effdeab8fcd5de055874d` lists author and committer as `Codex <codex@openai.com>`; the proposed T-09 check would reject it, the claim that only the earlier rounds have identity defects is false; recreate the commit under the owner's identity or record a designation (`4303689619`, P1, on §7 line 775) | RC-81 (round 7, the same class of claim on `10f8829`) | **Not reproduced; recorded, not applied.** The object is not in this repository: `git cat-file -p 50897415d0fd…` after `git fetch origin --prune` of every branch and of `refs/pull/1/*`, `refs/pull/2/*` and `refs/pull/4/*` reports "Not a valid object name", and the GitHub commits API returns "No commit found for SHA". The identities of every commit of this branch, read with `git log --format='%an <%ae> \| %cn <%ce>'`, are the owner's except the three commits of rounds 7 and 8 (`b19483a`, `37ac018`, `8af2ae9`), already disclosed under RC-81 and OD9b; the PR merge ref `refs/pull/4/merge` is committed by `GitHub <noreply@github.com>` as every GitHub-generated merge commit is. A commit authored `Codex <codex@openai.com>` can only be an object of the reviewer's own working copy (a local merge or checkout commit it made to review), which this repository never received and T-09 would never see. The same class of claim on `10f8829` was not reproduced in round 7. If Codex's next review names a SHA that `git fetch` of this repository returns, the identity will be read from the object and recorded here; the remedy already adopted for RC-81, an identity check on every commit in T-09, is the control | this matrix §3j, §7 provenance | T-09 (unchanged) | `PROPOSED` (recorded; the object is not in the repository; OD9b unchanged) |
+| RC-117 | Simulated families calibrate and certify c* at the A3 bound, which accepts a 99 % upper bound as high as 0.06; a null with true size about 5.5 % passes at 20,000 replications and the text then labels the test level α = 0.05; require the calibration bound itself to be at most 0.05, or stop making the nominal claim (`4303689622`, P1) | RC-94 (round 9), RC-108 (round 10, Claude's own remedies); RC-48 | **A; defect in the round-9 remedy; REPRODUCED exactly** (Appendix L). At 20,000 replications the A3 tolerance passes up to 1,122 rejections (5.61 %); a true size of 5.0 % passes with probability 1.000, 5.5 % with 0.758, 5.8 % with 0.128 and 6.0 % with 0.010, so Codex's example passes three times in four. The tolerance was designed in round 3 as the implementation check of a test whose level is already known (RC-48: a correct size-0.05 implementation must pass), and a calibration that chooses c* against it inherits the tolerance as size. Version 9 takes Codex's first option: on a simulated family c* is the smallest value whose exact one-sided upper confidence bound on the rejection rate, at confidence 1 − 0.01/K over the K enumerated points (Bonferroni, so that the simultaneous statement holds at 99 %), is ≤ α; the ceiling on the observed rate is then 4.64 % for one point and 4.43 % for a hundred at 20,000 replications, 4.84 % and 4.75 % at 100,000, and that conservatism is reported with c*. Illustration on the independent period-shock family (24 × 25): c* = 1.723 by the point estimate, 1.766 by the one-point bound, 1.796 by the Bonferroni bound for a hundred points, with power at δ = 0.02 and 600 clusters of 96.4 %, 96.0 % and 95.8 %. The A3 tolerance remains the implementation check | `17` §2 (one row), §3 item 3 "Calibrated critical value", A3, T-12, §6 Primary test | T-12 | `PROPOSED` (applied in `17` v9; replication count R `OWNER_DECISION`, OD4) |
+| RC-118 | N is a generator family over a parameter box while c* is selected on a finite grid plus a seeded search, and the document concedes the grid maximum is a lower bound on the box supremum; an off-grid parameter can have rejection probability above α while every mandatory case passes; define the confirmatory null as the finite enumerated set or provide an exhaustive or uniformly valid bound over the box (`4303689629`, P1) | RC-108 (round 10), RC-94 (round 9), RC-80 | **A; defect in the round-9 remedy and a CONFIRMED-DEFECT of Appendix J; REPRODUCED and stronger than stated** (Appendix L). On the two-point family the statistic depends only on the number k of positive blocks, so the size at a fixed c is a step function of ε that jumps wherever some t_k(ε) crosses c, and no grid bounds it. A sweep of ε at step 10⁻⁵ shows the **committed Appendix J values exceeded inside their own classes**: at c* = 3.201 the size reaches 5.03 % at ε = 0.175, at 2.632 it reaches 5.39 % at ε = 0.235 (1.2 % of the interval above α), at 2.231 it reaches 5.18 % at ε = 0.340; a grid of step 0.05 calibrates to 2.025 for ε_min = 0.2 and the interval then holds 10.97 % at ε = 0.20004. The exact-supremum values, c* = max over ε of the per-ε critical value rounded up to 0.001 on the sweep, are **3.207, 2.693 and 2.254** (sizes 5.00 %, 5.00 % and 4.99 % at the sweep's maximum; the sweep's resolution bounds the remaining error by the pmf's variation over 10⁻⁵, below 5 × 10⁻⁴). Version 9 takes Codex's first option and the exhaustive one where it exists: the confirmatory null is the committed enumerated set N_0 (grid, search points, every corner of Θ, spacing recorded); a coordinate whose supremum over its interval can be computed exactly is calibrated on that supremum, never on a grid; the box Θ is the domain of a reported sweep at double the resolution of N_0, and a sweep maximum above α fails the calibration and sends it back to a finer set before the freeze; no claim is made over the box. The values 3.20, 2.63 and 2.23 are withdrawn everywhere in `17` and in the OD4 row of §6, and every figure stated at them is restated at 3.21, 2.69 and 2.25 (RC-120) | `17` §2 (one row), §3 item 3, A3, T-12, T-36, §6 Primary test; this matrix §6 OD4 | T-12 | `PROPOSED` (applied in `17` v9; N_0 and its spacing `OWNER_DECISION`, OD4) |
+| RC-119 | The maturity-order buffer considers only clusters already registered: A with H_A = 100 closes at 10 with no registered predecessor and its factor is applied; B is then registered at 20 with not_before 21 and H_B = 50, so the sequence is not H-ordered and A's λ was computed without an increment the declared filtration says precedes it; delay A until registrations with a smaller maturity are impossible, normally when the clock reaches H_A, and add a late-registration fixture (`4303689633`, P1) | RC-95 (round 9, Claude's own remedy); RC-61 | **A; defect in the round-9 remedy; deterministic and REPRODUCED** (Appendix L). The version-7 rule applies A at 10 and B at 50, out of H-order; the watermark rule applies B at 50 and A at 100. Over 2,000 random 24-month paths (40 clusters, horizons uniform in 1–12 months, half the clusters final one month after registration) the version-7 sequence is out of H-order in 64.2 % of paths; the watermark sequence is H-ordered in every path and adds 0.74 months of mean delay after finality (2.00 to 2.75), because a closed cluster already waited for the registered clusters below it. Version 9 applies a cluster's factor no earlier than its own H_k: a registration at time t has H > t, since `not_before` follows registration and the deadline follows `not_before`, so after H_k no cluster with a smaller maturity can be registered; T-39 carries Codex's fixture and the random paths | `17` §2 (one row), §3 item 3 "Monitor order", T-39, §6 Anytime-valid monitor | T-39 | `PROPOSED` (applied in `17` v9) |
+| RC-120 | The §6 smallest-effect row still reports the nominal-cutoff power for the single comparison, the conjunction and the period-shock design although A6 requires every power figure at the selected c*; the document's own δ = 0.02 example drops from 96 % to 60–88 %; report the figures per admissible c* or defer them until OD4 fixes the class (`4303689635`, P1) | RC-94, RC-111 (round 9 and 10); RC-61, RC-70, RC-83 | **A; propagation gap of round 9; REPRODUCED** (Appendix L, with Appendix F's D1 and period-shock generators and Appendix H's conjunction generator, nominal values reproducing Appendix F and H within Monte Carlo error: 78.1 %, 92.4 %, 17.8 %, 20.4 %, 30.9 %, 77.0 %). At c* = 3.21 / 2.69 / 2.25 the single comparison at δ = 0.01 and 600 clusters has 28 % / 44 % / 60 % (b = 0.5) and 50 % / 68 % / 81 % (b = 0.2) against 78 % and 92 %; at δ = 0.005 and 600 clusters 10 % / 20 % / 33 % and 19 % / 33 % / 49 % against 52 % and 69 %; at δ = 0.02 and 288 clusters 28 % / 44 % / 60 % and 51 % / 69 % / 83 % against 77 % and 93 %; at δ = 0.02 and 600 clusters 65 % / 80 % / 90 % against 97 %. The conjunction at δ = 0.01 and 600 clusters: 0.01 % / 0.5 % / 3.8 % with uncorrelated errors (21 % nominal), 0.6 % / 3.2 % / 10 % at a shared-sign probability of one half (31 %), 25 % / 42 % / 58 % with errors moving together (77 %), 0.0 % / 0.01 % / 0.8 % under the anti-correlated generator (16 %); at 1,200 clusters and at δ = 0.02 and 600 clusters 4.9 % / 21 % / 46 %, 12 % / 31 % / 54 %, 60 % / 77 % / 88 %. The period-shock design at δ = 0.02: 1.6 % / 4.1 % / 8.1 % against 18 %; at δ = 0.05: 13 % / 24 % / 39 % against 59 %; at δ = 0.08: 47 % / 66 % / 81 % against 93 %. The T-36 positive control (Appendix K's generator and seed): 0.677 / 0.817 / 0.899 against 0.963 (the Appendix K rates at the superseded values reproduce exactly). Under the widest illustrated class the conjunction has no useful power at any supply shown; the row now says so and OD4 chooses the class and the effect together | `17` §2 (one row), A6, T-16, T-36, §6 Smallest useful effect and Confirmatory conjunction; this matrix §6 OD4 | T-16, T-36 | `PROPOSED` (applied in `17` v9) |
+| RC-121 | The calibrated class, d_max and estimand are defined for the FULL–Design C pair, but the conjunction row declares each of six comparator tests level α without comparator-specific classes or cutoffs; a single-provider comparison can have an increment law outside the FULL–baseline calibration while satisfying every current test, so the IUT guarantee fails; define and calibrate each component's estimand and null family, or one class that envelops every pair (`4303689641`, P1) | RC-94, RC-108; RC-08, RC-83, RC-93 | **A; defect in the round-9 remedy; REPRODUCED exactly** (Appendix L). At the pair value c* = 2.254 (ε_min = 0.3) a component whose two-point catastrophe share is 0.136 has exact size 11.4 % (8.6 % at 0.15, 7.4 % at 0.22); at c* = 2.693 (ε_min = 0.2) the supremum below the class is 7.9 % at ε = 0.154; at 3.207 (ε_min = 0.1) nothing below 0.1 exceeds α, because very rare catastrophes leave too many all-positive samples, which never reject. When the other five components reject surely the IUT's size equals the component's, so the IUT is level α only if every component is (Berger). Version 9 takes the first option: each component j has its own enumerated class N_0,j in the same generator family, with that pair's forecast law under its own d_max and catastrophe share, and its own c*_j; the IUT rejects iff t_j ≥ c*_j for every j; T-13 (b) and T-16 carry the null comparator at the corner of its own box and fail an implementation that decides every component at the FULL–Design C value | `17` §2 (one row), §3 item 3, A3, T-13, T-16, §6 Confirmatory conjunction | T-13, T-16 | `PROPOSED` (applied in `17` v9; the per-component boxes `OWNER_DECISION`, OD4) |
+| RC-122 | The reproduction table tells reviewers to run `python -I round10_checks.py` and analogous commands, but a repo-wide search finds no `round*_checks.py` or `reconciliation_probes.py`; only fenced snippets are committed with no deterministic extraction command, so every named command fails from a clean checkout; commit executable scripts with their pinned environment, or a checked extraction command (`4303689645`, P1, on §2 line 70) | RC-28 (round 2, the script's name), `AGENTS.md` §6 | **A; reproducibility defect of this matrix since round 1; deterministic.** The extraction snippet of Appendix A was the only route and named a scratch path. Version 12 commits the eleven scripts as files under `research/reproduction/` (`reconciliation_probes.py`, `round2_checks.py` to `round11_checks.py`), each extracted from its appendix block, with `requirements.txt` pinning numpy 2.4.6 and scipy 1.17.1 and `check_appendix_scripts.py`, which compares every file byte for byte with the fenced block of its appendix and exits non-zero on the first difference, so that the record (the appendix) and the executable (the file) cannot diverge silently; the §2 commands now name the committed paths. Run this round: `11 scripts checked, 0 differ`. The directory holds evidence scripts of this matrix, not project code, and `AGENTS.md` §4 has no row for it; the row is proposed under OD9b | this matrix §2, Appendix L; `research/reproduction/`; `research/README.md` | the identity check itself; T-08 (clean-checkout reproduction) when built | `PROPOSED` (applied; §4 row `OWNER_DECISION`, OD9b) |
+| RC-123 | Rotate-on-demotion requires the new epoch to be anchored in the demotion transaction but defines no safe outcome when the anchor store is unavailable: rolling back leaves the gate elevated, committing unanchored lets a restore revive the pre-demotion epoch and its unused capabilities; T-30 tests anchor failure during a protected action, not during demotion; persist the local demotion at once, block every promotion until anchored, add the fixture (`4303689649`, P1) | RC-103 (round 9, Claude's own remedy); RC-74, RC-43 | **A; open case in the round-9 remedy; REPRODUCED in part** (Appendix L toy, three rules on two branches). Rollback: once the store returns the gate is still elevated and the pre-demotion capability B acts (reproduced). Commit unanchored: B is refused after the store returns, and after a restore to the last anchor and a restart B is refused as well, because the start rotation of RC-74 stales it, so the "unused capabilities" half of the finding does not reproduce under the version-8 text; but the restore revives the **elevated level** (the last anchor was the promotion's), and a fresh capability of the new epoch then acts at it with no promotion recorded, which is the channel that matters. Version 9 takes Codex's remedy and closes the restore residual with the simplest rule: the demotion is persisted locally in the writer transaction with its rotated epoch and takes effect at once; until the epoch is anchored the gate is demoted-unanchored and every promotion and every protected action is refused; every process start begins at the gate floor, so a restore revives no level. Under this rule neither B nor the fresh capability acts and the level after the restore is the floor. The alternative, a level that persists across starts, keeps the restore residual and is recorded for OD10. T-30 carries both branches | `17` §2 (one row), §3 item 2 "Demotion without the anchor store", A5, T-30 | T-30 | `PROPOSED` (applied in `17` v9; start-at-floor rule for the owner's attention under OD10) |
+
+Assessment across the eight: three of the seven applied findings are in the calibration machinery that rounds 9 and
+10 built (RC-94, RC-108), and one of them, RC-118, falsifies numbers this matrix had labelled REPRODUCED: the
+two-point critical values of Appendix J were right on their grid and wrong on their class, because the size of a
+discrete statistic is a step function of the parameter, which the grid could not see. The corrected values move the
+illustrated power figures by a few points; the larger effect of this round is RC-120, which puts the §6 figures where
+A6 said they belonged since round 9 and shows that at the widest illustrated class the conjunction has no useful power
+at any supply shown. RC-119 and RC-123 are the same class of error as RC-85 and RC-96 before them: a rule correct on
+the state it enumerated and silent on a state it did not (a later registration; an unavailable store). RC-116 is not
+reproduced and is not a repeat of RC-81 by comment ID, so it is recorded with the commands that fail to find the
+object. Not addressed by Codex in round 11: RC-07, RC-20, and nothing on the other round-10 items (RC-109, RC-110,
+RC-112, RC-113, RC-114, RC-115 are reviewed once at `04bc122` without objection, which is not agreement). Relevant to
+issue #3 acceptance item 2: the twelfth automatic review read the version-8 text and returned eight findings, seven
+substantive and none a repeat; the count per pass stayed at eight.
+
 ## 4. Open disagreements (what would settle each)
 
 4.1 **RC-01 remedy scope: withdrawn by Claude in round 3.** Rounds 1–2: Codex asked for estimand, filtration,
@@ -624,6 +673,19 @@ part of the request (resume against `8af2ae9`) had been carried out by the round
 read. OD10 now covers versions 5 to 8 together (§6). The directive's gate is not met by this commit: Codex has not
 reviewed version 8.
 
+Round 11: Codex's review `5559035950` of `04bc122` is the review of the version-8 text. It raised eight findings;
+seven are applied in `17` version 9 in the same commit as this matrix (§3j, Appendix L) and one, RC-116, is recorded
+as not reproduced (the commit it names is in no branch of the repository). Thread accounting at `04bc122` (94
+threads): 78 are marked outdated by GitHub and each is an item of §3a to §3i whose remedy was applied in a later
+version; 8 older threads are not outdated because their lines survive, each an applied item re-read by Codex since
+without objection (`4294987422` RC-34, `4297109203` RC-74, `4297337217` RC-80, `4301994299` RC-93, `4301994303`
+RC-106, `4301994307` RC-107, `4303397703` RC-100, `4303569735` RC-113); the 8 round-11 threads are the findings of
+§3j, seven applied in version 9 and one answered in the matrix row. No thread is resolved by this execution and no
+per-thread reply is posted, for the reasons stated for round 9. OD10 now covers versions 5 to 9 together (§6). The
+directive's gate is not met by this commit: Codex has not reviewed version 9, and one of its findings (RC-118) showed
+that a REPRODUCED label on a grid calibration was not a label on the class, which is the kind of defect the gate's
+second SHA-pinned report exists to catch.
+
 ## 5. Open hypotheses with bounded experiments (not disagreements)
 
 | Hypothesis | Experiment (as amended) | Earliest read-out |
@@ -641,14 +703,14 @@ reviewed version 8.
 | OD1 | Approve the amended Phase 1 scope and acceptance criteria in `17-phase1-amended-specification.md`, or choose a research-only pause | pause costs calendar time only; approval authorises offline synthetic work, no network |
 | OD2 | Authorise recording the scientific dispositions (RC-03, 04, 05, 10, 21 and the N7/N9/N10/N11 amendments) as dated amendments to D2, D3, D4, D6, D9, D11 in `09-open-questions-and-decisions.md`; archive untouched | none beyond review time |
 | OD3 | Lifetime error budget α_total for artefact promotions, and whether reversible promotions get a separate budget | smaller budget = fewer false promotions, steeply less power after a handful of **attempts** (α_j is debited per registered test, not per success, RC-44) |
-| OD4 | Smallest useful Brier improvement to power the primary test for, **stated for the confirmatory conjunction** (RC-83); the VOID-rate cap (RC-38; the cap bounds the share of clusters that leave, not the bias of a discretionary removal, which is why a VOID is frozen or adjudicated and never declared after the freeze, RC-85, Appendix I); the calendar-block dependence model (block length) and its shock amplitude (RC-49, RC-70); the estimand naming, per cluster or period-balanced (RC-69); the accrual cut-off and maximum horizon H_max (RC-68); the skew bound d_max and the catastrophe-share bound (RC-72); the comparator error-dependence assumption the design is powered under (RC-83); whether the 12-month look is futility-only (default) or carries a pre-registered O'Brien–Fleming-type spending (RC-56); **round 9:** the pre-registered null class N (block length, d_max, catastrophe-share bound ε_min, shock amplitude) over which the critical value c* is calibrated, and the power floor at the OD4 effect below which the primary is non-confirmatory under that class (RC-94); the minimum number G_min of occupied blocks (RC-97); whether the conjunction is powered under a justified positive-association assumption or under the Fréchet lower bound (RC-101); **round 10:** the generator box Θ of N as a committed family, in particular the serial-dependence bound ρ_max of the block shocks and the supply–shock coordinate, without which four scalars admit a P(stay) = 0.9 law with 15–22 % size at every calibrated c* (RC-108); the abstention cap per arm (RC-109) | power over the design's 24 calendar periods (REPRODUCED, Appendix F and H). Single comparison, independent clusters: δ = 0.01 at 600 clusters 78 % (b = 0.5) to 92 % (b = 0.2); δ = 0.005 at 600 clusters 54–70 %; δ = 0.02 at 288–300 clusters about 76–94 %; the anytime-valid monitor crosses far less often at the same supply (27–32 % for δ = 0.01 at 600; RC-61). **Conjunction** (six comparators, least-favourable configuration): at δ = 0.01 and 600 clusters 21 % with uncorrelated comparator errors, 32 % at a shared-sign probability of one half, 77 % when errors move together; at 1,200 clusters 77 % / 80 % / 96 %; at δ = 0.02 and 600 clusters 76 % / 80 % / 96 %: under uncorrelated errors the conjunction needs about twice the supply of one comparison. **Dependence model:** under independent period shocks of ± 0.3 the single comparison's power at δ = 0.02 is 18 % at 600 and at 1,200 clusters, so the detectable effect under that model is about δ = 0.065 at any supply (the 47 % offered here until round 5 averaged over 120 periods and is withdrawn, RC-70); under a persistent macro regime 120 clusters over 24 periods admit no valid test at any tested block length (Appendix D). **Validity:** the primary test's size is calibrated on the pre-registered null families, not finite-sample valid (exact size 7.33 % on a two-point period-shock null, up to 15.2 % on rare-catastrophe nulls at 24 blocks), and no finite-sample-valid bounded-mean test of any form has power above α(1 + δ)^24 (8 % at δ = 0.02, 16 % at 0.05; PROVED, RC-80), so the skew bound must be justified from reference-class history before supply is read. **Calibration (round 9, REPRODUCED, Appendix J):** on the two-point block-mean family with catastrophe share at least ε_min the calibrated critical value is 3.20 (ε_min = 0.05 or 0.10), 2.63 (0.20) or 2.23 (0.30), and the single comparison's power at δ = 0.02 is 60 %, 79 % or 88 % at 600 clusters and 94 %, 98 % or 99 % at 1,200, against 96 % and 99.9 % at the nominal 1.71; the conjunction's figures above are at the nominal value and fall accordingly. **Dependence of the comparators:** six tests at 80 % can have zero joint power; with anti-correlated errors the Appendix H generator gives 15 % joint power at δ = 0.01 and 600 clusters where the product is 20 % (RC-101) |
+| OD4 | Smallest useful Brier improvement to power the primary test for, **stated for the confirmatory conjunction** (RC-83); the VOID-rate cap (RC-38; the cap bounds the share of clusters that leave, not the bias of a discretionary removal, which is why a VOID is frozen or adjudicated and never declared after the freeze, RC-85, Appendix I); the calendar-block dependence model (block length) and its shock amplitude (RC-49, RC-70); the estimand naming, per cluster or period-balanced (RC-69); the accrual cut-off and maximum horizon H_max (RC-68); the skew bound d_max and the catastrophe-share bound (RC-72); the comparator error-dependence assumption the design is powered under (RC-83); whether the 12-month look is futility-only (default) or carries a pre-registered O'Brien–Fleming-type spending (RC-56); **round 9:** the pre-registered null class N (block length, d_max, catastrophe-share bound ε_min, shock amplitude) over which the critical value c* is calibrated, and the power floor at the OD4 effect below which the primary is non-confirmatory under that class (RC-94); the minimum number G_min of occupied blocks (RC-97); whether the conjunction is powered under a justified positive-association assumption or under the Fréchet lower bound (RC-101); **round 10:** the generator box Θ of N as a committed family, in particular the serial-dependence bound ρ_max of the block shocks and the supply–shock coordinate, without which four scalars admit a P(stay) = 0.9 law with 15–22 % size at every calibrated c* (RC-108); the abstention cap per arm (RC-109); **round 11:** the committed enumerated set N_0 of Θ and its spacing, the replication count R and the confidence 1 − 0.01/K of a simulated calibration (RC-117, RC-118), and the per-component boxes Θ_j of the IUT (RC-121); the calibrated values follow from these and are not a choice | power over the design's 24 calendar periods (REPRODUCED, Appendix F and H). Single comparison, independent clusters: δ = 0.01 at 600 clusters 78 % (b = 0.5) to 92 % (b = 0.2); δ = 0.005 at 600 clusters 54–70 %; δ = 0.02 at 288–300 clusters about 76–94 %; the anytime-valid monitor crosses far less often at the same supply (27–32 % for δ = 0.01 at 600; RC-61). **Conjunction** (six comparators, least-favourable configuration): at δ = 0.01 and 600 clusters 21 % with uncorrelated comparator errors, 32 % at a shared-sign probability of one half, 77 % when errors move together; at 1,200 clusters 77 % / 80 % / 96 %; at δ = 0.02 and 600 clusters 76 % / 80 % / 96 %: under uncorrelated errors the conjunction needs about twice the supply of one comparison. **Dependence model:** under independent period shocks of ± 0.3 the single comparison's power at δ = 0.02 is 18 % at 600 and at 1,200 clusters, so the detectable effect under that model is about δ = 0.065 at any supply (the 47 % offered here until round 5 averaged over 120 periods and is withdrawn, RC-70); under a persistent macro regime 120 clusters over 24 periods admit no valid test at any tested block length (Appendix D). **Validity:** the primary test's size is calibrated on the pre-registered null families, not finite-sample valid (exact size 7.33 % on a two-point period-shock null, up to 15.2 % on rare-catastrophe nulls at 24 blocks), and no finite-sample-valid bounded-mean test of any form has power above α(1 + δ)^24 (8 % at δ = 0.02, 16 % at 0.05; PROVED, RC-80), so the skew bound must be justified from reference-class history before supply is read. **Calibration (round 9, corrected in round 11, REPRODUCED, Appendix L):** on the two-point block-mean family with catastrophe share at least ε_min the exact-supremum critical value is 3.21 (ε_min = 0.05 or 0.10), 2.69 (0.20) or 2.25 (0.30); the round-9 grid values 3.20, 2.63 and 2.23 are exceeded between their own grid points (5.0–5.4 %) and are withdrawn (RC-118); a simulated calibration certifies ≤ α by the upper confidence bound, never by the A3 tolerance (RC-117). **Power at the calibrated values (round 11, REPRODUCED, Appendix L; RC-120):** the single comparison at δ = 0.02 and 600 clusters 65 %, 80 % or 90 % against 97 % at the nominal 1.71 (D1 generator), at δ = 0.01 and 600 clusters 28 %, 44 % or 60 % (b = 0.5) against 78 %; the conjunction at δ = 0.01 and 600 clusters 0.0 %, 0.5 % or 3.8 % with uncorrelated errors and 25 %, 42 % or 58 % with errors moving together, against 21 % and 77 %; the period-shock design at δ = 0.02: 1.6 %, 4.1 % or 8.1 % against 18 %. Under the widest illustrated class the conjunction has no useful power at any supply shown. **Per component (RC-121):** one pair's c* leaves a component whose catastrophe share lies outside that pair's class at up to 11.4 % size, so each component carries its own class and c*_j. **Dependence of the comparators:** six tests at 80 % can have zero joint power; with anti-correlated errors the Appendix H generator gives 15 % joint power at δ = 0.01 and 600 clusters where the product is 20 % (RC-101) |
 | OD5 | Five source families to profile, three to run; any paid-data allowance (Q5); per source, the pre-registered **source rule**: occurrence-time rule (RC-71), latency window (RC-77) and the failure condition under which the absence of a record at logical finality is an adjudicated VOID rather than NO (RC-85); **round 9:** the observation duty at finality (how the observer records an absence at or after deadline + window, RC-105) and the per-source bound on the rate of post-finality reports above which the source is withdrawn from new registrations (RC-88); **round 10:** the monotone-publication condition per source (evidenced publication times, records never removed), under which a late record is itself the observation of absence at finality, and the exclusion at registration of sources that cannot meet it (RC-113) | determines supply, cluster structure and licensing cost; a source whose failure condition cannot be stated is excluded at registration, because after registration no party may declare a member VOID; a source that cannot be observed at finality cannot resolve a NO |
 | OD6 | Hosting at the Phase 2 gate: minimal cloud, hybrid (cloud trusted writer + local stateless GPU compute), or local-only | Codex's illustrative envelope ≈ USD 1,000 / year; local-only is the weakest boundary |
 | OD7 | Position caps for appreciated compounders (cost basis with a review ceiling vs market value with forced trims); precedence of hard limits over the thesis-intact veto | affects turnover, tax classification risk (Q9) and compounding |
 | OD8 | Provider access route per provider after setup-day verification of terms; human duties implied; **round 9:** each provider must state a model knowledge cutoff per model version, recorded per forecast as an UNVERIFIED claim with its evidence (RC-98); a provider that will not state one is excluded at registration | batch route adds a human to the loop and latency; the cutoff cannot be verified from inside the system |
 | OD9a | `AGENTS.md` §2 item 7 (floor → shrinkage) and §2 item 10 (time-shifted holdouts → forbidden-future-information controls) wording, proposed text below; **prerequisite of A0** because the Phase 1 shrinkage estimator (T-20) and leak detector (T-15) would otherwise contradict binding product requirements (RC-33) | governance change; owner approves personally; until recorded, T-20 and T-15 are not built |
-| OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28); **§2 item 3 wording** so that "anytime-valid sequential tests" cannot be read as requiring the confirmatory test to be anytime-valid (RC-84, proposed text below); **§7 commit identity**: whether the two round-7 commits, which carry the tool identity `Claude <noreply@anthropic.com>` because the execution environment denied setting the owner's identity, are squashed on merge, re-created under the owner's identity, or accepted by designating that identity (RC-81; the round-9 commit carries the owner's identity, because the execution environment honoured the setting this time, so the three commits of rounds 7 and 8 remain the only ones at issue); **§2 item 1 (RC-106):** whether an exploratory single-arm Design C track record may be issued in Phase 2 before the three adapters and Jev operate, which the binding text forbids; until amended, no forecast is issued before Phase 4 | governance change; owner approves personally; not a prerequisite of A0; the §2 item 3 wording is a prerequisite of freezing the Phase 2 contract |
-| OD10 | **Approve or revert the version-5 to version-8 diffs of `17`** (commit `b19483a`, the round-8 commit `8af2ae9`, the round-9 commit `922956b`, and the round-10 commit that carries this matrix v11 and applies RC-108 to RC-115, §3i): RC-60 and RC-64 to RC-79 (§3c–§3e wording, applied), RC-80 to RC-83 (§3f) and RC-85, RC-86 (§3g, defects Codex found in the round-7 remedies for RC-67 and RC-79), each change carrying its matrix ID; the propagation fixes RC-57 and RC-59 stand unless reverted; the owner names any item to revert, and any item reverted returns to `OWNER_DECISION` with its evidence intact. The round budget question of the former OD10 is answered by the owner's audit and the §4.6 rule (findings are applied on assessment and closed on evidence) | no cost beyond review time; without OD10 T-34 and the secret-handling code of §3 item 5 are not built (A0, RC-64) while the rest of Phase 1 waits only on OD1, OD2 and OD9a; the items that already misstated evidence offered to OD4 (RC-70, RC-72, RC-83) are corrected in the diff and are the reason the figures in the OD4 row changed |
+| OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28); **§2 item 3 wording** so that "anytime-valid sequential tests" cannot be read as requiring the confirmatory test to be anytime-valid (RC-84, proposed text below); **§7 commit identity**: whether the two round-7 commits, which carry the tool identity `Claude <noreply@anthropic.com>` because the execution environment denied setting the owner's identity, are squashed on merge, re-created under the owner's identity, or accepted by designating that identity (RC-81; the round-9 commit carries the owner's identity, because the execution environment honoured the setting this time, so the three commits of rounds 7 and 8 remain the only ones at issue); **§2 item 1 (RC-106):** whether an exploratory single-arm Design C track record may be issued in Phase 2 before the three adapters and Jev operate, which the binding text forbids; until amended, no forecast is issued before Phase 4; **§4 layout (RC-122):** a row for `research/reproduction/`, the committed evidence scripts of this matrix, proposed below | governance change; owner approves personally; not a prerequisite of A0; the §2 item 3 wording is a prerequisite of freezing the Phase 2 contract |
+| OD10 | **Approve or revert the version-5 to version-9 diffs of `17`** (commit `b19483a`, the round-8 commit `8af2ae9`, the round-9 commit `922956b`, the round-10 commit `04bc122` that applies RC-108 to RC-115, §3i, and the round-11 commit that carries this matrix v12 and applies RC-117 to RC-123, §3j, among them the start-at-floor rule of RC-123 and the withdrawal of the Appendix J critical values under RC-118): RC-60 and RC-64 to RC-79 (§3c–§3e wording, applied), RC-80 to RC-83 (§3f) and RC-85, RC-86 (§3g, defects Codex found in the round-7 remedies for RC-67 and RC-79), each change carrying its matrix ID; the propagation fixes RC-57 and RC-59 stand unless reverted; the owner names any item to revert, and any item reverted returns to `OWNER_DECISION` with its evidence intact. The round budget question of the former OD10 is answered by the owner's audit and the §4.6 rule (findings are applied on assessment and closed on evidence) | no cost beyond review time; without OD10 T-34 and the secret-handling code of §3 item 5 are not built (A0, RC-64) while the rest of Phase 1 waits only on OD1, OD2 and OD9a; the items that already misstated evidence offered to OD4 (RC-70, RC-72, RC-83) are corrected in the diff and are the reason the figures in the OD4 row changed |
 
 **Proposed `AGENTS.md` wording (for OD9a and OD9b; not applied here):**
 
@@ -662,20 +724,23 @@ reviewed version 8.
 - §2 item 3 (RC-84): replace "and anytime-valid sequential tests" with "anytime-valid sequential monitoring of
   the conditional null, and a pre-registered confirmatory test of the average-effect estimand whose validity
   conditions are stated, each labelled as such".
+- §4 table (RC-122): add the row `research/reproduction/` | reproduction scripts of the reconciliation matrix, one
+  per appendix, with pinned requirements | evidence scripts, not project code; each byte-identical to its appendix
+  block (`check_appendix_scripts.py`); never imported by implementation code; no row of §4 is changed by them.
 
 ## 7. Machine-readable state
 
 ```yaml
-matrix_version: 11
+matrix_version: 12
 date: 2026-10-17
-round: 10   # Codex's review of the version-7 text; eight findings, all applied in 17 v8 (section 3i, 4.6); round 9 processed the two reviews of the version-6 text and the owner's directive (section 3h)
+round: 11   # Codex's review of the version-8 text; eight findings, seven applied in 17 v9 and one not reproduced (section 3j, 4.6); round 10 applied the eight findings on the version-7 text (section 3i)
 budget: per_execution   # one commit per execution; no commit without a new finding or an owner decision; findings never close by count
 inputs_processed:
   research_head: 8b2dba79fe9077df53a96a6b61b1823b80930ee8
   codex_review_commit: 59206fe5f652cc3ea63114ad1c2b0fd7252962c2
   pr2_comments: [6215215092, 6215369656]
-  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670, 6220313901, 6220770348, 6222759237, 6231265852, 6231483746, 6236946882]
-  pr4_comments: [6218467449, 6236238443, 6236863824]   # the owner's @codex review request, the owner's directive, the owner's progress request
+  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670, 6220313901, 6220770348, 6222759237, 6231265852, 6231483746, 6236946882, 6237338855]
+  pr4_comments: [6218467449, 6236238443, 6236863824, 6237340628]   # the owner's @codex review request, the owner's directive, the owner's progress request, the routine's one progress update
   pr4_reviews:
     - review_id: 5548201046
       commit: 10d1581595b2d1ea6a8689e0f94b33bd68a59d66
@@ -740,6 +805,13 @@ inputs_processed:
       items: [RC-108, RC-109, RC-110, RC-111, RC-112, RC-113, RC-114, RC-115]
       handling: applied_round_10
       raised_nothing_on: [RC-87, RC-89, RC-91, RC-92, RC-93, RC-95, RC-96, RC-97, RC-100, RC-101, RC-102, RC-103, RC-106, RC-107]   # reviewed once at 922956b without objection; not agreement
+    - review_id: 5559035950
+      commit: 04bc1223d099059bc9f47585281028f01ed023ae
+      summary_comment: 6216072575
+      comment_ids: [4303689619, 4303689622, 4303689629, 4303689633, 4303689635, 4303689641, 4303689645, 4303689649]
+      items: [RC-116, RC-117, RC-118, RC-119, RC-120, RC-121, RC-122, RC-123]
+      handling: applied_round_11_except_RC-116_not_reproduced
+      raised_nothing_on: [RC-109, RC-110, RC-112, RC-113, RC-114, RC-115]   # reviewed once at 04bc122 without objection; not agreement
   review_threads_at_922956b: {total: 86, outdated_and_applied: 71, live_older_applied: [4294987422, 4297109203, 4297337217, 4301994299, 4301994303, 4301994307, 4303397703], live_round_10_applied_in_v8: 8, resolved_by_this_execution: 0}
   review_threads_at_8af2ae9: {total: 78, outdated_and_applied: 53, live_older_applied: [4294987422, 4297109203, 4297109207, 4297337217], live_round_9_applied_in_v7: 21, resolved_by_this_execution: 0}
   other_reviews_read:
@@ -758,6 +830,24 @@ specification:
   new_tests: [T-37, T-38(Phase 5), T-39]
   new_fixtures: [F-02a, F-02b, F-02c, F-02d, F-02e, F-21b, F-24(seven clusters; G rewritten in v8), F-25, F-26, F-27(rewritten in v8)]
 awaiting: codex_review_of_this_commit; owner_decisions_OD1_OD2_OD9a_OD10
+round11_items:
+  applied: [RC-117, RC-118, RC-119, RC-120, RC-121, RC-122, RC-123]
+  recorded_not_reproduced: [RC-116]   # object 50897415d0fd85e29a4effdeab8fcd5de055874d is in no branch or pull-request ref of this repository; GitHub API: no commit found
+  reproduced: [RC-117, RC-118, RC-119, RC-120, RC-121, RC-123]
+  deterministic_or_textual: [RC-122]
+  own_round9_round10_remedies_found_defective: [RC-94 (RC-117, RC-118, RC-121), RC-108 (RC-118, RC-121), RC-95 (RC-119), RC-103 (RC-123)]
+  own_evidence_found_defective: [Appendix J two-point critical values 3.201/2.632/2.231 exceeded inside their classes (RC-118)]
+  rc117_magnitude: {A3_tolerance_pass_probability_by_true_size_20000_reps: {0.05: 1.0, 0.055: 0.7581, 0.058: 0.128, 0.06: 0.01}, level_alpha_observed_rate_ceiling: {reps_20000_K_1: 0.0464, reps_20000_K_100: 0.0443, reps_100000_K_1: 0.04839, reps_100000_K_100: 0.04745}}
+  rc118_magnitude: {appendix_J_values_sup_size_on_1e-5_sweep: {3.201: 0.0503, 2.632: 0.0539, 2.231: 0.0518}, exact_supremum_c_star: {eps_min_0.05: 3.207, eps_min_0.1: 3.207, eps_min_0.2: 2.693, eps_min_0.3: 2.254}, grid_step_0.05_sup_size: 0.1097}
+  rc119_magnitude: {version_7_sequence_out_of_H_order_fraction: 0.642, mean_delay_after_finality_months: {version_7: 2.005, watermark: 2.749}}
+  rc120_magnitude: {single_delta_0.01_600_b_0.5: {nominal: 0.7806, c_3.207: 0.2797, c_2.693: 0.4394, c_2.254: 0.6036}, conjunction_delta_0.01_600_rho_0: {nominal: 0.2036, c_3.207: 0.0001, c_2.693: 0.0054, c_2.254: 0.0375}, conjunction_delta_0.01_600_rho_1: {nominal: 0.7695, c_3.207: 0.2534, c_2.693: 0.4173, c_2.254: 0.582}, period_shock_delta_0.02_600: {nominal: 0.1781, c_3.207: 0.0163, c_2.693: 0.0406, c_2.254: 0.0807}, t36_positive_control: {nominal: 0.9633, c_3.207: 0.6767, c_2.693: 0.8172, c_2.254: 0.8991}}
+  rc121_magnitude: {component_sup_size_below_pair_class: {pair_c_2.254: 0.114, pair_c_2.693: 0.0791, pair_c_3.207: 0.0}}
+  rc123_toy: {v8_rollback: {B_acts_after_store_returns: true, level_after_restore: SIM, fresh_capability_acts_without_promotion: true}, v8_commit_unanchored: {B_acts_after_store_returns: false, level_after_restore: SIM, fresh_capability_acts_without_promotion: true}, fail_closed_start_at_floor: {B_acts_after_store_returns: false, level_after_restore: FLOOR, fresh_capability_acts_without_promotion: false}}
+  design_rules_changed: {calibration_criterion: A3_tolerance -> upper_confidence_bound_le_alpha_at_1_minus_0.01_over_K (RC-117), confirmatory_null: box_with_grid_lower_bound -> committed_enumerated_set_N0_with_exact_supremum_where_available (RC-118), monitor_buffer: registered_clusters_only -> own_maturity_watermark (RC-119), iut_components: one_pair_c_star -> per_component_class_and_c_star_j (RC-121), demotion_without_anchor: undefined -> local_persist_fail_closed_start_at_floor (RC-123)}
+  committed_scripts: {directory: research/reproduction, identity_check: "11 scripts checked, 0 differ"}
+  codex_reviewed_once_without_objection_at_04bc122: [RC-109, RC-110, RC-112, RC-113, RC-114, RC-115]   # not agreement
+  rerun_of_committed_scripts: {byte_identical: [K], not_run_this_round: [A, B, C, D, E, F, G, H, I, J]}   # C to I were re-run in round 9, J in round 10
+  provenance: this commit is authored and committed under the owner's identity; the three commits of rounds 7 and 8 still carry the tool identity (OD9b); the object Codex named in RC-116 is not in the repository
 round10_items:
   applied: [RC-108, RC-109, RC-110, RC-111, RC-112, RC-113, RC-114, RC-115]
   reproduced: [RC-108, RC-109, RC-111, RC-112]
@@ -5664,6 +5754,1370 @@ Output:
     },
     "v8_choice": "section 3 and F-24: a pre-declared member is fixed in the registration record before any forecast or outcome exists and is a population choice, like a candidate-log rejection; the cap and the bounds cover members that left the scored population after registration",
     "reading": "round 9 rewrote section 3 and F-24 for RC-87 and RC-90 and left the T-17 pass condition at its round-7 wording; the two cannot both be implemented"
+  },
+  "python": "3.11.17"
+}
+```
+
+## Appendix L. Round-11 checks (REPRODUCED)
+
+Needs no reference code and no network. Run from the repository root with
+`python -I research/reproduction/round11_checks.py` in an isolated venv (Python 3.11.17, numpy 2.4.6, scipy 1.17.1;
+95 s); the file is byte-identical to the block between the `round11-script` markers (RC-122;
+`python -I research/reproduction/check_appendix_scripts.py` printed `reconciliation_probes.py: identical to the
+appendix block`, the same for `round2_checks.py` to `round11_checks.py`, and `11 scripts checked, 0 differ`). Seeds
+are fixed; two consecutive runs produced byte-identical output. Blocks, keyed by the review-comment id each answers:
+RC-117 computes the exact pass probability of the A3 tolerance by true size at 20,000 replications, the observed-rate
+ceiling of the level-α criterion at 20,000 and 100,000 replications for K = 1, 25, 100 and 400 evaluated points, and
+an illustration on the independent period-shock family of Appendix F; RC-118 vectorises the exact two-point family of
+Appendix J, sweeps ε at step 10⁻⁵, evaluates the committed values 3.201, 2.632 and 2.231 on the sweep, computes the
+exact-supremum critical values and shows two coarse grids; RC-119 runs Codex's two-cluster example and 2,000 random
+registration paths under the version-7 buffer and the watermark rule; RC-120 restates every §6 power figure and the
+T-36 positive control (Appendix K's generator and seed, which reproduces Appendix K's rates at the superseded values)
+at the nominal value, at the superseded values and at the corrected values; RC-121 computes the exact size of a
+component whose catastrophe share lies outside the pair class at the pair's c*; RC-123 is a toy gate under three
+demotion rules on two branches. One choice made while writing it, recorded so that the method is checkable: the
+first draft of the RC-118 block used a sweep at step 0.0005, which already showed the committed values exceeded; the
+committed block uses 10⁻⁵ so that the supremum is located to the pmf's variation over one step. The committed round-10
+script of Appendix K was re-run in the same environment this round (§2): byte-identical. The round-11 commands that
+established RC-116 are not in the script because they need the repository, not a venv: `git fetch origin --prune`,
+`git fetch origin '+refs/pull/4/*:refs/remotes/pr4/*'`, `git cat-file -p 50897415d0fd85e29a4effdeab8fcd5de055874d`
+("fatal: Not a valid object name"), `git branch -r --contains 50897415d0fd…` (no output), the GitHub commits API for
+the SHA ("No commit found for SHA"), and `git log --format='%h %an <%ae> | %cn <%ce>' origin/research/claude-handoff..HEAD`
+(every commit the owner's identity except `b19483a`, `37ac018`, `8af2ae9`).
+
+<!-- round11-script:start -->
+```python
+"""Round-11 checks for the Codex findings on PR #4 at 04bc122 (no reference code, no network).
+
+Review 5559035950. Each block is keyed by the review-comment id it answers. The cluster-weighted statistic with
+block-sum variance, the D1-type generator, the period-shock generator, the two-point calibration and the conjunction
+generator are those of 16 Appendix F, H, J and K.
+"""
+import json, math, sys
+import numpy as np
+from scipy.stats import beta, binom, t as student_t
+
+out = {}
+ALPHA = 0.05
+PERIODS = 24
+REPS = 20000
+CRIT = float(student_t.ppf(1 - ALPHA, PERIODS - 1))        # nominal one-sided critical value on 23 df, 1.7139
+
+def binom_upper(k, n, conf):
+    return 1.0 if k >= n else float(beta.ppf(conf, k + 1, n - k))
+def binom_lower(k, n, conf):
+    return 0.0 if k <= 0 else float(beta.ppf(1 - conf, k, n - k + 1))
+
+def cw_t_many(x):
+    """x: (reps, clusters) with clusters = PERIODS * per, blocks of one period; cluster-weighted statistic, block-sum
+    variance on G - 1 df (16 Appendix F). A zero-variance sample returns -inf (never rejects)."""
+    reps, n = x.shape
+    per = n // PERIODS
+    theta = x.mean(axis=1)
+    dev = (x - theta[:, None]).reshape(reps, PERIODS, per).sum(axis=2)
+    v = (dev ** 2).sum(axis=1) / n ** 2 * PERIODS / (PERIODS - 1)
+    tt = np.full(reps, -np.inf)
+    ok = v > 0
+    tt[ok] = theta[ok] / np.sqrt(v[ok])
+    return tt
+
+def cw_t_many_j(x):
+    """x: (reps, J, clusters); returns t per (rep, J) (16 Appendix H)."""
+    reps, j, n = x.shape
+    per = n // PERIODS
+    theta = x.mean(axis=2)
+    dev = (x - theta[:, :, None]).reshape(reps, j, PERIODS, per).sum(axis=3)
+    v = (dev ** 2).sum(axis=2) / n ** 2 * PERIODS / (PERIODS - 1)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        return theta / np.sqrt(v)
+
+# ================= r4303689622 (RC-117): the A3 tolerance is not a level-alpha calibration criterion =================
+# A3 passes a family when the exact one-sided 99 % upper bound over 20,000 replications is <= 0.06. Used as the
+# calibration criterion for c*, that admits a true size above alpha. Exact pass probabilities by true size, then the
+# criterion that certifies size <= alpha: the upper bound itself <= alpha, at a confidence adjusted for the K points
+# evaluated (Bonferroni, 1 - 0.01/K), with the implied ceiling on the observed rate.
+def kmax(bound, n, conf):
+    lo, hi = 0, n
+    while lo < hi:                                    # largest k with binom_upper(k, n, conf) <= bound
+        mid = (lo + hi + 1) // 2
+        if binom_upper(mid, n, conf) <= bound:
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo
+rc117 = {'A3_tolerance_as_calibration_criterion': {}, 'level_alpha_criterion': {}}
+k06 = kmax(0.06, REPS, 0.99)
+rc117['A3_tolerance_as_calibration_criterion'] = {
+    'max_rejections_passing_at_20000_reps': k06, 'observed_rate_ceiling': round(k06 / REPS, 5),
+    'P_pass_by_true_size': {f'size={s}': round(float(binom.cdf(k06, REPS, s)), 4) for s in (0.050, 0.055, 0.057, 0.058, 0.060)}}
+for n_reps in (20000, 100000):
+    for K in (1, 25, 100, 400):
+        conf = 1 - 0.01 / K
+        k05 = kmax(ALPHA, n_reps, conf)
+        rc117['level_alpha_criterion'][f'reps={n_reps},points_K={K},confidence={conf:.4f}'] = {
+            'max_rejections_passing': k05, 'observed_rate_ceiling': round(k05 / n_reps, 5),
+            'margin_below_alpha': round(ALPHA - k05 / n_reps, 5),
+            'P_pass_by_true_size': {f'size={s}': round(float(binom.cdf(k05, n_reps, s)), 4) for s in (0.040, 0.042, 0.044, 0.046, 0.050)}}
+# Illustration on a simulated family (the independent period-shock null of Appendix F, q_t = 0.5 +/- 0.3, 24 x 25):
+# c* under the point-estimate criterion, under the 99 % bound at one point and under the Bonferroni bound for K = 100,
+# with the power at delta = 0.02 (D1 generator, b = 0.5, 600 clusters) at each.
+r = np.random.default_rng(11700)
+per = 25; n = PERIODS * per
+sh = r.choice([-0.3, 0.3], size=(REPS, PERIODS))
+q = np.repeat(0.5 + sh, per, axis=1)
+y = (r.random(q.shape) < q).astype(float)
+t_null = np.sort(cw_t_many(0.4 * y - 0.2))[::-1]
+p = 0.5 + math.sqrt(0.02) * r.choice([-1., 1.], size=(REPS, n))
+yy = (r.random(p.shape) < p).astype(float)
+t_alt = cw_t_many((0.5 - yy) ** 2 - (p - yy) ** 2)
+illus = {}
+for label, kk in (('point_estimate_le_alpha', int(ALPHA * REPS)), ('99pct_upper_le_alpha_K=1', kmax(ALPHA, REPS, 0.99)),
+                  ('bonferroni_upper_le_alpha_K=100', kmax(ALPHA, REPS, 1 - 0.01 / 100))):
+    c = float(t_null[kk])                             # smallest c with at most kk null statistics strictly above it
+    k_obs = int((t_null > c).sum())
+    illus[label] = {'c_star': round(c, 4), 'null_rejections_at_c_star': k_obs, 'observed_size': round(k_obs / REPS, 4),
+                    '99pct_upper': round(binom_upper(k_obs, REPS, 0.99), 4), 'power_delta_0.02_600': round(float((t_alt > c).mean()), 4)}
+illus['nominal_1.7139'] = {'observed_size': round(float((t_null > CRIT).mean()), 4), 'power_delta_0.02_600': round(float((t_alt > CRIT).mean()), 4)}
+rc117['illustration_period_shock_family'] = illus
+rc117['reading'] = ('with the A3 tolerance as the criterion a family of true size 5.5 % passes the calibration in about three runs of four and the text then calls the test level 0.05; '
+                    'the criterion that certifies size <= alpha is the upper bound itself <= alpha at confidence 1 - 0.01/K over the K evaluated points, '
+                    'which costs 0.4 to 0.6 points of size at 20,000 replications (0.2 to 0.3 at 100,000) and a few points of power, reported at c*')
+out['RC117_calibration_criterion'] = rc117
+
+# ================= r4303689629 (RC-118): the grid maximum is not the supremum over the box =================
+# Exact two-point block-mean family of Appendix J (block mean +a w.p. 1 - eps, -b w.p. eps, a = eps b / (1 - eps),
+# b = 0.9, 24 blocks). The statistic depends only on the number k of positive blocks, so the size at a fixed c is a
+# STEP function of eps (it jumps where some t_k(eps) crosses c) and a grid cannot bound it. Vectorised over eps.
+G = 24
+KS = np.arange(G + 1)
+def two_point_t(eps, b=0.9):
+    """t_k(eps) for every k, shape (len(eps), G + 1); zero-variance samples (k = 0, G) never reject."""
+    eps = np.asarray(eps, float)[:, None]
+    a = eps * b / (1 - eps)
+    k = KS[None, :]
+    mean = (k * a - (G - k) * b) / G
+    var = (k * (a - mean) ** 2 + (G - k) * (-b - mean) ** 2) / (G - 1)
+    with np.errstate(divide='ignore', invalid='ignore'):
+        tk = mean / np.sqrt(var / G)
+    tk[:, [0, G]] = -np.inf
+    return tk
+def two_point_pmf(eps):
+    return binom.pmf(KS[None, :], G, 1 - np.asarray(eps, float)[:, None])
+def size_over(eps, c):
+    return (two_point_pmf(eps) * (two_point_t(eps) > c)).sum(axis=1)
+def exact_size(e, c):
+    return float(size_over(np.array([e]), c)[0])
+def crit_per_eps(eps):
+    """Smallest c with size(eps, c) <= alpha, for every eps: the t_(j*) at which the descending cumulative mass first exceeds alpha."""
+    tk = two_point_t(eps); pm = two_point_pmf(eps)
+    order = np.argsort(-tk, axis=1)
+    ts = np.take_along_axis(tk, order, axis=1); ps = np.take_along_axis(pm, order, axis=1)
+    cum = np.cumsum(ps, axis=1)
+    j = (cum > ALPHA).argmax(axis=1)
+    return ts[np.arange(len(eps)), j]
+def c_star(eps_set):
+    return float(math.ceil(crit_per_eps(np.asarray(eps_set, float)).max() * 1000) / 1000)      # rounded up to 0.001 as in Appendix J
+dense = np.round(np.arange(0.02, 0.50001, 1e-5), 5)
+rc118 = {'committed_appendix_J_values_on_the_dense_sweep': {}, 'coarse_grids': {}}
+C_DENSE = {}
+for eps_min, c_j in ((0.05, 3.201), (0.1, 3.201), (0.2, 2.632), (0.3, 2.231)):
+    d = dense[dense >= eps_min - 1e-9]
+    sz = size_over(d, c_j); i = int(sz.argmax())
+    grid_j = np.round(np.arange(eps_min, 0.5001, 0.005), 3)
+    C_DENSE[eps_min] = c_star(d)
+    rc118['committed_appendix_J_values_on_the_dense_sweep'][f'eps_min={eps_min}'] = {
+        'appendix_J_grid_step': 0.005, 'appendix_J_c_star': c_j, 'max_size_on_appendix_J_grid': round(float(size_over(grid_j, c_j).max()), 4),
+        'sup_size_on_dense_sweep_step_1e-5': round(float(sz[i]), 4), 'argmax_eps': float(d[i]),
+        'fraction_of_dense_points_above_alpha': round(float((sz > ALPHA).mean()), 4),
+        'c_star_on_dense_sweep': C_DENSE[eps_min], 'sup_size_at_dense_c_star': round(float(size_over(d, C_DENSE[eps_min]).max()), 4)}
+for eps_min, step in ((0.2, 0.05), (0.3, 0.05)):
+    grid = [round(e, 3) for e in np.arange(eps_min, 0.5001, step)]
+    c = c_star(grid)
+    d = dense[dense >= eps_min - 1e-9]
+    sz = size_over(d, c); i = int(sz.argmax())
+    rc118['coarse_grids'][f'eps_min={eps_min},grid_step={step}'] = {
+        'grid': grid, 'c_star_on_grid': c, 'max_size_on_grid': round(float(size_over(np.array(grid), c).max()), 4),
+        'sup_size_on_dense_sweep': round(float(sz[i]), 4), 'argmax_eps': float(d[i]), 'fraction_of_dense_points_above_alpha': round(float((sz > ALPHA).mean()), 4)}
+rc118['dense_c_star_by_eps_min'] = {str(k): v for k, v in C_DENSE.items()}
+rc118['reading'] = ('on the exact two-point family the size at a fixed c is a step function of eps, so every grid value of c*, the committed 0.005 grid '
+                    'included, is exceeded between its grid points; the confirmatory claim is over the committed enumerated set, a coordinate whose '
+                    'supremum can be computed exactly is calibrated on it (the dense values replace the Appendix J grid values), and the box is otherwise '
+                    'the domain of a reported sweep whose refinement is a pre-registration check')
+out['RC118_grid_versus_box'] = rc118
+C_STARS = tuple(sorted({3.201, 2.632, 2.231, C_DENSE[0.05], C_DENSE[0.2], C_DENSE[0.3]}, reverse=True))
+
+# ================= r4303689633 (RC-119): the maturity buffer must wait for the registration watermark =================
+# Codex's example: A registered at 0 with H_A = 100, final at 10, no registered predecessor; B registered at 20 with
+# not_before 21 and H_B = 50, final at 50. Version-8 rule: a closed cluster waits for every REGISTERED cluster with a
+# smaller H. Watermark rule: a closed cluster waits until the clock reaches its own H as well (no cluster with a
+# smaller H can be registered after that, because a registration at time t has H > t).
+def consume(clusters, rule):
+    # clusters: list of (name, registered_at, H, final_at). Returns the consumption sequence [(time, name, H)].
+    events = sorted({c[1] for c in clusters} | {c[3] for c in clusters} | {c[2] for c in clusters})
+    applied, seq = set(), []
+    for now in events:
+        progress = True
+        while progress:
+            progress = False
+            registered = [c for c in clusters if c[1] <= now and c[0] not in applied]
+            for c in sorted(registered, key=lambda c: (c[2], c[1])):
+                name, reg, H, fin = c
+                if fin > now:
+                    continue
+                predecessors = [d for d in registered if d[2] < H or (d[2] == H and d[1] < reg)]
+                if any(d[3] > now for d in predecessors):
+                    continue
+                if rule == 'watermark' and now < H:
+                    continue
+                applied.add(name); seq.append((now, name, H)); progress = True
+                break
+    return seq
+ex = [('A', 0, 100, 10), ('B', 20, 50, 50)]
+rc119 = {'codex_example': {}}
+for rule in ('version_8', 'watermark'):
+    seq = consume(ex, rule)
+    rc119['codex_example'][rule] = {'sequence_(time,cluster,H)': seq, 'H_ordered': all(seq[i][2] <= seq[i + 1][2] for i in range(len(seq) - 1))}
+# Frequency under random registrations: 24 months, registrations at uniform times, horizons uniform in [1, 12],
+# a YES final one month after registration with probability one half, otherwise final at H.
+rr = np.random.default_rng(11900)
+unsorted = 0; delay_v8 = []; delay_wm = []
+TRIALS = 2000
+for _ in range(TRIALS):
+    m = 40
+    reg = np.sort(rr.uniform(0, 24, m)); hor = rr.uniform(1, 12, m); H = reg + hor
+    early = rr.random(m) < 0.5
+    fin = np.where(early, reg + 1.0, H)
+    cl = [(f'c{i}', float(reg[i]), float(H[i]), float(fin[i])) for i in range(m)]
+    s8 = consume(cl, 'version_8'); sw = consume(cl, 'watermark')
+    if not all(s8[i][2] <= s8[i + 1][2] for i in range(len(s8) - 1)):
+        unsorted += 1
+    fin_by = {c[0]: c[3] for c in cl}
+    delay_v8.append(np.mean([t - fin_by[nm] for t, nm, _ in s8])); delay_wm.append(np.mean([t - fin_by[nm] for t, nm, _ in sw]))
+rc119['random_registrations_40_clusters_24_months'] = {
+    'trials': TRIALS, 'fraction_of_paths_with_unsorted_version_8_sequence': round(unsorted / TRIALS, 4),
+    'mean_delay_after_finality_months': {'version_8': round(float(np.mean(delay_v8)), 3), 'watermark': round(float(np.mean(delay_wm)), 3)},
+    'watermark_sequences_H_ordered_in_every_trial': True}
+rc119['reading'] = ('the version-8 buffer orders only the clusters registered so far, so a later registration with a smaller H breaks the declared H-order and '
+                    'the earlier factor was computed on a prefix the filtration says is incomplete; applying a factor no earlier than its own H closes the channel, '
+                    'because a registration at time t has H > t, at the cost of the delay reported')
+out['RC119_registration_watermark'] = rc119
+
+# ================= r4303689635 (RC-120): the section-6 power figures restated at the calibrated c* =================
+# Single comparison, D1 generator (Appendix F rows): b in {0.5, 0.2}, delta in {0.005, 0.01, 0.02}, 288, 600 and 1,200 clusters.
+def d1_x(b, delta, kk, r_):
+    p_ = b + math.sqrt(delta) * r_.choice([-1., 1.], size=(REPS, kk))
+    y_ = (r_.random(p_.shape) < p_).astype(float)
+    return (b - y_) ** 2 - (p_ - y_) ** 2
+def rates(tt):
+    d = {'nominal_1.7139': round(float((tt > CRIT).mean()), 4)}
+    for c in C_STARS:
+        d[f'c*={c}'] = round(float((tt > c).mean()), 4)
+    return d
+single = {}
+for b in (0.5, 0.2):
+    for delta in (0.005, 0.01, 0.02):
+        for per_ in (12, 25, 50):
+            kk = PERIODS * per_
+            r_ = np.random.default_rng(12000 + int(b * 10) * 100 + int(delta * 1000) * 10 + per_)
+            single[f'b={b},delta={delta},clusters={kk}(24x{per_})'] = rates(cw_t_many(d1_x(b, delta, kk, r_)))
+# Period-shock design (Appendix F generator: q_t = 0.5 + 2.5 delta +/- 0.3 per period, X in {-0.2, +0.2}).
+shock = {}
+for delta in (0.02, 0.05, 0.08):
+    for per_ in (25, 50):
+        kk = PERIODS * per_
+        r_ = np.random.default_rng(12100 + int(delta * 1000) * 10 + per_)
+        sh_ = r_.choice([-0.3, 0.3], size=(REPS, PERIODS))
+        q_ = np.repeat(0.5 + 2.5 * delta + sh_, per_, axis=1)
+        y_ = (r_.random(q_.shape) < q_).astype(float)
+        shock[f'shock=+/-0.3,delta={delta},clusters={kk}(24x{per_})'] = rates(cw_t_many(0.4 * y_ - 0.2))
+# Conjunction (Appendix H generator: six comparators sharing FULL's forecast and the outcome, shared-sign probability rho;
+# Appendix J's three anti-correlated pairs). IUT rejects iff every comparator's statistic exceeds the common c.
+J = 6
+def iut_tt(b, delta, per_, rho, seed, anti=False):
+    r_ = np.random.default_rng(seed)
+    n_ = PERIODS * per_
+    y_ = (r_.random((REPS, 1, n_)) < b).astype(float)
+    if anti:
+        own = r_.choice([-1.0, 1.0], size=(REPS, 3, n_))
+        s_ = np.concatenate([own, -own], axis=1)
+    else:
+        shared = r_.choice([-1.0, 1.0], size=(REPS, 1, n_))
+        own = r_.choice([-1.0, 1.0], size=(REPS, J, n_))
+        s_ = np.where(r_.random((REPS, J, n_)) < rho, shared, own)
+    bc = b - s_ * math.sqrt(delta)
+    return cw_t_many_j((bc - y_) ** 2 - (b - y_) ** 2)
+def iut_rates(tt):
+    d = {}
+    for label, c in (('nominal_1.7139', CRIT),) + tuple((f'c*={c}', c) for c in C_STARS):
+        rej = tt > c
+        d[label] = {'mean_marginal': round(float(rej.mean(axis=0).mean()), 4), 'iut_joint': round(float(rej.all(axis=1).mean()), 4)}
+    return d
+conj = {}
+for delta, per_ in ((0.01, 25), (0.01, 50), (0.02, 25)):
+    for rho in (0.0, 0.5, 1.0):
+        conj[f'delta={delta},clusters={PERIODS * per_},shared_sign_prob={rho}'] = iut_rates(iut_tt(0.5, delta, per_, rho, 12200 + int(delta * 1000) * 100 + per_ + int(rho * 10)))
+conj['delta=0.01,clusters=600,three_anti_correlated_pairs'] = iut_rates(iut_tt(0.5, 0.01, 25, 0.0, 12300, anti=True))
+# T-36 (c) positive control restated at every cutoff (Appendix K generator and seed: D1, b = 0.5, delta = 0.08, 120 clusters).
+r36 = np.random.default_rng(11100)
+p36 = 0.5 + math.sqrt(0.08) * r36.choice([-1.0, 1.0], size=(REPS, PERIODS * 5))
+y36 = (r36.random((REPS, PERIODS * 5)) < p36).astype(float)
+t36 = cw_t_many((0.5 - y36) ** 2 - (p36 - y36) ** 2)
+pc36 = {}
+for label, c in (('nominal_1.7139', CRIT),) + tuple((f'c*={c}', c) for c in C_STARS):
+    k36 = int((t36 > c).sum())
+    pc36[label] = {'rejection_rate': round(k36 / REPS, 4), 'exact_99pct_lower_bound': round(binom_lower(k36, REPS, 0.99), 4)}
+out['RC120_power_restated_at_calibrated_cutoffs'] = {
+    'single_comparison_D1_generator': single, 'period_shock_design': shock, 'confirmatory_conjunction': conj,
+    'T36_positive_control_b_0.5_delta_0.08_120_clusters': pc36,
+    'reading': 'every figure of the section-6 smallest-effect row is stated at the nominal value; at the illustrated c* values the single comparison at delta = 0.01 and 600 clusters, the conjunction and the period-shock design all fall, and the row now carries the figures per c* and defers the choice to OD4'}
+
+# ================= r4303689641 (RC-121): one calibrated cutoff does not make every IUT component level alpha =================
+# Exact: a component whose increment law is the two-point family with a catastrophe share OUTSIDE the class the
+# FULL-Design C pair was calibrated for (eps < eps_min), evaluated at the pair's c*. The IUT's size when the other five
+# components reject surely equals the component's size (Berger: the IUT is level alpha only if every component is).
+rc121 = {'component_size_outside_the_pair_class': {}}
+for eps_min in (0.3, 0.2, 0.1):
+    c = C_DENSE[eps_min]
+    below = dense[dense < eps_min - 1e-9]
+    sz = size_over(below, c); i = int(sz.argmax())
+    inside = dense[dense >= eps_min - 1e-9]
+    rc121['component_size_outside_the_pair_class'][f'pair_eps_min={eps_min},pair_c_star={c}'] = {
+        'sup_size_inside_the_pair_class': round(float(size_over(inside, c).max()), 4),
+        'sup_component_size_for_eps_in_[0.02,eps_min)': round(float(sz[i]), 4), 'argmax_eps': float(below[i]),
+        'component_size_at_selected_eps': {f'eps={e}': round(exact_size(e, c), 4) for e in (0.12, 0.15, 0.18, 0.22, 0.25, 0.28) if e < eps_min}}
+rc121['reading'] = ('a comparator whose increments carry a catastrophe share outside the class the FULL-baseline pair was calibrated for has size '
+                    'above alpha at the pair c*, and the IUT inherits it when the other components reject; each component needs its own '
+                    'enumerated class and c*_j, and T-13 and T-16 carry the null comparator at the corner of its box')
+out['RC121_component_calibration'] = rc121
+
+# ================= r4303689649 (RC-123): demotion when the anchor store is unavailable =================
+# Toy gate. State: level, epoch, anchored epochs, pending flag. Scenario: promote (anchored) -> capability B signed in
+# that epoch -> hazard demotion while the anchor store is unavailable -> present B -> ledger restored to the last anchor
+# and the process restarted -> store returns -> present B -> present a fresh owner capability. Three rules for the
+# demotion: version-8 transaction rolled back on anchor failure; version-8 transaction committed unanchored; the
+# fail-closed rule (local demotion persisted at once, promotions and protected actions refused until anchored, every
+# start at the floor).
+def gate_run(rule, restore_branch):
+    store_up = [True]
+    st = {'level': 'FLOOR', 'epoch': 0, 'anchored': {0}, 'pending': False}
+    anchors = []                                          # snapshots of st at each successful anchor
+    log = []
+    def anchor():
+        if store_up[0]:
+            st['anchored'].add(st['epoch']); st['pending'] = False; anchors.append(dict(st, anchored=set(st['anchored'])))
+            return True
+        return False
+    def start():
+        st['epoch'] += 1
+        if rule == 'fail_closed':
+            st['level'] = 'FLOOR'
+        ok = anchor()
+        log.append(f"start: level={st['level']} epoch={st['epoch']} anchored={ok}")
+    def promote(cap_epoch):
+        if cap_epoch != st['epoch'] or st['epoch'] not in st['anchored'] or st['pending']:
+            log.append(f'promote with cap epoch {cap_epoch}: refused'); return False
+        st['level'] = 'SIM'; anchor(); log.append(f'promote with cap epoch {cap_epoch}: level=SIM, anchored'); return True
+    def demote():
+        if rule == 'v8_rollback':
+            if not store_up[0]:
+                log.append('demote: anchor unavailable, transaction rolled back, level stays ' + st['level']); return
+            st['level'] = 'FLOOR'; st['epoch'] += 1; anchor(); log.append('demote: level=FLOOR, epoch anchored')
+        elif rule == 'v8_commit_unanchored':
+            st['level'] = 'FLOOR'; st['epoch'] += 1
+            ok = anchor(); log.append(f'demote: level=FLOOR, new epoch anchored={ok}')
+        else:
+            st['level'] = 'FLOOR'; st['epoch'] += 1; st['pending'] = True
+            ok = anchor(); log.append(f'demote: level=FLOOR persisted locally, epoch {st["epoch"]} anchored={ok}, pending={st["pending"]}')
+    def act(cap_epoch, name):
+        if cap_epoch != st['epoch'] or st['level'] != 'SIM' or st['pending'] or st['epoch'] not in st['anchored'] or not store_up[0]:
+            log.append(f'{name}: refused'); return False
+        log.append(f'{name}: ACTED at level SIM'); return True
+    def restore():
+        last = anchors[-1]
+        st.update(level=last['level'], epoch=last['epoch'], anchored=set(last['anchored']), pending=last['pending'])
+        log.append(f"restore to last anchor: level={st['level']} epoch={st['epoch']}")
+    start()
+    promote(st['epoch'])
+    b_epoch = st['epoch']                                 # capability B signed now, unused
+    store_up[0] = False
+    demote()
+    acted_store_down = act(b_epoch, 'B after demotion, store down')
+    if not restore_branch:
+        store_up[0] = True
+        if rule == 'fail_closed' and st['pending']:
+            anchor()                                       # the pending epoch is anchored as soon as the store returns
+        acted = act(b_epoch, 'B after the store returns')
+        return {'B_acts_after_the_store_returns': acted, 'level_after_the_store_returns': st['level'], 'log': log}
+    restore(); start()
+    store_up[0] = True
+    anchor()
+    acted = act(b_epoch, 'B after restore and restart')
+    fresh = act(st['epoch'], 'fresh owner capability in the new epoch, no promotion recorded')
+    return {'B_acts_after_demotion_store_down': acted_store_down, 'B_acts_after_restore_and_restart': acted,
+            'level_after_restore_and_restart': st['level'], 'fresh_capability_acts_at_SIM_without_a_promotion': fresh, 'log': log}
+rc123 = {}
+for rule in ('v8_rollback', 'v8_commit_unanchored', 'fail_closed'):
+    rc123[rule] = {'store_returns_no_restore': gate_run(rule, False), 'restore_to_last_anchor_while_store_down': gate_run(rule, True)}
+rc123['reading'] = ('rolling the demotion back leaves the gate elevated and the pre-demotion capability acts once the store returns; committing it unanchored stales '
+                    'the capability (and the start rotation of RC-74 stales it after a restore as well, so that part of the finding does not reproduce) but a restore '
+                    'to the last anchor revives the elevated level and a fresh capability then acts at it with no promotion recorded; persisting the demotion at once, '
+                    'refusing every promotion and protected action until the new epoch is anchored, and starting every process at the floor leaves nothing to revive')
+out['RC123_demotion_without_anchor'] = rc123
+
+out['python'] = sys.version.split()[0]
+print(json.dumps(out, indent=2, default=str))
+```
+<!-- round11-script:end -->
+
+Output (`python -I research/reproduction/round11_checks.py`, round 11, 2026-10-17; the second run was byte-identical):
+
+```json
+{
+  "RC117_calibration_criterion": {
+    "A3_tolerance_as_calibration_criterion": {
+      "max_rejections_passing_at_20000_reps": 1122,
+      "observed_rate_ceiling": 0.0561,
+      "P_pass_by_true_size": {
+        "size=0.05": 1.0,
+        "size=0.055": 0.7581,
+        "size=0.057": 0.2979,
+        "size=0.058": 0.128,
+        "size=0.06": 0.01
+      }
+    },
+    "level_alpha_criterion": {
+      "reps=20000,points_K=1,confidence=0.9900": {
+        "max_rejections_passing": 928,
+        "observed_rate_ceiling": 0.0464,
+        "margin_below_alpha": 0.0036,
+        "P_pass_by_true_size": {
+          "size=0.04": 1.0,
+          "size=0.042": 0.9989,
+          "size=0.044": 0.9518,
+          "size=0.046": 0.6147,
+          "size=0.05": 0.0096
+        }
+      },
+      "reps=20000,points_K=25,confidence=0.9996": {
+        "max_rejections_passing": 897,
+        "observed_rate_ceiling": 0.04485,
+        "margin_below_alpha": 0.00515,
+        "P_pass_by_true_size": {
+          "size=0.04": 0.9997,
+          "size=0.042": 0.9778,
+          "size=0.044": 0.728,
+          "size=0.046": 0.2244,
+          "size=0.05": 0.0004
+        }
+      },
+      "reps=20000,points_K=100,confidence=0.9999": {
+        "max_rejections_passing": 886,
+        "observed_rate_ceiling": 0.0443,
+        "margin_below_alpha": 0.0057,
+        "P_pass_by_true_size": {
+          "size=0.04": 0.9989,
+          "size=0.042": 0.9485,
+          "size=0.044": 0.5906,
+          "size=0.046": 0.1288,
+          "size=0.05": 0.0001
+        }
+      },
+      "reps=20000,points_K=400,confidence=1.0000": {
+        "max_rejections_passing": 876,
+        "observed_rate_ceiling": 0.0438,
+        "margin_below_alpha": 0.0062,
+        "P_pass_by_true_size": {
+          "size=0.04": 0.9968,
+          "size=0.042": 0.9003,
+          "size=0.044": 0.454,
+          "size=0.046": 0.0702,
+          "size=0.05": 0.0
+        }
+      },
+      "reps=100000,points_K=1,confidence=0.9900": {
+        "max_rejections_passing": 4839,
+        "observed_rate_ceiling": 0.04839,
+        "margin_below_alpha": 0.00161,
+        "P_pass_by_true_size": {
+          "size=0.04": 1.0,
+          "size=0.042": 1.0,
+          "size=0.044": 1.0,
+          "size=0.046": 0.9998,
+          "size=0.05": 0.0097
+        }
+      },
+      "reps=100000,points_K=25,confidence=0.9996": {
+        "max_rejections_passing": 4769,
+        "observed_rate_ceiling": 0.04769,
+        "margin_below_alpha": 0.00231,
+        "P_pass_by_true_size": {
+          "size=0.04": 1.0,
+          "size=0.042": 1.0,
+          "size=0.044": 1.0,
+          "size=0.046": 0.9946,
+          "size=0.05": 0.0004
+        }
+      },
+      "reps=100000,points_K=100,confidence=0.9999": {
+        "max_rejections_passing": 4745,
+        "observed_rate_ceiling": 0.04745,
+        "margin_below_alpha": 0.00255,
+        "P_pass_by_true_size": {
+          "size=0.04": 1.0,
+          "size=0.042": 1.0,
+          "size=0.044": 1.0,
+          "size=0.046": 0.9857,
+          "size=0.05": 0.0001
+        }
+      },
+      "reps=100000,points_K=400,confidence=1.0000": {
+        "max_rejections_passing": 4722,
+        "observed_rate_ceiling": 0.04722,
+        "margin_below_alpha": 0.00278,
+        "P_pass_by_true_size": {
+          "size=0.04": 1.0,
+          "size=0.042": 1.0,
+          "size=0.044": 1.0,
+          "size=0.046": 0.9674,
+          "size=0.05": 0.0
+        }
+      }
+    },
+    "illustration_period_shock_family": {
+      "point_estimate_le_alpha": {
+        "c_star": 1.7226,
+        "null_rejections_at_c_star": 1000,
+        "observed_size": 0.05,
+        "99pct_upper": 0.0537,
+        "power_delta_0.02_600": 0.9638
+      },
+      "99pct_upper_le_alpha_K=1": {
+        "c_star": 1.7659,
+        "null_rejections_at_c_star": 928,
+        "observed_size": 0.0464,
+        "99pct_upper": 0.05,
+        "power_delta_0.02_600": 0.9604
+      },
+      "bonferroni_upper_le_alpha_K=100": {
+        "c_star": 1.7964,
+        "null_rejections_at_c_star": 886,
+        "observed_size": 0.0443,
+        "99pct_upper": 0.0478,
+        "power_delta_0.02_600": 0.9579
+      },
+      "nominal_1.7139": {
+        "observed_size": 0.0509,
+        "power_delta_0.02_600": 0.9647
+      }
+    },
+    "reading": "with the A3 tolerance as the criterion a family of true size 5.5 % passes the calibration in about three runs of four and the text then calls the test level 0.05; the criterion that certifies size <= alpha is the upper bound itself <= alpha at confidence 1 - 0.01/K over the K evaluated points, which costs 0.4 to 0.6 points of size at 20,000 replications (0.2 to 0.3 at 100,000) and a few points of power, reported at c*"
+  },
+  "RC118_grid_versus_box": {
+    "committed_appendix_J_values_on_the_dense_sweep": {
+      "eps_min=0.05": {
+        "appendix_J_grid_step": 0.005,
+        "appendix_J_c_star": 3.201,
+        "max_size_on_appendix_J_grid": 0.045,
+        "sup_size_on_dense_sweep_step_1e-5": 0.0503,
+        "argmax_eps": 0.17505,
+        "fraction_of_dense_points_above_alpha": 0.0005,
+        "c_star_on_dense_sweep": 3.207,
+        "sup_size_at_dense_c_star": 0.05
+      },
+      "eps_min=0.1": {
+        "appendix_J_grid_step": 0.005,
+        "appendix_J_c_star": 3.201,
+        "max_size_on_appendix_J_grid": 0.045,
+        "sup_size_on_dense_sweep_step_1e-5": 0.0503,
+        "argmax_eps": 0.17505,
+        "fraction_of_dense_points_above_alpha": 0.0006,
+        "c_star_on_dense_sweep": 3.207,
+        "sup_size_at_dense_c_star": 0.05
+      },
+      "eps_min=0.2": {
+        "appendix_J_grid_step": 0.005,
+        "appendix_J_c_star": 2.632,
+        "max_size_on_appendix_J_grid": 0.0484,
+        "sup_size_on_dense_sweep_step_1e-5": 0.0539,
+        "argmax_eps": 0.23502,
+        "fraction_of_dense_points_above_alpha": 0.0116,
+        "c_star_on_dense_sweep": 2.693,
+        "sup_size_at_dense_c_star": 0.05
+      },
+      "eps_min=0.3": {
+        "appendix_J_grid_step": 0.005,
+        "appendix_J_c_star": 2.231,
+        "max_size_on_appendix_J_grid": 0.0468,
+        "sup_size_on_dense_sweep_step_1e-5": 0.0518,
+        "argmax_eps": 0.34004,
+        "fraction_of_dense_points_above_alpha": 0.0086,
+        "c_star_on_dense_sweep": 2.254,
+        "sup_size_at_dense_c_star": 0.0499
+      }
+    },
+    "coarse_grids": {
+      "eps_min=0.2,grid_step=0.05": {
+        "grid": [
+          0.2,
+          0.25,
+          0.3,
+          0.35,
+          0.4,
+          0.45,
+          0.5
+        ],
+        "c_star_on_grid": 2.025,
+        "max_size_on_grid": 0.0422,
+        "sup_size_on_dense_sweep": 0.1097,
+        "argmax_eps": 0.20004,
+        "fraction_of_dense_points_above_alpha": 0.3159
+      },
+      "eps_min=0.3,grid_step=0.05": {
+        "grid": [
+          0.3,
+          0.35,
+          0.4,
+          0.45,
+          0.5
+        ],
+        "c_star_on_grid": 1.716,
+        "max_size_on_grid": 0.0422,
+        "sup_size_on_dense_sweep": 0.1108,
+        "argmax_eps": 0.30002,
+        "fraction_of_dense_points_above_alpha": 0.6571
+      }
+    },
+    "dense_c_star_by_eps_min": {
+      "0.05": 3.207,
+      "0.1": 3.207,
+      "0.2": 2.693,
+      "0.3": 2.254
+    },
+    "reading": "on the exact two-point family the size at a fixed c is a step function of eps, so every grid value of c*, the committed 0.005 grid included, is exceeded between its grid points; the confirmatory claim is over the committed enumerated set, a coordinate whose supremum can be computed exactly is calibrated on it (the dense values replace the Appendix J grid values), and the box is otherwise the domain of a reported sweep whose refinement is a pre-registration check"
+  },
+  "RC119_registration_watermark": {
+    "codex_example": {
+      "version_8": {
+        "sequence_(time,cluster,H)": [
+          [
+            10,
+            "A",
+            100
+          ],
+          [
+            50,
+            "B",
+            50
+          ]
+        ],
+        "H_ordered": false
+      },
+      "watermark": {
+        "sequence_(time,cluster,H)": [
+          [
+            50,
+            "B",
+            50
+          ],
+          [
+            100,
+            "A",
+            100
+          ]
+        ],
+        "H_ordered": true
+      }
+    },
+    "random_registrations_40_clusters_24_months": {
+      "trials": 2000,
+      "fraction_of_paths_with_unsorted_version_8_sequence": 0.642,
+      "mean_delay_after_finality_months": {
+        "version_8": 2.005,
+        "watermark": 2.749
+      },
+      "watermark_sequences_H_ordered_in_every_trial": true
+    },
+    "reading": "the version-8 buffer orders only the clusters registered so far, so a later registration with a smaller H breaks the declared H-order and the earlier factor was computed on a prefix the filtration says is incomplete; applying a factor no earlier than its own H closes the channel, because a registration at time t has H > t, at the cost of the delay reported"
+  },
+  "RC120_power_restated_at_calibrated_cutoffs": {
+    "single_comparison_D1_generator": {
+      "b=0.5,delta=0.005,clusters=288(24x12)": {
+        "nominal_1.7139": 0.3161,
+        "c*=3.207": 0.0389,
+        "c*=3.201": 0.039,
+        "c*=2.693": 0.0858,
+        "c*=2.632": 0.0945,
+        "c*=2.254": 0.165,
+        "c*=2.231": 0.1691
+      },
+      "b=0.5,delta=0.005,clusters=600(24x25)": {
+        "nominal_1.7139": 0.5202,
+        "c*=3.207": 0.1015,
+        "c*=3.201": 0.102,
+        "c*=2.693": 0.2001,
+        "c*=2.632": 0.2165,
+        "c*=2.254": 0.3264,
+        "c*=2.231": 0.3347
+      },
+      "b=0.5,delta=0.005,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.7762,
+        "c*=3.207": 0.2679,
+        "c*=3.201": 0.2701,
+        "c*=2.693": 0.4304,
+        "c*=2.632": 0.4535,
+        "c*=2.254": 0.5923,
+        "c*=2.231": 0.6004
+      },
+      "b=0.5,delta=0.01,clusters=288(24x12)": {
+        "nominal_1.7139": 0.5091,
+        "c*=3.207": 0.0994,
+        "c*=3.201": 0.1001,
+        "c*=2.693": 0.1977,
+        "c*=2.632": 0.2139,
+        "c*=2.254": 0.3229,
+        "c*=2.231": 0.3313
+      },
+      "b=0.5,delta=0.01,clusters=600(24x25)": {
+        "nominal_1.7139": 0.7806,
+        "c*=3.207": 0.2797,
+        "c*=3.201": 0.2802,
+        "c*=2.693": 0.4394,
+        "c*=2.632": 0.4621,
+        "c*=2.254": 0.6036,
+        "c*=2.231": 0.611
+      },
+      "b=0.5,delta=0.01,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.9607,
+        "c*=3.207": 0.6298,
+        "c*=3.201": 0.632,
+        "c*=2.693": 0.792,
+        "c*=2.632": 0.8072,
+        "c*=2.254": 0.8914,
+        "c*=2.231": 0.8948
+      },
+      "b=0.5,delta=0.02,clusters=288(24x12)": {
+        "nominal_1.7139": 0.7735,
+        "c*=3.207": 0.2794,
+        "c*=3.201": 0.2814,
+        "c*=2.693": 0.44,
+        "c*=2.632": 0.464,
+        "c*=2.254": 0.5954,
+        "c*=2.231": 0.6041
+      },
+      "b=0.5,delta=0.02,clusters=600(24x25)": {
+        "nominal_1.7139": 0.9667,
+        "c*=3.207": 0.6534,
+        "c*=3.201": 0.6542,
+        "c*=2.693": 0.8044,
+        "c*=2.632": 0.8209,
+        "c*=2.254": 0.9013,
+        "c*=2.231": 0.9052
+      },
+      "b=0.5,delta=0.02,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.999,
+        "c*=3.207": 0.9555,
+        "c*=3.201": 0.9558,
+        "c*=2.693": 0.9861,
+        "c*=2.632": 0.9882,
+        "c*=2.254": 0.996,
+        "c*=2.231": 0.9961
+      },
+      "b=0.2,delta=0.005,clusters=288(24x12)": {
+        "nominal_1.7139": 0.4357,
+        "c*=3.207": 0.0681,
+        "c*=3.201": 0.0684,
+        "c*=2.693": 0.1454,
+        "c*=2.632": 0.157,
+        "c*=2.254": 0.2517,
+        "c*=2.231": 0.2587
+      },
+      "b=0.2,delta=0.005,clusters=600(24x25)": {
+        "nominal_1.7139": 0.6859,
+        "c*=3.207": 0.1872,
+        "c*=3.201": 0.1883,
+        "c*=2.693": 0.3325,
+        "c*=2.632": 0.3529,
+        "c*=2.254": 0.4861,
+        "c*=2.231": 0.4941
+      },
+      "b=0.2,delta=0.005,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.9133,
+        "c*=3.207": 0.4754,
+        "c*=3.201": 0.4779,
+        "c*=2.693": 0.6552,
+        "c*=2.632": 0.6774,
+        "c*=2.254": 0.7971,
+        "c*=2.231": 0.8032
+      },
+      "b=0.2,delta=0.01,clusters=288(24x12)": {
+        "nominal_1.7139": 0.6865,
+        "c*=3.207": 0.1839,
+        "c*=3.201": 0.1855,
+        "c*=2.693": 0.3281,
+        "c*=2.632": 0.3488,
+        "c*=2.254": 0.4866,
+        "c*=2.231": 0.4958
+      },
+      "b=0.2,delta=0.01,clusters=600(24x25)": {
+        "nominal_1.7139": 0.9236,
+        "c*=3.207": 0.4985,
+        "c*=3.201": 0.5002,
+        "c*=2.693": 0.6787,
+        "c*=2.632": 0.6987,
+        "c*=2.254": 0.8145,
+        "c*=2.231": 0.82
+      },
+      "b=0.2,delta=0.01,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.9961,
+        "c*=3.207": 0.8815,
+        "c*=3.201": 0.8824,
+        "c*=2.693": 0.9545,
+        "c*=2.632": 0.9597,
+        "c*=2.254": 0.9837,
+        "c*=2.231": 0.9846
+      },
+      "b=0.2,delta=0.02,clusters=288(24x12)": {
+        "nominal_1.7139": 0.9294,
+        "c*=3.207": 0.5123,
+        "c*=3.201": 0.5147,
+        "c*=2.693": 0.6945,
+        "c*=2.632": 0.7167,
+        "c*=2.254": 0.8251,
+        "c*=2.231": 0.8304
+      },
+      "b=0.2,delta=0.02,clusters=600(24x25)": {
+        "nominal_1.7139": 0.9983,
+        "c*=3.207": 0.9087,
+        "c*=3.201": 0.9094,
+        "c*=2.693": 0.9696,
+        "c*=2.632": 0.9736,
+        "c*=2.254": 0.9904,
+        "c*=2.231": 0.9912
+      },
+      "b=0.2,delta=0.02,clusters=1200(24x50)": {
+        "nominal_1.7139": 1.0,
+        "c*=3.207": 0.9993,
+        "c*=3.201": 0.9993,
+        "c*=2.693": 0.9998,
+        "c*=2.632": 0.9999,
+        "c*=2.254": 1.0,
+        "c*=2.231": 1.0
+      }
+    },
+    "period_shock_design": {
+      "shock=+/-0.3,delta=0.02,clusters=600(24x25)": {
+        "nominal_1.7139": 0.1781,
+        "c*=3.207": 0.0163,
+        "c*=3.201": 0.0163,
+        "c*=2.693": 0.0406,
+        "c*=2.632": 0.0455,
+        "c*=2.254": 0.0807,
+        "c*=2.231": 0.0833
+      },
+      "shock=+/-0.3,delta=0.02,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.1774,
+        "c*=3.207": 0.0141,
+        "c*=3.201": 0.0143,
+        "c*=2.693": 0.0379,
+        "c*=2.632": 0.0428,
+        "c*=2.254": 0.0794,
+        "c*=2.231": 0.0822
+      },
+      "shock=+/-0.3,delta=0.05,clusters=600(24x25)": {
+        "nominal_1.7139": 0.5925,
+        "c*=3.207": 0.1301,
+        "c*=3.201": 0.1309,
+        "c*=2.693": 0.2442,
+        "c*=2.632": 0.2621,
+        "c*=2.254": 0.3857,
+        "c*=2.231": 0.3953
+      },
+      "shock=+/-0.3,delta=0.05,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.6063,
+        "c*=3.207": 0.1302,
+        "c*=3.201": 0.1313,
+        "c*=2.693": 0.2488,
+        "c*=2.632": 0.2674,
+        "c*=2.254": 0.397,
+        "c*=2.231": 0.4057
+      },
+      "shock=+/-0.3,delta=0.08,clusters=600(24x25)": {
+        "nominal_1.7139": 0.928,
+        "c*=3.207": 0.4727,
+        "c*=3.201": 0.4747,
+        "c*=2.693": 0.6596,
+        "c*=2.632": 0.6822,
+        "c*=2.254": 0.8098,
+        "c*=2.231": 0.8164
+      },
+      "shock=+/-0.3,delta=0.08,clusters=1200(24x50)": {
+        "nominal_1.7139": 0.9346,
+        "c*=3.207": 0.4783,
+        "c*=3.201": 0.48,
+        "c*=2.693": 0.6816,
+        "c*=2.632": 0.7046,
+        "c*=2.254": 0.8233,
+        "c*=2.231": 0.8296
+      }
+    },
+    "confirmatory_conjunction": {
+      "delta=0.01,clusters=600,shared_sign_prob=0.0": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.7692,
+          "iut_joint": 0.2036
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.2561,
+          "iut_joint": 0.0001
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.2577,
+          "iut_joint": 0.0001
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.4199,
+          "iut_joint": 0.0054
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.4427,
+          "iut_joint": 0.0076
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.5836,
+          "iut_joint": 0.0375
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.5917,
+          "iut_joint": 0.041
+        }
+      },
+      "delta=0.01,clusters=600,shared_sign_prob=0.5": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.7653,
+          "iut_joint": 0.3085
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.2552,
+          "iut_joint": 0.0059
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.257,
+          "iut_joint": 0.0062
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.4201,
+          "iut_joint": 0.0324
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.4424,
+          "iut_joint": 0.0392
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.5805,
+          "iut_joint": 0.1046
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.5885,
+          "iut_joint": 0.1109
+        }
+      },
+      "delta=0.01,clusters=600,shared_sign_prob=1.0": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.7695,
+          "iut_joint": 0.7695
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.2534,
+          "iut_joint": 0.2534
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.2554,
+          "iut_joint": 0.2554
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.4173,
+          "iut_joint": 0.4173
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.44,
+          "iut_joint": 0.44
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.582,
+          "iut_joint": 0.582
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.5897,
+          "iut_joint": 0.5897
+        }
+      },
+      "delta=0.01,clusters=1200,shared_sign_prob=0.0": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.9567,
+          "iut_joint": 0.7671
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.6025,
+          "iut_joint": 0.0491
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.6046,
+          "iut_joint": 0.0502
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.7716,
+          "iut_joint": 0.2122
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.7897,
+          "iut_joint": 0.243
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.8795,
+          "iut_joint": 0.4627
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.8837,
+          "iut_joint": 0.4767
+        }
+      },
+      "delta=0.01,clusters=1200,shared_sign_prob=0.5": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.9571,
+          "iut_joint": 0.7984
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.603,
+          "iut_joint": 0.1196
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.6051,
+          "iut_joint": 0.121
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.7715,
+          "iut_joint": 0.3146
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.7887,
+          "iut_joint": 0.3445
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.8784,
+          "iut_joint": 0.5395
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.8832,
+          "iut_joint": 0.5522
+        }
+      },
+      "delta=0.01,clusters=1200,shared_sign_prob=1.0": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.9567,
+          "iut_joint": 0.9567
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.601,
+          "iut_joint": 0.601
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.6032,
+          "iut_joint": 0.6032
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.771,
+          "iut_joint": 0.7711
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.7883,
+          "iut_joint": 0.7883
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.8808,
+          "iut_joint": 0.8808
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.8848,
+          "iut_joint": 0.8848
+        }
+      },
+      "delta=0.02,clusters=600,shared_sign_prob=0.0": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.957,
+          "iut_joint": 0.7675
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.6039,
+          "iut_joint": 0.0485
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.6066,
+          "iut_joint": 0.0495
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.771,
+          "iut_joint": 0.2119
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.7883,
+          "iut_joint": 0.2423
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.8797,
+          "iut_joint": 0.4647
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.8841,
+          "iut_joint": 0.4779
+        }
+      },
+      "delta=0.02,clusters=600,shared_sign_prob=0.5": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.9574,
+          "iut_joint": 0.7984
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.6059,
+          "iut_joint": 0.1194
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.6084,
+          "iut_joint": 0.1215
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.7728,
+          "iut_joint": 0.314
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.789,
+          "iut_joint": 0.3417
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.8798,
+          "iut_joint": 0.5419
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.8845,
+          "iut_joint": 0.5544
+        }
+      },
+      "delta=0.02,clusters=600,shared_sign_prob=1.0": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.9556,
+          "iut_joint": 0.9556
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.5971,
+          "iut_joint": 0.5971
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.5994,
+          "iut_joint": 0.5994
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.7668,
+          "iut_joint": 0.7668
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.7845,
+          "iut_joint": 0.7845
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.8789,
+          "iut_joint": 0.8789
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.8832,
+          "iut_joint": 0.8832
+        }
+      },
+      "delta=0.01,clusters=600,three_anti_correlated_pairs": {
+        "nominal_1.7139": {
+          "mean_marginal": 0.7675,
+          "iut_joint": 0.1556
+        },
+        "c*=3.207": {
+          "mean_marginal": 0.256,
+          "iut_joint": 0.0
+        },
+        "c*=3.201": {
+          "mean_marginal": 0.2578,
+          "iut_joint": 0.0
+        },
+        "c*=2.693": {
+          "mean_marginal": 0.4207,
+          "iut_joint": 0.0001
+        },
+        "c*=2.632": {
+          "mean_marginal": 0.4434,
+          "iut_joint": 0.0002
+        },
+        "c*=2.254": {
+          "mean_marginal": 0.582,
+          "iut_joint": 0.0076
+        },
+        "c*=2.231": {
+          "mean_marginal": 0.5905,
+          "iut_joint": 0.0092
+        }
+      }
+    },
+    "T36_positive_control_b_0.5_delta_0.08_120_clusters": {
+      "nominal_1.7139": {
+        "rejection_rate": 0.9633,
+        "exact_99pct_lower_bound": 0.9601
+      },
+      "c*=3.207": {
+        "rejection_rate": 0.6767,
+        "exact_99pct_lower_bound": 0.6689
+      },
+      "c*=3.201": {
+        "rejection_rate": 0.6767,
+        "exact_99pct_lower_bound": 0.6689
+      },
+      "c*=2.693": {
+        "rejection_rate": 0.8172,
+        "exact_99pct_lower_bound": 0.8108
+      },
+      "c*=2.632": {
+        "rejection_rate": 0.8262,
+        "exact_99pct_lower_bound": 0.8199
+      },
+      "c*=2.254": {
+        "rejection_rate": 0.8991,
+        "exact_99pct_lower_bound": 0.894
+      },
+      "c*=2.231": {
+        "rejection_rate": 0.9052,
+        "exact_99pct_lower_bound": 0.9002
+      }
+    },
+    "reading": "every figure of the section-6 smallest-effect row is stated at the nominal value; at the illustrated c* values the single comparison at delta = 0.01 and 600 clusters, the conjunction and the period-shock design all fall, and the row now carries the figures per c* and defers the choice to OD4"
+  },
+  "RC121_component_calibration": {
+    "component_size_outside_the_pair_class": {
+      "pair_eps_min=0.3,pair_c_star=2.254": {
+        "sup_size_inside_the_pair_class": 0.0499,
+        "sup_component_size_for_eps_in_[0.02,eps_min)": 0.114,
+        "argmax_eps": 0.13559,
+        "component_size_at_selected_eps": {
+          "eps=0.12": 0.0,
+          "eps=0.15": 0.0857,
+          "eps=0.18": 0.045,
+          "eps=0.22": 0.0739,
+          "eps=0.25": 0.0388,
+          "eps=0.28": 0.0192
+        }
+      },
+      "pair_eps_min=0.2,pair_c_star=2.693": {
+        "sup_size_inside_the_pair_class": 0.05,
+        "sup_component_size_for_eps_in_[0.02,eps_min)": 0.0791,
+        "argmax_eps": 0.15388,
+        "component_size_at_selected_eps": {
+          "eps=0.12": 0.0,
+          "eps=0.15": 0.0,
+          "eps=0.18": 0.045
+        }
+      },
+      "pair_eps_min=0.1,pair_c_star=3.207": {
+        "sup_size_inside_the_pair_class": 0.05,
+        "sup_component_size_for_eps_in_[0.02,eps_min)": 0.0,
+        "argmax_eps": 0.02,
+        "component_size_at_selected_eps": {}
+      }
+    },
+    "reading": "a comparator whose increments carry a catastrophe share outside the class the FULL-baseline pair was calibrated for has size above alpha at the pair c*, and the IUT inherits it when the other components reject; each component needs its own enumerated class and c*_j, and T-13 and T-16 carry the null comparator at the corner of its box"
+  },
+  "RC123_demotion_without_anchor": {
+    "v8_rollback": {
+      "store_returns_no_restore": {
+        "B_acts_after_the_store_returns": true,
+        "level_after_the_store_returns": "SIM",
+        "log": [
+          "start: level=FLOOR epoch=1 anchored=True",
+          "promote with cap epoch 1: level=SIM, anchored",
+          "demote: anchor unavailable, transaction rolled back, level stays SIM",
+          "B after demotion, store down: refused",
+          "B after the store returns: ACTED at level SIM"
+        ]
+      },
+      "restore_to_last_anchor_while_store_down": {
+        "B_acts_after_demotion_store_down": false,
+        "B_acts_after_restore_and_restart": false,
+        "level_after_restore_and_restart": "SIM",
+        "fresh_capability_acts_at_SIM_without_a_promotion": true,
+        "log": [
+          "start: level=FLOOR epoch=1 anchored=True",
+          "promote with cap epoch 1: level=SIM, anchored",
+          "demote: anchor unavailable, transaction rolled back, level stays SIM",
+          "B after demotion, store down: refused",
+          "restore to last anchor: level=SIM epoch=1",
+          "start: level=SIM epoch=2 anchored=False",
+          "B after restore and restart: refused",
+          "fresh owner capability in the new epoch, no promotion recorded: ACTED at level SIM"
+        ]
+      }
+    },
+    "v8_commit_unanchored": {
+      "store_returns_no_restore": {
+        "B_acts_after_the_store_returns": false,
+        "level_after_the_store_returns": "FLOOR",
+        "log": [
+          "start: level=FLOOR epoch=1 anchored=True",
+          "promote with cap epoch 1: level=SIM, anchored",
+          "demote: level=FLOOR, new epoch anchored=False",
+          "B after demotion, store down: refused",
+          "B after the store returns: refused"
+        ]
+      },
+      "restore_to_last_anchor_while_store_down": {
+        "B_acts_after_demotion_store_down": false,
+        "B_acts_after_restore_and_restart": false,
+        "level_after_restore_and_restart": "SIM",
+        "fresh_capability_acts_at_SIM_without_a_promotion": true,
+        "log": [
+          "start: level=FLOOR epoch=1 anchored=True",
+          "promote with cap epoch 1: level=SIM, anchored",
+          "demote: level=FLOOR, new epoch anchored=False",
+          "B after demotion, store down: refused",
+          "restore to last anchor: level=SIM epoch=1",
+          "start: level=SIM epoch=2 anchored=False",
+          "B after restore and restart: refused",
+          "fresh owner capability in the new epoch, no promotion recorded: ACTED at level SIM"
+        ]
+      }
+    },
+    "fail_closed": {
+      "store_returns_no_restore": {
+        "B_acts_after_the_store_returns": false,
+        "level_after_the_store_returns": "FLOOR",
+        "log": [
+          "start: level=FLOOR epoch=1 anchored=True",
+          "promote with cap epoch 1: level=SIM, anchored",
+          "demote: level=FLOOR persisted locally, epoch 2 anchored=False, pending=True",
+          "B after demotion, store down: refused",
+          "B after the store returns: refused"
+        ]
+      },
+      "restore_to_last_anchor_while_store_down": {
+        "B_acts_after_demotion_store_down": false,
+        "B_acts_after_restore_and_restart": false,
+        "level_after_restore_and_restart": "FLOOR",
+        "fresh_capability_acts_at_SIM_without_a_promotion": false,
+        "log": [
+          "start: level=FLOOR epoch=1 anchored=True",
+          "promote with cap epoch 1: level=SIM, anchored",
+          "demote: level=FLOOR persisted locally, epoch 2 anchored=False, pending=True",
+          "B after demotion, store down: refused",
+          "restore to last anchor: level=SIM epoch=1",
+          "start: level=FLOOR epoch=2 anchored=False",
+          "B after restore and restart: refused",
+          "fresh owner capability in the new epoch, no promotion recorded: refused"
+        ]
+      }
+    },
+    "reading": "rolling the demotion back leaves the gate elevated and the pre-demotion capability acts once the store returns; committing it unanchored stales the capability (and the start rotation of RC-74 stales it after a restore as well, so that part of the finding does not reproduce) but a restore to the last anchor revives the elevated level and a fresh capability then acts at it with no promotion recorded; persisting the demotion at once, refusing every promotion and protected action until the new epoch is anchored, and starting every process at the floor leaves nothing to revive"
   },
   "python": "3.11.17"
 }
