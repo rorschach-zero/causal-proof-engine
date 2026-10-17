@@ -173,3 +173,13 @@ research document under a `REVISION` label and leaves the original text intact. 
 
 Scope delivered in full or the gap stated explicitly; tests and checks actually run and reported with output;
 documentation updated; labels honest; no secrets; no attribution; independent review requested.
+
+## 13. Graphify-assisted navigation and review (optional developer tool)
+
+The repository may expose Graphify over an authenticated MCP connection. It is a **source-navigation and static impact hint**, not a scientific proof, code/test execution result, security authorization, causal inference model, or independent review verdict. Follow `docs/runbooks/graphify-agent-review.md` when using it.
+
+- Claude Code and Codex must each establish their **own** tool availability in their actual working environment. A connector used by another assistant is not evidence of access.
+- Before making graph-backed coverage or safety claims, compare Graphify's full indexed `commitSha` and `repositoryId` to the exact GitHub PR head SHA and selected repository. Use `scripts/check_graphify_snapshot.py` when an exported response is available. A missing, mismatched or branch-stale graph is **historical context only**; review the actual PR diff and repository files directly instead.
+- Use scoped graph queries to discover code, callers/dependencies, potential blast radius and candidate tests; inspect critical source and independently execute relevant tests. Distinguish extracted edges, inferred edges and semantic fallback matches. Empty graph results or `tests_unresolved` do not establish completeness.
+- The implementer and independent reviewer each perform their own graph/source analysis. Graphify memory may contain unverified candidates: treat them as leads, not binding decisions or approvals. Record the reviewer, query, snapshot, results and unresolved evidence.
+- Never store credentials or private research evidence in Graphify Memory; never add Graphify spend or create background dispatch/reindex automations without explicit authorization. No changes to scientific governance, risk gates, broker authority, or `main` are implied by this tooling.
