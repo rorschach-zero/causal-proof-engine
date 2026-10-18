@@ -26,7 +26,11 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v23, round 22: two provenance findings on the round-21 commit, none on the
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v24, round 23: three findings on the round-22 commit, one applied to the
+   specification, which moves to version 20: a simulated calibration's seed is now derived from a value that does not
+   exist until its calibration record is anchored, because a seed only committed before the cohort could be chosen
+   among several runs; one provenance claim not reproduced, and one whose evidence showed that the round-22 test was
+   confounded by the order of the push and the PR edit; round 22: two provenance findings on the round-21 commit, none on the
    specification, which stays at version 19; one not reproduced, and one that found the pull request's title and
    description nine rounds stale, now advanced; round 21: the four
    findings of Codex's review of the version-18 specification, three applied and one not reproduced: the η budget
@@ -72,7 +76,7 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 19; versions 5 to 19 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 20; versions 5 to 20 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
 11. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
