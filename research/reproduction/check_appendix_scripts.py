@@ -3,10 +3,13 @@
 
 The appendices are the record of what was run in each reconciliation round; the files here are the executables
 the reproduction commands of `16` section 2 name. This check is what keeps the two from diverging: it exits
-non-zero and names the first script that differs. Run from the repository root:
+non-zero and names every script that differs, every appendix block whose script is missing, and every script
+without an appendix block (RC-136: a check over the files that happen to exist passes when one is deleted). Run
+from the repository root:
 
     python -I research/reproduction/check_appendix_scripts.py
 """
+import re
 import sys
 from pathlib import Path
 
@@ -24,20 +27,28 @@ def fenced_block(text: str, key: str) -> str:
 
 def main() -> int:
     text = MATRIX.read_text(encoding='utf-8')
-    scripts = sorted(p for p in HERE.glob('*.py') if p.name in MARKERS)
+    keys = set(re.findall(r'^<!-- (\w+)-script:start -->$', text, flags=re.MULTILINE))
+    files = {p.name for p in HERE.glob('*.py') if p.name in MARKERS}
+    expected = {name for name, key in MARKERS.items() if key in keys}
     failures = 0
-    for path in scripts:
-        key = MARKERS[path.name]
-        if f'<!-- {key}-script:start -->' not in text:
-            print(f'{path.name}: no appendix block with marker {key}-script')
+    for key in sorted(keys - set(MARKERS.values())):
+        print(f'appendix block {key}-script: no script name is defined for this marker')
+        failures += 1
+    for name in sorted(expected | files):
+        key = MARKERS[name]
+        path = HERE / name
+        if name not in files:
+            print(f'{name}: MISSING, appendix block {key}-script has no committed file')
             failures += 1
-            continue
-        if fenced_block(text, key) == path.read_text(encoding='utf-8'):
-            print(f'{path.name}: identical to the appendix block')
+        elif key not in keys:
+            print(f'{name}: no appendix block with marker {key}-script')
+            failures += 1
+        elif fenced_block(text, key) == path.read_text(encoding='utf-8'):
+            print(f'{name}: identical to the appendix block')
         else:
-            print(f'{path.name}: DIFFERS from the appendix block')
+            print(f'{name}: DIFFERS from the appendix block')
             failures += 1
-    print(f'{len(scripts)} scripts checked, {failures} differ')
+    print(f'{len(keys)} appendix blocks, {len(files)} scripts checked, {failures} failures')
     return 1 if failures else 0
 
 
