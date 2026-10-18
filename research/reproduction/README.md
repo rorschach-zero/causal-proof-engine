@@ -7,7 +7,7 @@ scripts for the research documents, not project code: nothing under `cpe/` (when
 | File | Appendix | Needs |
 |---|---|---|
 | `reconciliation_probes.py` | A (output in B) | a scratch copy of the archived v0.2 reference code, passed as the first argument; the pinned packages, httpx and its dependencies included (the archived `cpe.saxo_sim` imports httpx) |
-| `round2_checks.py` to `round13_checks.py` | C to N | numpy and scipy of the pinned packages |
+| `round2_checks.py` to `round14_checks.py` | C to O | numpy and scipy of the pinned packages |
 | `check_appendix_scripts.py` | — | nothing; verifies every file above against its appendix block, and fails on an appendix block without its file or a file without its block |
 
 Run from the repository root, in an isolated virtual environment:
@@ -15,7 +15,7 @@ Run from the repository root, in an isolated virtual environment:
 ```sh
 python -m venv /path/to/venv && /path/to/venv/bin/pip install -r research/reproduction/requirements.txt
 /path/to/venv/bin/python -I research/reproduction/check_appendix_scripts.py
-/path/to/venv/bin/python -I research/reproduction/round13_checks.py
+/path/to/venv/bin/python -I research/reproduction/round14_checks.py
 cp -r research/original/CPE_Forschungspaket_2026-10-16/08_Anhang/Referenz_Code_Vorschlaege_NICHT_IMPLEMENTIEREN/source_v0_2 /path/to/scratch/v02
 /path/to/venv/bin/python -I research/reproduction/reconciliation_probes.py /path/to/scratch/v02
 ```

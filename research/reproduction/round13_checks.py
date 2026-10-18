@@ -56,7 +56,9 @@ for rho in (0.5, 0.75, 0.9, 1.0):
     logw = np.cumsum(np.log1p(lam * seq), axis=1)
     cross = logw.max(axis=1) >= np.log(1 / ALPHA)
     rc133[f'rho_{rho}'] = {'chronological_null_holds': True, 'record_order_null_holds': rho == 0.5,
-                           'E_factor_A_given_record_order_past': round(1 + 0.5 * 0.5 * 0.5 * (2 * rho - 1), 4),
+                           'E_factor_A_given_B_positive': round(1 + 0.5 * 0.5 * (2 * rho - 1), 4),
+                           'E_factor_A_given_B_negative': 1.0,
+                           'E_factor_A_unconditional_over_B': round(1 + 0.5 * 0.5 * 0.5 * (2 * rho - 1), 4),
                            'crossing_rate': round(float(cross.mean()), 4),
                            'upper_99': round(binom_upper(int(cross.sum()), REPS, 0.99), 4)}
 rc133['reading'] = ('Ville bounds the crossing rate under the record-order null only (rho = 0.5); for rho > 0.5 the version-10 '
