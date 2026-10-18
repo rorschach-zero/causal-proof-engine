@@ -8,12 +8,16 @@ without an appendix block (RC-136: a check over the files that happen to exist p
 `*.py` file here except this checker is enumerated, so a script whose name has no marker fails too (RC-196: a check
 over the files whose names are in MARKERS passes an unregistered or misspelled evidence script). Every key must
 have exactly one start and one end marker line, in that order (RC-217: with the last start marker read and the keys
-collected into a set, a second, stale block under the same key was never compared). Run from the repository
-root:
+collected into a set, a second, stale block under the same key was never compared). Every script whose source
+matches is then run, and its stdout must be byte-identical to the committed output, the first ```json block after
+its end marker (RC-224: comparing the source alone passed a stale or hand-edited output block). The probe needs a
+scratch copy of the archived reference code; without `--reference-code` its output is reported as not compared,
+never as passed. Run from the repository root, in the environment of README.md:
 
-    python -I research/reproduction/check_appendix_scripts.py
+    python -I research/reproduction/check_appendix_scripts.py [--reference-code /path/to/scratch/v02]
 """
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -46,12 +50,32 @@ def fenced_block(text: str, key: str) -> str:
     return text[start:end].split('```python\n', 1)[1].rsplit('```', 1)[0]
 
 
-def main() -> int:
+def output_block(text: str, key: str) -> str:
+    """The first ```json block after the end marker and before the next script's start marker, or ''."""
+    end, = marker_lines(text, key, 'end')
+    rest = re.split(r'^<!-- \w+-script:start -->$', text[end:], maxsplit=1, flags=re.MULTILINE)[0]
+    return rest.split('```json\n', 1)[1].split('```', 1)[0] if '```json\n' in rest else ''
+
+
+def output_failure(text: str, key: str, path: Path, args: list) -> str:
+    expected = output_block(text, key)
+    if not expected:
+        return f'{path.name}: no committed output block after its appendix block'
+    run = subprocess.run([sys.executable, '-I', str(path), *args], capture_output=True, text=True)
+    if run.returncode != 0:
+        return f'{path.name}: RUN FAILED with exit code {run.returncode}'
+    if run.stdout != expected:
+        return f'{path.name}: OUTPUT DIFFERS from the committed output block'
+    return ''
+
+
+def main(argv: list) -> int:
+    reference = argv[argv.index('--reference-code') + 1:][:1] if '--reference-code' in argv else []
     text = MATRIX.read_text(encoding='utf-8')
     keys = set(re.findall(r'^<!-- (\w+)-script:start -->$', text, flags=re.MULTILINE))
     files = {p.name for p in HERE.glob('*.py') if p.name != Path(__file__).name}
     expected = {name for name, key in MARKERS.items() if key in keys}
-    failures = 0
+    failures = unrun = 0
     malformed = marker_failures(text)
     for line in malformed.values():
         print(line)
@@ -73,14 +97,21 @@ def main() -> int:
             failures += 1
         elif key in malformed:
             print(f'{name}: not compared, its appendix markers are malformed')
-        elif fenced_block(text, key) == path.read_text(encoding='utf-8'):
-            print(f'{name}: identical to the appendix block')
-        else:
+        elif fenced_block(text, key) != path.read_text(encoding='utf-8'):
             print(f'{name}: DIFFERS from the appendix block')
             failures += 1
-    print(f'{len(keys)} appendix blocks, {len(files)} scripts checked, {failures} failures')
+        elif key == 'probe' and not reference:
+            print(f'{name}: identical to the appendix block; output NOT compared (needs --reference-code)')
+            unrun += 1
+        elif failure := output_failure(text, key, path, reference if key == 'probe' else []):
+            print(failure)
+            failures += 1
+        else:
+            print(f'{name}: identical to the appendix block, output identical to the committed output')
+    print(f'{len(keys)} appendix blocks, {len(files)} scripts checked, {unrun} outputs not compared, '
+          f'{failures} failures')
     return 1 if failures else 0
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))
