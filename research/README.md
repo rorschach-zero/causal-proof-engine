@@ -26,7 +26,13 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v19, round 18: the three
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v21, round 20: the seven
+   findings of Codex's comment on the version-17 specification, six applied and one not reproduced, among them the
+   late-record budget η_max now bounding the probability of any late record over the whole cohort, members
+   pre-declared VOID adjudicated so that a registration breach on one removes its cluster, and source withdrawal
+   deferred to the next cohort; round 19: the three findings of Codex's comment on the version-16 specification, two
+   applied and one not reproduced, every component certified at α − η_max and the issuance breach routed through the
+   box rule; round 18: the three
    findings of Codex's review of the version-15 specification, all applied, among them the protected operation's
    commit record anchored before the change takes effect and is acknowledged, all-VOID clusters counted in the VOID
    cap, and one inclusion probability for every sampled cluster; round 17: the three
@@ -60,7 +66,7 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 16; versions 5 to 16 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 18; versions 5 to 18 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
 11. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
