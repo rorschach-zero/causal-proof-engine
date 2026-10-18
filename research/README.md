@@ -26,7 +26,11 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v21, round 20: the seven
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v22, round 21: the four
+   findings of Codex's review of the version-18 specification, three applied and one not reproduced: the η budget
+   closes the registration window for every source and the estimand is stated over that window, a simulated
+   calibration spends its miscoverage in the level budget, and G counts only blocks with an emitted increment;
+   round 20: the seven
    findings of Codex's comment on the version-17 specification, six applied and one not reproduced, among them the
    late-record budget η_max now bounding the probability of any late record over the whole cohort, members
    pre-declared VOID adjudicated so that a registration breach on one removes its cluster, and source withdrawal
@@ -66,7 +70,7 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 18; versions 5 to 18 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 19; versions 5 to 19 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
 11. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements

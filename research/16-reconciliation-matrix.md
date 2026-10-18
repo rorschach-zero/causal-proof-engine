@@ -6,7 +6,7 @@ and is the single place where positions, evidence, dispositions and remaining bl
 original research under `research/original/` is unchanged. Nothing here authorises implementation, merges,
 capital, broker connectivity or policy changes.
 
-**Version:** v21, 2026-10-18. **Round:** 20 (Codex round 20 = the PR #4 comment `6248401610` of the automatic review of PR #4 at `f20d1fc`, seven findings posted as one PR comment and not as inline review comments, §3s, Appendix U; round 19 = the PR #4 comment `6248247231` of the automatic review of PR #4 at `ceaeda1`, three findings posted as one PR comment and not as inline review comments, §3r, Appendix T; round 18 = the automatic review `5562262057` of PR #4 at `7d11065`, three findings, §3q, Appendix S; round 17 = the automatic review `5562186477` of PR #4 at `018057b`, three findings, §3p, Appendix R; round 16 = the automatic review `5562093769` of PR #4 at `36a1768`, seven findings, §3o, Appendix Q; round 15 = the automatic review `5562023932` of PR #4 at `0bef5f8`, five findings, §3n, Appendix P; round 14 = the automatic review `5561953685` of PR #4 at `b1935db`, four findings, §3m, Appendix O; round 13 = the automatic review `5560193272` of PR #4 at `6fa4f0c`, six findings, §3l, Appendix N; round 12 = the two reviews of PR #4 at `78225fd`, the automatic review `5559198689` and the review `5560119353` requested on PR #4 comment `6241076464`, nine findings, §3k, Appendix M; round 11 = the automatic review `5559035950` of PR #4 at `04bc122`, eight findings, §3j, Appendix L; round 10 = the automatic review `5558887072` of PR #4 at `922956b`, eight findings, §3i, Appendix K; round 9 = the two reviews of PR #4 at `8af2ae9`, automatic review `5556950582` and the owner-requested review `5558680831`, twenty-one findings, §3h, under the owner's directive on PR #4, comment `6236238443`; round 8 was automatic review `5556866013` of `37ac018`, two findings, §3g; round 7 was review `5551243905` of `10f8829`, round 6 review `5550966930` of `4de18e5`, round 5 review `5550735335` of `88abaa4`, round 4 review `5550366107` of `d46c204`, round 3 review `5550048687` of `43754cc`, round 2 the two reviews of `10d1581`). **The rule changed in this round, on the owner's instruction.** The owner's audit on issue #3 (comment `6222759237`, 2026-10-16 19:07 UTC) rejects "three rounds then park": the per-issue round budget is a per-execution quota safeguard, and the lifetime of a finding is governed by reproducible evidence, never by a retry count. Accordingly the seventeen findings that rounds 4–6 recorded without revision (RC-60, RC-64 to RC-79) and the four findings of round 7 (RC-80 to RC-83) are **applied in `17-phase1-amended-specification.md` version 5, commit `b19483a` (`b19483a909bc948f6775fb5ce3b510d2bdfe9261`), as the OD10 decision diff**: every change carries its matrix ID, the owner approves the diff by recording OD10 on issue #3 or names the items to revert, and the fields that are the owner's to set (OD4, OD5) are left as named fields (§4.6, §6). Round 7's own results (Appendix H): the round-6 sentence that generalised one kernel's zero power to every distribution-free test is replaced by a theorem, power ≤ α(1 + δ)^G for any finite-sample-valid bounded-mean test over G blocks (8 % at δ = 0.02 and 16 % at δ = 0.05 over 24 blocks; RC-80); the intersection-union conjunction over six comparators has 21 % to 77 % power at δ = 0.01 and 600 clusters depending on comparator error dependence, where the single comparison has 77 % (RC-83); the A7 certificate tests had no Phase 1 verifier (RC-82); Codex's claim that commit `10f8829` carries a non-owner identity is not reproduced in the repository, while its remedy, an identity check in T-09, is adopted, and the round-7 commits themselves carry a non-conforming identity that is disclosed in RC-81 for the owner's decision. Appendix F and G scripts were re-run in round 7 and reproduce byte for byte. **Round 8** (Appendix I): Codex's review of the version-5 text raised two findings, both defects in round-7 remedies, both reproduced and applied in `17` version 6 in the same commit as this matrix: the version-5 VOID cutoff was computed from resolved members and so did not exist for an all-VOID cluster, and inside a 5 % VOID cap outcome-dependent removal raises the primary's null rejection rate from 5 % to 23–95 % while the worst-case bound stays at 5 %, so the VOID set is now frozen with the membership and a later VOID is an adjudication outcome under the source rule, never a declaration (RC-85); T-15's refusal-only pass condition was met by a reader that refuses everything or returns the oldest vintage, so positive as-of oracles on fixture F-25 are added (RC-86). The same review raised nothing on the other nineteen items applied in version 5; under §4.6 rule 2 they are now **reviewed once by Codex at `37ac018` without objection**, which is not agreement and does not replace OD10. **Round 9** (Appendix J): the owner's directive of 2026-10-17 16:00 UTC asks for every live finding to be reconciled with its evidence and for the candidate specification to be amended on this branch; Codex's two reviews of the version-6 text raised twenty-one findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 7 in the same commit as this matrix. Six are defects in the round-7 and round-8 remedies (RC-87, RC-90, RC-92 on the VOID rule; RC-93 and RC-101 on the conjunction evidence; RC-96 on the slot key), two are defects in Claude's own evidence (RC-93: the IUT null check used a comparator whose increments were identically zero; RC-102: a hand-typed 140 where the computation gives 141), and one, RC-95, is a design rule carried since round 2: the monitor consumed increments in closure order, which on fair increments crosses 1/α in 5 % to 100 % of paths depending on how much later a NO resolves than a YES, because the knowable time of an eventually-by-deadline outcome is itself outcome-dependent; increments now enter in pre-registered maturity order (3.2–3.4 %). RC-94 makes the primary's critical value a calibration over a pre-registered null class with a pass condition (c* = 3.20, 2.63, 2.23 for catastrophe shares of at least 0.05, 0.2, 0.3; power at δ = 0.02 and 600 clusters 60 %, 79 %, 88 % against 96 % nominal). Every committed script of Appendix C to I was re-extracted and re-run in the round-9 environment: byte-identical, except Appendix H, which differs in the one corrected line. **Round 10** (Appendix K): Codex's review of the version-7 text raised eight findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 8 in the same commit as this matrix. Five are defects in round-9 remedies: the null class N was four scalars, and a persistent-regime law inside all four has 15–22 % size at every calibrated c* (RC-108 on RC-94); an empty baseline slot removed the member while every other arm's empty slot kept it, and a baseline failure correlated with event type turns a zero-average null into 18–49 % rejection (RC-109 on RC-104); the burn-in blinding bounded the latest finality time and not the earliest knowable time (RC-110 on RC-99); the T-36 oracle required rejection at the nominal value that a correct calibrated test fails (RC-111 on RC-94); the model cutoff sat on each `Forecast` with a correction path that let an outcome-chosen correction month raise the null rejection rate to 13 % (RC-112 on RC-98). One is a propagation gap (T-17 contradicted §3 and F-24 on pre-declared members, RC-115), one an open case the round-9 finality rules did not cover (observer outage plus late publication, RC-113), one an ambiguity in round-7 wording under which a third of the cohort would leave (RC-114). The round-9 script was re-extracted and re-run: byte-identical. **Round 11** (Appendix L): Codex's review of the version-8 text raised eight findings; seven are assessed as genuine, every checkable claim reproduces, and all seven are applied in `17` version 9 in the same commit as this matrix; the eighth, a provenance claim naming a commit that exists in no branch of the repository, is recorded and not applied. Three are defects in the round-9 calibration remedy and its round-10 extension: the calibration criterion was the A3 tolerance, which a family of true size 5.5 % passes three times in four while the text calls the test level 0.05 (RC-117); the size of the two-point family at a fixed critical value is a step function of the catastrophe share, so the committed grid values 3.20, 2.63 and 2.23 are exceeded between their own grid points (5.0–5.4 %) and the exact-supremum values 3.21, 2.69 and 2.25 replace them (RC-118, a CONFIRMED-DEFECT of Appendix J); and one pair's critical value does not make every IUT component level α (up to 11.4 % size for a component outside the pair's class, RC-121). One is a defect in the round-9 monitor-order remedy: the maturity buffer ordered only the clusters registered so far, which breaks the H-order in 64 % of random registration paths (RC-119). One is a propagation gap, the §6 power figures left at the nominal value (RC-120: at the illustrated critical values the single comparison at δ = 0.01 and 600 clusters falls from 78 % to 28–60 %, the conjunction from 21 % to 0–4 % under uncorrelated errors, the period-shock design from 18 % to 2–8 %); one an open case in the round-9 epoch remedy (RC-123: a demotion with the anchor store unavailable had no defined outcome, and a rollback let the pre-demotion capability act once the store returned); one on reproducibility (RC-122: the appendix scripts now exist as committed files under `research/reproduction/`, each checked byte-identical to its appendix block). The round-10 script was re-run: byte-identical. **Round 12** (§3k, Appendix M) applied eight of nine findings on the version-9 text in `17` version 10. **Round 13** (§3l, Appendix N): Codex's review of the version-10 text raised six findings, all assessed as genuine, every checkable one reproduced, all applied in the same commit as this matrix (four in `17` version 11, one in the reproduction directory, one in the README). The two with statistical weight are selections on a known outcome that version 10 still allowed: a member whose outcome was knowable before an arm's model cutoff was excluded after the outcome was known, and only a YES can be knowable that early on a milestone-deadline predicate (RC-135: 9.3 % to 33.9 % null rejection at breach shares of 1 % to 4 %); and a terminal-falsifier member could be registered after its falsifier was public (RC-138: up to 25.1 % at 4.8 % of the cohort). **Round 14** (§3m, Appendix O): Codex's review of the version-11 text raised four findings. Two are applied in `17` version 12: the §6 estimand row still compared the model cutoff with `not_before` instead of the earliest-knowable bound (RC-142), and a member whose outcome was knowable before its cluster's registration was not named (RC-139); the selection Codex describes for that member does not occur under version 11, because no forecast on it can be eligible and it enters at X = 0 whatever its outcome, so the change names and reports the case. One corrects a mislabelled value in Appendix N (RC-141). One, a commit-identity claim about a SHA that is in no ref of this repository, is recorded and not applied (RC-140, OD9b). **Round 15** (§3n, Appendix P): Codex's review of the version-12 text raised five findings, all assessed as genuine, every checkable claim reproduced, all applied in `17` version 13 in the same commit as this matrix. One is a defect in Claude's round-14 remedy: a registration-breach cluster entered the primary at X = 0, described as selecting nothing, but zeros move the cluster mean and every block deviation, and Codex's fixture reproduces exactly (30 zeros in a block with sum 11 move t from 2.167 to 2.261 across 2.254); such a cluster is now outside the scored population (RC-143). One is a gap in the round-9 remedy RC-88: a late record that shows a timely YES was graded NO was only counted, and defects on 0.5 % to 2 % of members raise null rejection from 5.1 % to 8.0–24.7 %; such a member is now scored at its least favourable outcome (RC-145). Three are wording that contradicted the rules (RC-144, RC-146, RC-147). **Round 16** (§3o, Appendix Q): Codex's review of the version-13 text raised seven findings; six are assessed as genuine, every checkable claim reproduces, and all six are applied in `17` version 14 in the same commit as this matrix; the seventh, a commit-identity claim about a SHA that is in no ref of the repository, is recorded and not applied (RC-151, OD9b). The one with most weight is a defect in Claude's round-13 and round-15 remedies: scoring a breached or defective member at its least favourable outcome is not conservative, because the block statistic is not monotone in one increment (Codex's fixture, t from 1.622 to 16.143) and because an informed forecast moves the least favourable value (18.5 % null rejection at a 4 % breach share); such members now enter by a box rule whose decision is dominated sample by sample by the decision on the honest sample, a proved inclusion, at a stated power cost (RC-148). The others: the decision waits for a defect-closure horizon and spends a latent-record budget η_max from α (RC-149, EXPERIMENT_REQUIRED for η_max); a cutoff correction after the first registration under an arm version ends the claim, since forecasts can steer a pre-unblinding withdrawal (RC-150, a defect in RC-132); over-limit forecast pairs are clipped at t_close (RC-152); a three-step commit across the external anchor (RC-153); the VOID cap as a cluster-weighted share per component (RC-154). **Round 17** (§3p, Appendix R): Codex's review of the version-14 text raised three findings, all assessed as genuine, all reproduced, all applied in `17` version 15 in the same commit as this matrix. One is a defect in Claude's round-16 remedy RC-148: the closed-form bound of the box rule used the norm of the block-centring map as if it were 1, which holds only for equal block sizes; on an unequal design the version-14 form rejects where the exact box minimum does not (2.504 against 2.147 at c* = 2.254), and the bound now carries κ_A, computed exactly from the design (RC-155). Two close gaps: a provider's cutoff breach did not reach the arms that consume that provider, so the honest FULL forecast could lie outside the FULL–Design C box (9.4–39.2 % null rejection at breach shares of 1–4 %); every arm version now records its inputs and uses the latest cutoff over them (RC-156). And monitor factors were committed at H_k from the graded value although the decision waits for the defect-closure horizon (4.0–43.5 % crossing at defect shares of 1–5 %); factors are now committed at H_k + D (RC-157). **Round 18** (§3q, Appendix S): Codex's review of the version-15 text raised three findings, all assessed as genuine, all reproduced, all applied in `17` version 16 in the same commit as this matrix. One is a defect in Claude's round-16 remedy RC-153: the external anchor covered only the intent, the change took effect and was acknowledged at the local commit, and a restore to the last anchor then discarded an acknowledged change; the Appendix Q invariant accepted any anchor and missed it (the extended toy model loses a change that took effect in 3 of version 15's 10 crash-and-restore cases); the commit record is now anchored before the change takes effect and before the acknowledgement (RC-158). Two close gaps: the VOID cap's denominator did not say that a cluster whose members are all adjudicated VOID or pending, which emits no increment, is counted (0.51 % against 2.5 % on one fixture; RC-159); and the sampling rule allowed unequal inclusion probabilities that nothing used, under which an exactly null eligible population gives 17.2 % rejection at the nominal value (RC-160); the subsample now has one π for every cluster. **Round 19** (§3r, Appendix T): Codex's comment on the version-16 text raised three findings; two are assessed as genuine, every checkable claim reproduces, and both are applied in `17` version 17 in the same commit as this matrix; the third, a commit-identity claim about a SHA that is in no ref of the repository, is recorded and not applied (RC-162, OD9b). RC-161 closes a gap in Claude's round-16 remedy RC-149: §3 item 3 said the primary is calibrated at α − η_max, while §6 and T-12 certified c* at size ≤ α, which the same union bound leaves at α + η_max; every component is now certified at α − η_max (on the two-point family η_max = 0.01 moves c* from 3.207, 2.693 and 2.254 to 3.445, 2.869 and 2.574). RC-163 closes a gap left by RC-52 and RC-135: an outcome knowable after every cutoff and after the registration record but before a forecast's receipt inside the issuance window was not a breach, and the forecast was excluded at adjudication with no stated disposition for the slot; read either as leaving the primary or as an abstention it selects on YES (5.2 % to 6.5–12.7 % null rejection at 1–4 % of YES members); such a cluster is now an issuance breach whose late and empty slots enter the box rule free. **Round 20** (§3s, Appendix U): Codex's comment on the version-17 text raised seven findings; six are assessed as genuine and applied in the same commit as this matrix, three in `17` version 18 and three in the records (§7 and `research/README.md`); the seventh, a commit-identity claim about a SHA that is in no ref of the repository, is recorded and not applied (RC-165, OD9b). RC-164 closes a gap in Claude's round-16 remedy RC-149: η is the probability that any breach or defect of the whole cohort is recorded after T_D, while Phase 2 was to measure a per-member bound on late publication only; a per-member 0.001 over 600 independent members is a cohort-level 45.1 %, and η_max is now at or above the Boole sum of per-member, per-mechanism bounds over the registered cohort, a requirement that at 600 members and η_max = 0.01 needs about 180,000 Phase 2 member observations with no late record. RC-168: a member pre-declared VOID was never adjudicated, so a registrar who saw its outcome at registration could keep exactly the breached clusters that favour FULL (5.1 % to 7.7–57.0 % null rejection); it is now adjudicated and its registration breach removes the cluster. RC-169: withdrawing a source from new registrations during accrual reweights an average-null cohort (5.5 % to 16.7 % at δ = 0.02); the withdrawal now applies to the next cohort. **Awaiting:** Codex's review of this commit; owner decisions OD1, OD2, OD9a and OD10 (now: approve or revert the version-5 to version-18 diffs; round 13 found that this sentence still named versions 5 to 9 through v13, RC-137). **No disposition in this matrix is a Codex agreement** until Codex has reviewed the commit that carries it; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3g. Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); rounds 4–6 found defects in Claude's own remedies (RC-56, RC-60, RC-65, RC-69, RC-70, RC-72, RC-73; Appendix E–G); round 7 found one more, an over-general sentence in round 6's RC-72 response (RC-80); round 8 found two in round 7's remedies (RC-85 on RC-67, RC-86 on RC-79; Appendix I); round 9 found six in round 7's and round 8's remedies and two in Claude's own evidence (§3h, Appendix J); round 10 found five in round 9's remedies and one round-9 propagation gap (§3i, Appendix K); round 11 found three in the round-9 calibration remedy and its round-10 extension, one in the round-9 monitor-order remedy and one open case in the round-9 epoch remedy, and one of them (RC-118) also falsifies committed numbers of Appendix J (§3j, Appendix L). No Codex review addressed RC-07 (n_eff retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
+**Version:** v22, 2026-10-18. **Round:** 21 (Codex round 21 = the automatic review `5562492917` of PR #4 at `d18a4b7`, four inline findings, §3t, Appendix V; round 20 = the PR #4 comment `6248401610` of the automatic review of PR #4 at `f20d1fc`, seven findings posted as one PR comment and not as inline review comments, §3s, Appendix U; round 19 = the PR #4 comment `6248247231` of the automatic review of PR #4 at `ceaeda1`, three findings posted as one PR comment and not as inline review comments, §3r, Appendix T; round 18 = the automatic review `5562262057` of PR #4 at `7d11065`, three findings, §3q, Appendix S; round 17 = the automatic review `5562186477` of PR #4 at `018057b`, three findings, §3p, Appendix R; round 16 = the automatic review `5562093769` of PR #4 at `36a1768`, seven findings, §3o, Appendix Q; round 15 = the automatic review `5562023932` of PR #4 at `0bef5f8`, five findings, §3n, Appendix P; round 14 = the automatic review `5561953685` of PR #4 at `b1935db`, four findings, §3m, Appendix O; round 13 = the automatic review `5560193272` of PR #4 at `6fa4f0c`, six findings, §3l, Appendix N; round 12 = the two reviews of PR #4 at `78225fd`, the automatic review `5559198689` and the review `5560119353` requested on PR #4 comment `6241076464`, nine findings, §3k, Appendix M; round 11 = the automatic review `5559035950` of PR #4 at `04bc122`, eight findings, §3j, Appendix L; round 10 = the automatic review `5558887072` of PR #4 at `922956b`, eight findings, §3i, Appendix K; round 9 = the two reviews of PR #4 at `8af2ae9`, automatic review `5556950582` and the owner-requested review `5558680831`, twenty-one findings, §3h, under the owner's directive on PR #4, comment `6236238443`; round 8 was automatic review `5556866013` of `37ac018`, two findings, §3g; round 7 was review `5551243905` of `10f8829`, round 6 review `5550966930` of `4de18e5`, round 5 review `5550735335` of `88abaa4`, round 4 review `5550366107` of `d46c204`, round 3 review `5550048687` of `43754cc`, round 2 the two reviews of `10d1581`). **The rule changed in this round, on the owner's instruction.** The owner's audit on issue #3 (comment `6222759237`, 2026-10-16 19:07 UTC) rejects "three rounds then park": the per-issue round budget is a per-execution quota safeguard, and the lifetime of a finding is governed by reproducible evidence, never by a retry count. Accordingly the seventeen findings that rounds 4–6 recorded without revision (RC-60, RC-64 to RC-79) and the four findings of round 7 (RC-80 to RC-83) are **applied in `17-phase1-amended-specification.md` version 5, commit `b19483a` (`b19483a909bc948f6775fb5ce3b510d2bdfe9261`), as the OD10 decision diff**: every change carries its matrix ID, the owner approves the diff by recording OD10 on issue #3 or names the items to revert, and the fields that are the owner's to set (OD4, OD5) are left as named fields (§4.6, §6). Round 7's own results (Appendix H): the round-6 sentence that generalised one kernel's zero power to every distribution-free test is replaced by a theorem, power ≤ α(1 + δ)^G for any finite-sample-valid bounded-mean test over G blocks (8 % at δ = 0.02 and 16 % at δ = 0.05 over 24 blocks; RC-80); the intersection-union conjunction over six comparators has 21 % to 77 % power at δ = 0.01 and 600 clusters depending on comparator error dependence, where the single comparison has 77 % (RC-83); the A7 certificate tests had no Phase 1 verifier (RC-82); Codex's claim that commit `10f8829` carries a non-owner identity is not reproduced in the repository, while its remedy, an identity check in T-09, is adopted, and the round-7 commits themselves carry a non-conforming identity that is disclosed in RC-81 for the owner's decision. Appendix F and G scripts were re-run in round 7 and reproduce byte for byte. **Round 8** (Appendix I): Codex's review of the version-5 text raised two findings, both defects in round-7 remedies, both reproduced and applied in `17` version 6 in the same commit as this matrix: the version-5 VOID cutoff was computed from resolved members and so did not exist for an all-VOID cluster, and inside a 5 % VOID cap outcome-dependent removal raises the primary's null rejection rate from 5 % to 23–95 % while the worst-case bound stays at 5 %, so the VOID set is now frozen with the membership and a later VOID is an adjudication outcome under the source rule, never a declaration (RC-85); T-15's refusal-only pass condition was met by a reader that refuses everything or returns the oldest vintage, so positive as-of oracles on fixture F-25 are added (RC-86). The same review raised nothing on the other nineteen items applied in version 5; under §4.6 rule 2 they are now **reviewed once by Codex at `37ac018` without objection**, which is not agreement and does not replace OD10. **Round 9** (Appendix J): the owner's directive of 2026-10-17 16:00 UTC asks for every live finding to be reconciled with its evidence and for the candidate specification to be amended on this branch; Codex's two reviews of the version-6 text raised twenty-one findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 7 in the same commit as this matrix. Six are defects in the round-7 and round-8 remedies (RC-87, RC-90, RC-92 on the VOID rule; RC-93 and RC-101 on the conjunction evidence; RC-96 on the slot key), two are defects in Claude's own evidence (RC-93: the IUT null check used a comparator whose increments were identically zero; RC-102: a hand-typed 140 where the computation gives 141), and one, RC-95, is a design rule carried since round 2: the monitor consumed increments in closure order, which on fair increments crosses 1/α in 5 % to 100 % of paths depending on how much later a NO resolves than a YES, because the knowable time of an eventually-by-deadline outcome is itself outcome-dependent; increments now enter in pre-registered maturity order (3.2–3.4 %). RC-94 makes the primary's critical value a calibration over a pre-registered null class with a pass condition (c* = 3.20, 2.63, 2.23 for catastrophe shares of at least 0.05, 0.2, 0.3; power at δ = 0.02 and 600 clusters 60 %, 79 %, 88 % against 96 % nominal). Every committed script of Appendix C to I was re-extracted and re-run in the round-9 environment: byte-identical, except Appendix H, which differs in the one corrected line. **Round 10** (Appendix K): Codex's review of the version-7 text raised eight findings, all assessed as genuine, every checkable one reproduced, all applied in `17` version 8 in the same commit as this matrix. Five are defects in round-9 remedies: the null class N was four scalars, and a persistent-regime law inside all four has 15–22 % size at every calibrated c* (RC-108 on RC-94); an empty baseline slot removed the member while every other arm's empty slot kept it, and a baseline failure correlated with event type turns a zero-average null into 18–49 % rejection (RC-109 on RC-104); the burn-in blinding bounded the latest finality time and not the earliest knowable time (RC-110 on RC-99); the T-36 oracle required rejection at the nominal value that a correct calibrated test fails (RC-111 on RC-94); the model cutoff sat on each `Forecast` with a correction path that let an outcome-chosen correction month raise the null rejection rate to 13 % (RC-112 on RC-98). One is a propagation gap (T-17 contradicted §3 and F-24 on pre-declared members, RC-115), one an open case the round-9 finality rules did not cover (observer outage plus late publication, RC-113), one an ambiguity in round-7 wording under which a third of the cohort would leave (RC-114). The round-9 script was re-extracted and re-run: byte-identical. **Round 11** (Appendix L): Codex's review of the version-8 text raised eight findings; seven are assessed as genuine, every checkable claim reproduces, and all seven are applied in `17` version 9 in the same commit as this matrix; the eighth, a provenance claim naming a commit that exists in no branch of the repository, is recorded and not applied. Three are defects in the round-9 calibration remedy and its round-10 extension: the calibration criterion was the A3 tolerance, which a family of true size 5.5 % passes three times in four while the text calls the test level 0.05 (RC-117); the size of the two-point family at a fixed critical value is a step function of the catastrophe share, so the committed grid values 3.20, 2.63 and 2.23 are exceeded between their own grid points (5.0–5.4 %) and the exact-supremum values 3.21, 2.69 and 2.25 replace them (RC-118, a CONFIRMED-DEFECT of Appendix J); and one pair's critical value does not make every IUT component level α (up to 11.4 % size for a component outside the pair's class, RC-121). One is a defect in the round-9 monitor-order remedy: the maturity buffer ordered only the clusters registered so far, which breaks the H-order in 64 % of random registration paths (RC-119). One is a propagation gap, the §6 power figures left at the nominal value (RC-120: at the illustrated critical values the single comparison at δ = 0.01 and 600 clusters falls from 78 % to 28–60 %, the conjunction from 21 % to 0–4 % under uncorrelated errors, the period-shock design from 18 % to 2–8 %); one an open case in the round-9 epoch remedy (RC-123: a demotion with the anchor store unavailable had no defined outcome, and a rollback let the pre-demotion capability act once the store returned); one on reproducibility (RC-122: the appendix scripts now exist as committed files under `research/reproduction/`, each checked byte-identical to its appendix block). The round-10 script was re-run: byte-identical. **Round 12** (§3k, Appendix M) applied eight of nine findings on the version-9 text in `17` version 10. **Round 13** (§3l, Appendix N): Codex's review of the version-10 text raised six findings, all assessed as genuine, every checkable one reproduced, all applied in the same commit as this matrix (four in `17` version 11, one in the reproduction directory, one in the README). The two with statistical weight are selections on a known outcome that version 10 still allowed: a member whose outcome was knowable before an arm's model cutoff was excluded after the outcome was known, and only a YES can be knowable that early on a milestone-deadline predicate (RC-135: 9.3 % to 33.9 % null rejection at breach shares of 1 % to 4 %); and a terminal-falsifier member could be registered after its falsifier was public (RC-138: up to 25.1 % at 4.8 % of the cohort). **Round 14** (§3m, Appendix O): Codex's review of the version-11 text raised four findings. Two are applied in `17` version 12: the §6 estimand row still compared the model cutoff with `not_before` instead of the earliest-knowable bound (RC-142), and a member whose outcome was knowable before its cluster's registration was not named (RC-139); the selection Codex describes for that member does not occur under version 11, because no forecast on it can be eligible and it enters at X = 0 whatever its outcome, so the change names and reports the case. One corrects a mislabelled value in Appendix N (RC-141). One, a commit-identity claim about a SHA that is in no ref of this repository, is recorded and not applied (RC-140, OD9b). **Round 15** (§3n, Appendix P): Codex's review of the version-12 text raised five findings, all assessed as genuine, every checkable claim reproduced, all applied in `17` version 13 in the same commit as this matrix. One is a defect in Claude's round-14 remedy: a registration-breach cluster entered the primary at X = 0, described as selecting nothing, but zeros move the cluster mean and every block deviation, and Codex's fixture reproduces exactly (30 zeros in a block with sum 11 move t from 2.167 to 2.261 across 2.254); such a cluster is now outside the scored population (RC-143). One is a gap in the round-9 remedy RC-88: a late record that shows a timely YES was graded NO was only counted, and defects on 0.5 % to 2 % of members raise null rejection from 5.1 % to 8.0–24.7 %; such a member is now scored at its least favourable outcome (RC-145). Three are wording that contradicted the rules (RC-144, RC-146, RC-147). **Round 16** (§3o, Appendix Q): Codex's review of the version-13 text raised seven findings; six are assessed as genuine, every checkable claim reproduces, and all six are applied in `17` version 14 in the same commit as this matrix; the seventh, a commit-identity claim about a SHA that is in no ref of the repository, is recorded and not applied (RC-151, OD9b). The one with most weight is a defect in Claude's round-13 and round-15 remedies: scoring a breached or defective member at its least favourable outcome is not conservative, because the block statistic is not monotone in one increment (Codex's fixture, t from 1.622 to 16.143) and because an informed forecast moves the least favourable value (18.5 % null rejection at a 4 % breach share); such members now enter by a box rule whose decision is dominated sample by sample by the decision on the honest sample, a proved inclusion, at a stated power cost (RC-148). The others: the decision waits for a defect-closure horizon and spends a latent-record budget η_max from α (RC-149, EXPERIMENT_REQUIRED for η_max); a cutoff correction after the first registration under an arm version ends the claim, since forecasts can steer a pre-unblinding withdrawal (RC-150, a defect in RC-132); over-limit forecast pairs are clipped at t_close (RC-152); a three-step commit across the external anchor (RC-153); the VOID cap as a cluster-weighted share per component (RC-154). **Round 17** (§3p, Appendix R): Codex's review of the version-14 text raised three findings, all assessed as genuine, all reproduced, all applied in `17` version 15 in the same commit as this matrix. One is a defect in Claude's round-16 remedy RC-148: the closed-form bound of the box rule used the norm of the block-centring map as if it were 1, which holds only for equal block sizes; on an unequal design the version-14 form rejects where the exact box minimum does not (2.504 against 2.147 at c* = 2.254), and the bound now carries κ_A, computed exactly from the design (RC-155). Two close gaps: a provider's cutoff breach did not reach the arms that consume that provider, so the honest FULL forecast could lie outside the FULL–Design C box (9.4–39.2 % null rejection at breach shares of 1–4 %); every arm version now records its inputs and uses the latest cutoff over them (RC-156). And monitor factors were committed at H_k from the graded value although the decision waits for the defect-closure horizon (4.0–43.5 % crossing at defect shares of 1–5 %); factors are now committed at H_k + D (RC-157). **Round 18** (§3q, Appendix S): Codex's review of the version-15 text raised three findings, all assessed as genuine, all reproduced, all applied in `17` version 16 in the same commit as this matrix. One is a defect in Claude's round-16 remedy RC-153: the external anchor covered only the intent, the change took effect and was acknowledged at the local commit, and a restore to the last anchor then discarded an acknowledged change; the Appendix Q invariant accepted any anchor and missed it (the extended toy model loses a change that took effect in 3 of version 15's 10 crash-and-restore cases); the commit record is now anchored before the change takes effect and before the acknowledgement (RC-158). Two close gaps: the VOID cap's denominator did not say that a cluster whose members are all adjudicated VOID or pending, which emits no increment, is counted (0.51 % against 2.5 % on one fixture; RC-159); and the sampling rule allowed unequal inclusion probabilities that nothing used, under which an exactly null eligible population gives 17.2 % rejection at the nominal value (RC-160); the subsample now has one π for every cluster. **Round 19** (§3r, Appendix T): Codex's comment on the version-16 text raised three findings; two are assessed as genuine, every checkable claim reproduces, and both are applied in `17` version 17 in the same commit as this matrix; the third, a commit-identity claim about a SHA that is in no ref of the repository, is recorded and not applied (RC-162, OD9b). RC-161 closes a gap in Claude's round-16 remedy RC-149: §3 item 3 said the primary is calibrated at α − η_max, while §6 and T-12 certified c* at size ≤ α, which the same union bound leaves at α + η_max; every component is now certified at α − η_max (on the two-point family η_max = 0.01 moves c* from 3.207, 2.693 and 2.254 to 3.445, 2.869 and 2.574). RC-163 closes a gap left by RC-52 and RC-135: an outcome knowable after every cutoff and after the registration record but before a forecast's receipt inside the issuance window was not a breach, and the forecast was excluded at adjudication with no stated disposition for the slot; read either as leaving the primary or as an abstention it selects on YES (5.2 % to 6.5–12.7 % null rejection at 1–4 % of YES members); such a cluster is now an issuance breach whose late and empty slots enter the box rule free. **Round 20** (§3s, Appendix U): Codex's comment on the version-17 text raised seven findings; six are assessed as genuine and applied in the same commit as this matrix, three in `17` version 18 and three in the records (§7 and `research/README.md`); the seventh, a commit-identity claim about a SHA that is in no ref of the repository, is recorded and not applied (RC-165, OD9b). RC-164 closes a gap in Claude's round-16 remedy RC-149: η is the probability that any breach or defect of the whole cohort is recorded after T_D, while Phase 2 was to measure a per-member bound on late publication only; a per-member 0.001 over 600 independent members is a cohort-level 45.1 %, and η_max is now at or above the Boole sum of per-member, per-mechanism bounds over the registered cohort, a requirement that at 600 members and η_max = 0.01 needs about 180,000 Phase 2 member observations with no late record. RC-168: a member pre-declared VOID was never adjudicated, so a registrar who saw its outcome at registration could keep exactly the breached clusters that favour FULL (5.1 % to 7.7–57.0 % null rejection); it is now adjudicated and its registration breach removes the cluster. RC-169: withdrawing a source from new registrations during accrual reweights an average-null cohort (5.5 % to 16.7 % at δ = 0.02); the withdrawal now applies to the next cohort. **Awaiting:** Codex's review of this commit; owner decisions OD1, OD2, OD9a and OD10 (now: approve or revert the version-5 to version-19 diffs; round 13 found that this sentence still named versions 5 to 9 through v13, RC-137). **No disposition in this matrix is a Codex agreement** until Codex has reviewed the commit that carries it; "Codex position" quotes `research/15-codex-review.md` at commit `59206fe` (PR #2) or the PR #4 review comment named in §3a to §3g. Round 3 closed the RC-01 scope disagreement in Codex's favour (RC-49, RC-50; Appendix D); rounds 4–6 found defects in Claude's own remedies (RC-56, RC-60, RC-65, RC-69, RC-70, RC-72, RC-73; Appendix E–G); round 7 found one more, an over-general sentence in round 6's RC-72 response (RC-80); round 8 found two in round 7's remedies (RC-85 on RC-67, RC-86 on RC-79; Appendix I); round 9 found six in round 7's and round 8's remedies and two in Claude's own evidence (§3h, Appendix J); round 10 found five in round 9's remedies and one round-9 propagation gap (§3i, Appendix K); round 11 found three in the round-9 calibration remedy and its round-10 extension, one in the round-9 monitor-order remedy and one open case in the round-9 epoch remedy, and one of them (RC-118) also falsifies committed numbers of Appendix J (§3j, Appendix L). No Codex review addressed RC-07 (n_eff retention) or RC-20 (hosting timing). Silence in a diff review is not agreement.
 
 Labels follow `research/README.md`. Disposition statuses used here, per the protocol in issue #3:
 
@@ -54,10 +54,11 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Twentieth Codex review of PR #4 (round 18) | review `5562262057` on commit `7d110654727400b3a17e236a2915567e52ae1d0e`, the automatic review of the round-17 push (summary comment `6216072575` edited 2026-10-18 09:11 UTC; this execution was dispatched on that edit), three inline findings (two P1, one P2), all on `17` version 15, comment IDs `4306464068`, `4306464071`, `4306464073`; none repeats a comment ID of rounds 1–17; by content RC-158 is about the round-16 remedy RC-153 (what the external anchor covers), RC-159 extends RC-154 (which clusters the cap counts), RC-160 extends RC-78 (the sampling rule); none repeats an earlier claim; no comment by anyone on PR #4 or issue #3 after 09:11 UTC other than the summary edit | round 18 (§3q, RC-158 to RC-160) |
 | Twenty-first Codex review of PR #4 (round 19) | the automatic review of the round-18 push at `ceaeda1ad488054946a2a626d7616e396d103f77`, posted as PR #4 comment `6248247231` (2026-10-18 09:28 UTC; summary comment `6216072575` edited at the same time, `has_unresolved_findings: true`; this execution was dispatched on that edit); no review object and no inline review comment exists for `ceaeda1`, so the three findings (all P1) are keyed `6248247231/1` to `6248247231/3` by their order in the comment: item 1 on `17` line 948 (the §6 primary row), item 2 on `16` line 1199 (the round-18 provenance line of §7), item 3 on `17` lines 233–236 (§3 item 1); none repeats a comment ID of rounds 1–18; by content RC-161 is about the round-16 remedy RC-149, RC-162 is the class of RC-116, RC-126, RC-140 and RC-151 with a new SHA, and RC-163 extends RC-52 and RC-135; no comment by anyone on PR #4 or issue #3 after 09:28 UTC | round 19 (§3r, RC-161 to RC-163) |
 | Twenty-second Codex review of PR #4 (round 20) | the automatic review of the round-19 push at `f20d1fca5db674dc16ede206c12b88f731ac0f81`, posted as PR #4 comment `6248401610` (2026-10-18 09:46 UTC; summary comment `6216072575` edited at the same time, `has_unresolved_findings: true`; this execution was dispatched on that edit); no review object and no inline review comment exists for `f20d1fc`, so the seven findings (five P1, two P2) are keyed `6248401610/1` to `6248401610/7` by their order in the comment: item 1 on `17` lines 399–402 (§3 item 3, η_max), item 2 on `17` line 905 (T-09), item 3 on `16` line 1203 (§7 `applied_items`), item 4 on `research/README.md` lines 29–30, item 5 on `17` lines 666–668 (§3 item 3, pre-declared VOID), item 6 on `17` lines 264–265 (§3 item 1, source withdrawal), item 7 on `16` line 1182 (§7, round-19 record); none repeats a comment ID of rounds 1–19; by content RC-164 extends RC-149 and RC-161, RC-165 is the class of RC-116, RC-126, RC-140, RC-151 and RC-162 with a new SHA, RC-166 and RC-167 are the class of RC-131 and RC-137 for round 19, RC-168 extends RC-87 and RC-143, RC-169 extends RC-143 and RC-145, and RC-170 is about the round-19 record; no comment by anyone on PR #4 or issue #3 after 09:46 UTC except the summary edit | round 20 (§3s, RC-164 to RC-170) |
+| Twenty-third Codex review of PR #4 (round 21) | review `5562492917` on commit `d18a4b7e4fc8446d7ab8120c393b9f7df1d97d5a`, the automatic review of the round-20 push (summary comment `6216072575` edited 2026-10-18 10:08 UTC, `has_unresolved_findings: true`; this execution was dispatched on that edit), four inline findings, all P1, comment IDs `4306617507` (`17` line 430, the η budget), `4306617510` (`17` line 954, T-09), `4306617512` (`17` line 631, the level claim), `4306617514` (`17` line 553, G); none repeats a comment ID of rounds 1–20; by content RC-171 is about the round-20 remedy RC-164 (its registration refusal), RC-172 is the class of RC-116, RC-126, RC-140, RC-151, RC-162 and RC-165 with a new SHA, RC-173 extends RC-117 and RC-161 (what the certification spends), RC-174 extends RC-97 (which blocks count); no comment by anyone on PR #4 or issue #3 after 10:08 UTC except the summary edit; issue #3 read through handoff 20 (`6248523476`) | round 21 (§3t, RC-171 to RC-174) |
 | PR #12 | `feature/graphify-agent-workflow-20261017` against `research/claude-handoff` (agent workflow and snapshot tests), opened 2026-10-17 | read for scope only: not a reconciliation input and touches neither `16` nor `17` |
 | Codex review of PR #7 (owner's Rust-first RFC) | review `5552078599` on `00642e3a1f5d3600cb169541c60d9736d39b08e7`, five findings, comment IDs `4297992981`, `4297992983`, `4297992988`, `4297993002`, `4297993009`; PR #7 is the owner's branch and is not revised here; the one finding that bears on `17` (`4297992983`: a fixed-horizon primary conflicts with the anytime-valid wording of `AGENTS.md` §2 item 3) is recorded as RC-84 | round 7 (§3f, RC-84; OD9b) |
 | Codex review of PR #10 (owner's CANNON protocol) | review `5552523817` on `b5d104cd25ee82a094cae1b4a04deb801e8ee674`, ten findings, comment IDs `4298363597` to `4298363703`; all on the protocol documents, none on the Phase 1 science; read for the §4.6 rule (durable finding state, pause not close, verification on the exact SHA), not reconciled here | round 7 (§4.6) |
-| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3), `6219896670` (handoff 4), `6220313901` (handoff 5), `6220770348` (handoff 6), `6231265852` (handoff 7), `6231483746` (handoff 8), `6236946882` (handoff 9), `6237338855` (handoff 10), `6237998297` (handoff 11), `6241083483` (resumption marker of the interactive session of 2026-10-17 21:06 UTC, recording the failed round-12 dispatch), `6241359504` (handoff 12), `6247126535` (handoff 13), `6247290530` (handoff 14), `6247503183` (handoff 15), `6247752807` (handoff 16), `6248004117` (handoff 17), `6248188858` (handoff 18), `6248331602` (handoff 19); PR #4 comment `6237340628` (the one progress update the owner asked for); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
+| Own posts | PR #2 comment `6216071592`; issue #3 comments `6216073335` (handoff 1), `6218864121` (handoff 2), `6219320639` (handoff 3), `6219896670` (handoff 4), `6220313901` (handoff 5), `6220770348` (handoff 6), `6231265852` (handoff 7), `6231483746` (handoff 8), `6236946882` (handoff 9), `6237338855` (handoff 10), `6237998297` (handoff 11), `6241083483` (resumption marker of the interactive session of 2026-10-17 21:06 UTC, recording the failed round-12 dispatch), `6241359504` (handoff 12), `6247126535` (handoff 13), `6247290530` (handoff 14), `6247503183` (handoff 15), `6247752807` (handoff 16), `6248004117` (handoff 17), `6248188858` (handoff 18), `6248331602` (handoff 19), `6248523476` (handoff 20); PR #4 comment `6237340628` (the one progress update the owner asked for); the twenty review-thread replies of 15:28–15:29 UTC on PR #4 (one per round-2 finding, posted under the owner's identity by the routine) | not inputs |
 | Automation | PR #5 (`automation/claude-review-dispatch`, merged to `main` 15:09 UTC) | not a scientific input |
 
 No Codex comment, commit or review newer than the above existed when this document was written. A later
@@ -807,6 +808,32 @@ the record defects that `next_execution` was written to prevent; the read-back o
 number in `16` §7, the header of `16`, `17` and both READMEs with this commit. RC-165 is the sixth commit-identity claim
 about an object that is not in the repository. Not addressed by Codex in round 20: RC-163 in substance.
 
+### 3t. Round 21: Codex's review of PR #4 at `d18a4b7` (review `5562492917`)
+
+Four findings, all P1, posted 2026-10-18 10:08 UTC by the automatic review of the round-20 push as inline review
+comments. None repeats a comment ID of rounds 1–20. By content, RC-171 is about the round-20 remedy RC-164 (the
+registration refusal it added), RC-172 is the class of RC-116, RC-126, RC-140, RC-151, RC-162 and RC-165 with a new
+SHA, RC-173 extends RC-117 and RC-161 (what a simulated certification spends) and RC-174 extends RC-97 (which blocks
+count in G). Three are assessed as genuine and applied in `17` version 19 in the same commit as this matrix; RC-172 is
+not reproduced and is recorded. Every checkable claim was run (Appendix V,
+`python -I research/reproduction/round21_checks.py`). Every disposition is `PROPOSED` until Codex reviews the commit
+that carries it.
+
+| ID | Codex finding (comment ID, severity) | Parent | Claude position and evidence | Resolved in | Validation test | Status |
+|---|---|---|---|---|---|---|
+| RC-171 | Preserve equal-probability sampling under the η budget: when the cumulative Boole sum reaches η_max before T_R, refusing each later registration gives otherwise eligible candidates inclusion probability zero, against the one-π rule of §6; with effect +δ early and −δ late the full eligible population can satisfy the average null while the budget-truncated cohort has a positive mean; pre-register a cohort ceiling or uniform sampling probability that guarantees every selected registration fits the budget, or redefine and calibrate the estimand for this order-dependent rule (`4306617507`, P1) | RC-164 (round 20, Claude's remedy), RC-160 (round 18) | **A; defect in my round-20 remedy; REPRODUCED.** Version 18 refused each registration that would carry the sum above η_max, admitted later ones that fit, and kept the estimand over the eligible population to T_R. 1,200 eligible singletons over 24 blocks on law (a) of Appendix N, FULL's effect +δ in blocks 1–12 and −δ in 13–24, one per-member bound for every candidate, so the budget binds at the 600th registration: the truncated cohort rejects in 32.4 % (δ = 0.01) and 77.4 % (δ = 0.02) at the nominal value, 20.2 % and 62.6 % at c* = 2.254, where the full window gives 4.2 % and 2.3 % (1.3 % and 0.5 %). With unequal bounds u_A < u_B the refusal also admits up to ⌈u_B/u_A⌉ − 1 A registrations after the first refused B one (deterministic), a source-dependent selection of the same kind as RC-169. Version 19 takes Codex's second route in its simplest form: the budget **closes the registration window** of the whole cohort at τ, the record time of the first registration it would refuse, for every source at once, and the estimand, the null class and the claim are stated over the eligible population of [T_0, τ), τ = T_R when the budget does not bind. τ depends only on registration counts and pre-registered bounds, so it is blind to every forecast and outcome, and the window it ends is no more arbitrary than T_R. On a null over [T_0, τ) the rate is 5.15 % and 4.95 % (2.5 % and 2.2 % at 2.254). The planned supply and π are pre-registered so that the budget is not expected to bind before T_R, τ is reported, and the calibration's supply law includes the close. A cohort ceiling is a close by count and is recorded with uniform sampling under OD10. Remaining assumption: a claim on [T_0, τ) generalises to later periods only under time homogeneity of the effect, which the claim on [T_0, T_R] also needed | `17` header, §2 (one row), §3 item 3 (the η_max paragraph), §6 Estimand and Accrual rows, T-12 | T-12: the budget-close family (the 600-of-1,200 case and a two-source variant with u_B = 10 u_A); the window closes at τ for every source, the null over [T_0, τ) holds size; the version-18 refusal with the estimand to T_R is the invalid control, and admitting a low-bound registration after the first refusal fails | `PROPOSED` (applied in `17` v19) |
+| RC-172 | Recreate this commit under the designated identity: `git show -s --format=fuller 65b72d1a01f0a834527bcc492a3128d28cafb3f7` reports author and committer `Codex <codex@openai.com>`, so the T-09 check would reject the reviewed commit (`4306617510`, P1) | RC-81, RC-116, RC-126, RC-140, RC-151, RC-162, RC-165 | **D; NOT REPRODUCED.** The comment is pinned to `d18a4b7`, whose author and committer are both the owner's identity (`git show -s --format=fuller d18a4b7`). `65b72d1a…` is not `d18a4b7` and is in none of the 37 refs fetched this round, the pull-request heads and merge refs included (`git cat-file -t`: could not get object info; 74 commits reachable, none with that prefix). The identities over every reachable commit are the owner's (`Salah Aouaj` and `rorschach0`, both `salah@hydeout.ch`, the latter with GitHub as committer on merges) and the three round-7 and round-8 commits that carry `Claude <noreply@anthropic.com>`, already under OD9b. No commit was rewritten, and none may be. Recorded for OD9b, which now lists seven such SHAs | `16` §6 OD9b (one more SHA) | none in `17`; T-09's identity check stands | `RECORDED` (not applied) |
+| RC-173 | Spend calibration uncertainty in the level budget: a simulated null family is certified at every evaluated point only with 99 % simultaneous confidence, yet the selected cutoff is promoted to an unconditional level-α claim; over repetitions of calibration and experiment the 1 % coverage-failure event can add up to 0.01, so even if covered calibrations have size 0.05 the procedure bounds the joint rate only by 0.99·0.05 + 0.01 = 0.0595; spend the failure probability alongside η_max, use an exact calibration, or describe the result as a 99 %-confidence size certificate (`4306617512`, P1) | RC-117 (round 11), RC-130 (round 12), RC-161 (round 19) | **A; gap in the proof of the level; deterministic.** The calibration's simulations are seeded and committed before the primary cohort and are independent of it, so the rejection probability is E[size(c*)] over the calibration. On the coverage event size(c*) ≤ the certification level; on its complement nothing bounds it below 1. Certified at α − η_max, the argument gives (1 − γ_cal)(α − η_max) + γ_cal + η_max: Codex's 5.95 % at η_max = 0 reproduces. It is a bound and not an observed rate: on one continuous point the rule's true size is exactly Beta(k + 1, R − k), which exceeds the level 0.05 with probability 0.0096 and averages 0.0464 at R = 20,000 (Appendix V). Version 19 spends it: a simulated family is certified at **α − η_max − γ_cal**, γ_cal the simultaneous miscoverage (0.01 unless OD4 sets a smaller value), so P(reject) ≤ γ_cal + η_max + (α − η_max − γ_cal) = α; an exact calibration spends nothing, so the two-point c* values of Appendix T do not move. At level 0.04 the observed-rate ceiling is 3.68 % for one point and 3.49 % for a hundred at R = 20,000. Power at the spent level is **not computed**. Codex's third route, a 99 %-confidence size certificate, is recorded under OD10. Remaining assumption: the committed generator's seeds are fixed before the cohort and never re-drawn after outcomes, which T-12 already prints | `17` header, §2 (one row), §3 item 3 (*Calibrated critical value*), §6 Primary test and Confirmatory conjunction rows, T-12 | T-12: a simulated family certified at α − η_max − γ_cal; an implementation that certifies a simulated family at α − η_max fails; an exact family certified at α − η_max | `PROPOSED` (applied in `17` v19) |
+| RC-174 | Exclude non-emitting blocks from G: an occupied block is one with any eligible cluster, so blocks with only pending or all-adjudicated-VOID clusters count although they emit no increment; such a block adds a zero block sum and one to G, lowering the G/(G − 1) multiplier and the critical value's degrees of freedom; adding 22 missing-only blocks to two scored blocks moves G from 2 to 24 and can turn a non-rejection into a rejection; define G from blocks with at least one emitted primary increment, keeping non-emitting clusters in the cap and bounds (`4306617514`, P1) | RC-97 (round 9, Claude's remedy), RC-159 (round 18) | **A; gap in my round-9 remedy; REPRODUCED.** Version 18 defined an occupied block as one with at least one eligible cluster, and the cap population of RC-159 deliberately includes non-emitting clusters, so the two definitions met in G. Codex's case reproduces: two scored blocks at t = 3.0 do not reject on one degree of freedom (6.314); 22 added non-emitting blocks give t = 4.153 on 23 (1.714), which rejects. On the RC-97 valid null (X = ±0.2, Poisson supply of 0.5, 1 and 2 per period, empty periods allowed) with 10–40 % of eligible clusters non-emitting independently of the outcome, eligible-block counting gives 4.9–6.1 % (99 % upper bound up to 6.6 %, above the A3 bound) and emitting-block counting 3.6–5.3 %. The effect is modest when non-emission is random and as large as Codex's case when it is concentrated, for example in the last blocks before T_A. Version 19 counts in G, the degrees of freedom and G_min only blocks with at least one emitted primary increment, scored or by the box rule; non-emitting clusters stay in the cap population and the worst-case bounds, and each imputed sample computes G over its own increments | `17` §2 (one row), §3 item 3 (*The primary statistic*), §6 Primary test and Stopping rule rows, T-12 | T-12: the zero-supply families with 10–40 % non-emitting clusters and the 2 + 22 block case; eligible-block counting is the invalid control | `PROPOSED` (applied in `17` v19) |
+
+Assessment across the four: RC-171 is the fourth finding on the η_max budget (RC-149, RC-161, RC-164) and the first on
+how it is enforced rather than what it bounds; the close moves the budget from a per-registration filter to the window
+of the estimand, where the existing equal-π rule holds unchanged. RC-173 and RC-174 are both statements that were
+correct at the level they were written and incomplete one level up: the certification bounded the size on the covered
+event but not the rate over calibrations, and RC-97 removed empty periods from G but not periods that are eligible and
+empty of increments. RC-172 is the seventh commit-identity claim about an object that is not in the repository. Not
+addressed by Codex in round 21: RC-166 to RC-170.
+
 ## 4. Open disagreements (what would settle each)
 
 4.1 **RC-01 remedy scope: withdrawn by Claude in round 3.** Rounds 1–2: Codex asked for estimand, filtration,
@@ -1044,14 +1071,14 @@ is not met by this commit: Codex has not reviewed version 14.
 | OD1 | Approve the amended Phase 1 scope and acceptance criteria in `17-phase1-amended-specification.md`, or choose a research-only pause | pause costs calendar time only; approval authorises offline synthetic work, no network |
 | OD2 | Authorise recording the scientific dispositions (RC-03, 04, 05, 10, 21 and the N7/N9/N10/N11 amendments) as dated amendments to D2, D3, D4, D6, D9, D11 in `09-open-questions-and-decisions.md`; archive untouched | none beyond review time |
 | OD3 | Lifetime error budget α_total for artefact promotions, and whether reversible promotions get a separate budget | smaller budget = fewer false promotions, steeply less power after a handful of **attempts** (α_j is debited per registered test, not per success, RC-44) |
-| OD4 | Smallest useful Brier improvement to power the primary test for, **stated for the confirmatory conjunction** (RC-83); the VOID-rate cap (RC-38; the cap bounds the share of clusters that leave, not the bias of a discretionary removal, which is why a VOID is frozen or adjudicated and never declared after the freeze, RC-85, Appendix I); the calendar-block dependence model (block length) and its shock amplitude (RC-49, RC-70); the estimand naming, per cluster or period-balanced (RC-69); the accrual cut-off and maximum horizon H_max (RC-68); the skew bound d_max and the catastrophe-share bound (RC-72); the comparator error-dependence assumption the design is powered under (RC-83); whether the 12-month look is futility-only (default) or carries a pre-registered O'Brien–Fleming-type spending (RC-56); **round 9:** the pre-registered null class N (block length, d_max, catastrophe-share bound ε_min, shock amplitude) over which the critical value c* is calibrated, and the power floor at the OD4 effect below which the primary is non-confirmatory under that class (RC-94); the minimum number G_min of occupied blocks (RC-97); whether the conjunction is powered under a justified positive-association assumption or under the Fréchet lower bound (RC-101); **round 10:** the generator box Θ of N as a committed family, in particular the serial-dependence bound ρ_max of the block shocks and the supply–shock coordinate, without which four scalars admit a P(stay) = 0.9 law with 15–22 % size at every calibrated c* (RC-108); the abstention cap per arm (RC-109); **round 11:** the committed enumerated set N_0 of Θ and its spacing, the replication count R and the confidence 1 − 0.01/K of a simulated calibration (RC-117, RC-118), and the per-component boxes Θ_j of the IUT (RC-121); **round 12:** the timestamp that assigns a cluster to a calendar block, maturity H_k by default, as part of the dependence model (RC-129; a fixed non-maturity assignment is oversized at 19.5–20.7 % when the shock follows the maturity month, Appendix M); **round 16:** the latent-record budget η_max, the pre-registered bound on the probability that a breach or defect is recorded after the decision date T_D, spent from α so that the primary is calibrated at α − η_max (RC-149; EXPERIMENT_REQUIRED: a value is defensible only from the Phase 2 late-record delays per source); the calibrated values follow from these and are not a choice | power over the design's 24 calendar periods (REPRODUCED, Appendix F and H). Single comparison, independent clusters: δ = 0.01 at 600 clusters 78 % (b = 0.5) to 92 % (b = 0.2); δ = 0.005 at 600 clusters 54–70 %; δ = 0.02 at 288–300 clusters about 76–94 %; the anytime-valid monitor crosses far less often at the same supply (27–32 % for δ = 0.01 at 600; RC-61). **Conjunction** (six comparators, least-favourable configuration): at δ = 0.01 and 600 clusters 21 % with uncorrelated comparator errors, 32 % at a shared-sign probability of one half, 77 % when errors move together; at 1,200 clusters 77 % / 80 % / 96 %; at δ = 0.02 and 600 clusters 76 % / 80 % / 96 %: under uncorrelated errors the conjunction needs about twice the supply of one comparison. **Dependence model:** under independent period shocks of ± 0.3 the single comparison's power at δ = 0.02 is 18 % at 600 and at 1,200 clusters, so the detectable effect under that model is about δ = 0.065 at any supply (the 47 % offered here until round 5 averaged over 120 periods and is withdrawn, RC-70); under a persistent macro regime 120 clusters over 24 periods admit no valid test at any tested block length (Appendix D). **Validity:** the primary test's size is calibrated on the pre-registered null families, not finite-sample valid (exact size 7.33 % on a two-point period-shock null, up to 15.2 % on rare-catastrophe nulls at 24 blocks), and no finite-sample-valid bounded-mean test of any form has power above α(1 + δ)^24 (8 % at δ = 0.02, 16 % at 0.05; PROVED, RC-80), so the skew bound must be justified from reference-class history before supply is read. **Calibration (round 9, corrected in round 11, REPRODUCED, Appendix L):** on the two-point block-mean family with catastrophe share at least ε_min the exact-supremum critical value is 3.207 (ε_min = 0.05 or 0.10), 2.693 (0.20) or 2.254 (0.30), published at three decimals or rounded upward, never to nearest (2.69 and 2.25 have 5.016 % and 5.025 % supremum size; RC-124, Appendix M); the round-9 grid values 3.20, 2.63 and 2.23 are exceeded between their own grid points (5.0–5.4 %) and are withdrawn (RC-118); a simulated calibration certifies ≤ α by the upper confidence bound, never by the A3 tolerance (RC-117). **Power at the calibrated values (round 11, REPRODUCED, Appendix L; RC-120):** the single comparison at δ = 0.02 and 600 clusters 65 %, 80 % or 90 % against 97 % at the nominal 1.71 (D1 generator), at δ = 0.01 and 600 clusters 28 %, 44 % or 60 % (b = 0.5) against 78 %; the conjunction at δ = 0.01 and 600 clusters 0.0 %, 0.5 % or 3.8 % with uncorrelated errors and 25 %, 42 % or 58 % with errors moving together, against 21 % and 77 %; the period-shock design at δ = 0.02: 1.6 %, 4.1 % or 8.1 % against 18 %. Under the widest illustrated class the conjunction has no useful power at any supply shown. **Per component (RC-121):** one pair's c* leaves a component whose catastrophe share lies outside that pair's class at up to 11.4 % size, so each component carries its own class and c*_j. **Round 20 (RC-164):** η_max bounds the cohort-level probability of any late record, so the cohort size, D and η_max are chosen together: at 600 members η_max = 0.01 needs a per-member bound of 1.667 × 10⁻⁵ summed over mechanisms, which zero late records certify at 95 % after 179,743 Phase 2 member observations (35,948 at 120 members); a smaller η_max raises every c* (RC-161). **Dependence of the comparators:** six tests at 80 % can have zero joint power; with anti-correlated errors the Appendix H generator gives 15 % joint power at δ = 0.01 and 600 clusters where the product is 20 % (RC-101) |
+| OD4 | Smallest useful Brier improvement to power the primary test for, **stated for the confirmatory conjunction** (RC-83); the VOID-rate cap (RC-38; the cap bounds the share of clusters that leave, not the bias of a discretionary removal, which is why a VOID is frozen or adjudicated and never declared after the freeze, RC-85, Appendix I); the calendar-block dependence model (block length) and its shock amplitude (RC-49, RC-70); the estimand naming, per cluster or period-balanced (RC-69); the accrual cut-off and maximum horizon H_max (RC-68); the skew bound d_max and the catastrophe-share bound (RC-72); the comparator error-dependence assumption the design is powered under (RC-83); whether the 12-month look is futility-only (default) or carries a pre-registered O'Brien–Fleming-type spending (RC-56); **round 9:** the pre-registered null class N (block length, d_max, catastrophe-share bound ε_min, shock amplitude) over which the critical value c* is calibrated, and the power floor at the OD4 effect below which the primary is non-confirmatory under that class (RC-94); the minimum number G_min of occupied blocks (RC-97); whether the conjunction is powered under a justified positive-association assumption or under the Fréchet lower bound (RC-101); **round 10:** the generator box Θ of N as a committed family, in particular the serial-dependence bound ρ_max of the block shocks and the supply–shock coordinate, without which four scalars admit a P(stay) = 0.9 law with 15–22 % size at every calibrated c* (RC-108); the abstention cap per arm (RC-109); **round 11:** the committed enumerated set N_0 of Θ and its spacing, the replication count R and the confidence 1 − 0.01/K of a simulated calibration (RC-117, RC-118), and the per-component boxes Θ_j of the IUT (RC-121); **round 12:** the timestamp that assigns a cluster to a calendar block, maturity H_k by default, as part of the dependence model (RC-129; a fixed non-maturity assignment is oversized at 19.5–20.7 % when the shock follows the maturity month, Appendix M); **round 16:** the latent-record budget η_max, the pre-registered bound on the probability that a breach or defect is recorded after the decision date T_D, spent from α so that the primary is calibrated at α − η_max (RC-149; EXPERIMENT_REQUIRED: a value is defensible only from the Phase 2 late-record delays per source); the calibrated values follow from these and are not a choice | power over the design's 24 calendar periods (REPRODUCED, Appendix F and H). Single comparison, independent clusters: δ = 0.01 at 600 clusters 78 % (b = 0.5) to 92 % (b = 0.2); δ = 0.005 at 600 clusters 54–70 %; δ = 0.02 at 288–300 clusters about 76–94 %; the anytime-valid monitor crosses far less often at the same supply (27–32 % for δ = 0.01 at 600; RC-61). **Conjunction** (six comparators, least-favourable configuration): at δ = 0.01 and 600 clusters 21 % with uncorrelated comparator errors, 32 % at a shared-sign probability of one half, 77 % when errors move together; at 1,200 clusters 77 % / 80 % / 96 %; at δ = 0.02 and 600 clusters 76 % / 80 % / 96 %: under uncorrelated errors the conjunction needs about twice the supply of one comparison. **Dependence model:** under independent period shocks of ± 0.3 the single comparison's power at δ = 0.02 is 18 % at 600 and at 1,200 clusters, so the detectable effect under that model is about δ = 0.065 at any supply (the 47 % offered here until round 5 averaged over 120 periods and is withdrawn, RC-70); under a persistent macro regime 120 clusters over 24 periods admit no valid test at any tested block length (Appendix D). **Validity:** the primary test's size is calibrated on the pre-registered null families, not finite-sample valid (exact size 7.33 % on a two-point period-shock null, up to 15.2 % on rare-catastrophe nulls at 24 blocks), and no finite-sample-valid bounded-mean test of any form has power above α(1 + δ)^24 (8 % at δ = 0.02, 16 % at 0.05; PROVED, RC-80), so the skew bound must be justified from reference-class history before supply is read. **Calibration (round 9, corrected in round 11, REPRODUCED, Appendix L):** on the two-point block-mean family with catastrophe share at least ε_min the exact-supremum critical value is 3.207 (ε_min = 0.05 or 0.10), 2.693 (0.20) or 2.254 (0.30), published at three decimals or rounded upward, never to nearest (2.69 and 2.25 have 5.016 % and 5.025 % supremum size; RC-124, Appendix M); the round-9 grid values 3.20, 2.63 and 2.23 are exceeded between their own grid points (5.0–5.4 %) and are withdrawn (RC-118); a simulated calibration certifies ≤ α by the upper confidence bound, never by the A3 tolerance (RC-117). **Power at the calibrated values (round 11, REPRODUCED, Appendix L; RC-120):** the single comparison at δ = 0.02 and 600 clusters 65 %, 80 % or 90 % against 97 % at the nominal 1.71 (D1 generator), at δ = 0.01 and 600 clusters 28 %, 44 % or 60 % (b = 0.5) against 78 %; the conjunction at δ = 0.01 and 600 clusters 0.0 %, 0.5 % or 3.8 % with uncorrelated errors and 25 %, 42 % or 58 % with errors moving together, against 21 % and 77 %; the period-shock design at δ = 0.02: 1.6 %, 4.1 % or 8.1 % against 18 %. Under the widest illustrated class the conjunction has no useful power at any supply shown. **Per component (RC-121):** one pair's c* leaves a component whose catastrophe share lies outside that pair's class at up to 11.4 % size, so each component carries its own class and c*_j. **Round 20 (RC-164):** η_max bounds the cohort-level probability of any late record, so the cohort size, D and η_max are chosen together: at 600 members η_max = 0.01 needs a per-member bound of 1.667 × 10⁻⁵ summed over mechanisms, which zero late records certify at 95 % after 179,743 Phase 2 member observations (35,948 at 120 members); a smaller η_max raises every c* (RC-161). **Round 21 (RC-173):** the miscoverage γ_cal of a simulated calibration, spent in the level budget, so that a simulated family is certified at α − η_max − γ_cal (0.04 at η_max = 0 and γ_cal = 0.01, 0.049 at γ_cal = 0.001, which needs a larger R for the same observed-rate ceiling); exact calibrations spend none; (RC-171) the planned supply and π at which the η budget is not expected to close registration before T_R, because a close at τ < T_R shortens the window over which the claim holds. **Dependence of the comparators:** six tests at 80 % can have zero joint power; with anti-correlated errors the Appendix H generator gives 15 % joint power at δ = 0.01 and 600 clusters where the product is 20 % (RC-101) |
 | OD5 | Five source families to profile, three to run; any paid-data allowance (Q5); per source, the pre-registered **source rule**: occurrence-time rule (RC-71), latency window (RC-77) and the failure condition under which the absence of a record at logical finality is an adjudicated VOID rather than NO (RC-85); **round 9:** the observation duty at finality (how the observer records an absence at or after deadline + window, RC-105) and the per-source bound on the rate of post-finality reports above which the source is withdrawn from new registrations (RC-88); **round 10:** the monotone-publication condition per source (evidenced publication times, records never removed), under which a late record is itself the observation of absence at finality, and the exclusion at registration of sources that cannot meet it (RC-113); **round 13:** per terminal-falsifier source, `falsifier_observable_from`, the earliest time the source can publish a falsifier, which with `not_before` forms the earliest-knowable bound that gates registration and the cutoff check; a source that cannot state it registers no terminal-falsifier event (RC-138); **round 15:** the per-source bound on registration breaches (clusters whose outcome was public at registration, outside the scored population), above which the source is withdrawn from new registrations (RC-143); **round 16:** the defect-closure horizon D_s per source, after deadline + window, that sets the decision date T_D = T_A + max_s D_s, with the measured late-record delays it rests on (RC-149); **round 18:** whether the primary registers every eligible candidate or an equal-probability subsample, and if so the one inclusion probability π applied to every candidate cluster (RC-160; unequal probabilities are excluded unless the owner adopts inverse-probability weighting under OD10); **round 20:** the confidence at which the per-source, per-mechanism late-record bounds u_s,m are certified, the stationarity assumption that carries them from the Phase 2 log to the primary cohort (RC-164), and the scope of a source withdrawal on its breach or defect bound: the next independent cohort (the version-18 rule), the end of the current claim at the crossing, or a source-stratified estimand with pre-registered weights (RC-169) | determines supply, cluster structure and licensing cost; a source whose failure condition cannot be stated is excluded at registration, because after registration no party may declare a member VOID; a source that cannot be observed at finality cannot resolve a NO |
 | OD6 | Hosting at the Phase 2 gate: minimal cloud, hybrid (cloud trusted writer + local stateless GPU compute), or local-only | Codex's illustrative envelope ≈ USD 1,000 / year; local-only is the weakest boundary |
 | OD7 | Position caps for appreciated compounders (cost basis with a review ceiling vs market value with forced trims); precedence of hard limits over the thesis-intact veto | affects turnover, tax classification risk (Q9) and compounding |
 | OD8 | Provider access route per provider after setup-day verification of terms; human duties implied; **round 9:** each provider must state a model knowledge cutoff per model version, recorded per forecast as an UNVERIFIED claim with its evidence (RC-98); a provider that will not state one is excluded at registration | batch route adds a human to the loop and latency; the cutoff cannot be verified from inside the system |
 | OD9a | `AGENTS.md` §2 item 7 (floor → shrinkage) and §2 item 10 (time-shifted holdouts → forbidden-future-information controls) wording, proposed text below; **prerequisite of A0** because the Phase 1 shrinkage estimator (T-20) and leak detector (T-15) would otherwise contradict binding product requirements (RC-33) | governance change; owner approves personally; until recorded, T-20 and T-15 are not built |
-| OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28); **§2 item 3 wording** so that "anytime-valid sequential tests" cannot be read as requiring the confirmatory test to be anytime-valid (RC-84, proposed text below); **§7 commit identity**: whether the two round-7 commits, which carry the tool identity `Claude <noreply@anthropic.com>` because the execution environment denied setting the owner's identity, are squashed on merge, re-created under the owner's identity, or accepted by designating that identity (RC-81; the round-9 commit carries the owner's identity, because the execution environment honoured the setting this time, so the three commits of rounds 7 and 8 remain the only ones at issue); **§2 item 1 (RC-106):** whether an exploratory single-arm Design C track record may be issued in Phase 2 before the three adapters and Jev operate, which the binding text forbids; until amended, no forecast is issued before Phase 4; **§4 layout (RC-122):** a row for `research/reproduction/`, the committed evidence scripts of this matrix, proposed below; **commit identities Codex reports that are in no ref of the repository** (RC-116 `50897415`, RC-126 `a47567ec`, RC-140 `fadd6adb`, RC-151 `51b580c1`, RC-162 `fc6296fc`, RC-165 `a2d8d4e5`): whether to ask Codex where these objects live, since none of the reviewed commits carries a non-owner identity | governance change; owner approves personally; not a prerequisite of A0; the §2 item 3 wording is a prerequisite of freezing the Phase 2 contract |
-| OD10 | **Approve or revert the version-5 to version-18 diffs of `17`** (commit `b19483a`, the round-8 commit `8af2ae9`, the round-9 commit `922956b`, the round-10 commit `04bc122` that applies RC-108 to RC-115, §3i, the round-11 commit `78225fd` that applies RC-117 to RC-123, §3j, among them the start-at-floor rule of RC-123 and the withdrawal of the Appendix J critical values under RC-118, and the round-12 commit that carries this matrix v13 and applies RC-124, RC-125, RC-127, RC-129, RC-130 and RC-132, §3k, among them the rule that a post-unblinding cutoff correction ends the confirmatory claim (RC-132; the alternative, keeping the corrected members, is the owner's to choose), and the round-13 commit `b1935db` that carries this matrix v14 and applies RC-133, RC-134, RC-135 and RC-138, §3l, among them the rule that an early-knowability breach stays in every statistic at its least favourable outcome (RC-135; the alternative, ending the confirmatory claim of every comparison a breach touches, is the owner's to choose), and the round-14 commit `0bef5f8` that carries this matrix v15 and applies RC-139 and RC-142, §3m, and the round-15 commit that carries this matrix v16 and applies RC-143 to RC-147, §3n, among them the rule that a registration-breach cluster is outside the scored population (RC-143; Codex's alternative, ending the confirmatory claim, is the owner's to choose) and the rule that a recorded late-source defect is scored at its least favourable outcome (RC-145; Codex's alternatives, a calibrated defect mechanism or a non-confirmatory comparison, are the owner's to choose), and the round-16 commit `018057b` that carried matrix v17 and applies RC-148 to RC-150 and RC-152 to RC-154, §3o, among them the box rule that replaces the least favourable outcome of RC-135 and RC-145 (RC-148; the alternative, ending the confirmatory claim at the first breach or defect, is the owner's to choose), the decision date T_D with the budget η_max (RC-149), and the rule that a cutoff correction after the first registration under an arm version ends the claim (RC-150; the alternatives, withdrawal before any forecast on the cohort and keeping the corrected members, are the owner's to choose), and the round-17 commit that carries this matrix v18 and applies RC-155 to RC-157, §3p, among them the rule that an arm's effective cutoff is the latest over its inputs (RC-156; Codex's alternative, freeing every downstream forecast without a recorded arm graph, is the owner's to choose) and monitor factors committed at H_k + D with later records withdrawing crossings (RC-157; Codex's alternative, invalidating and relabelling the whole monitor at the first late defect, is the owner's to choose), and the round-18 commit that carries this matrix v19 and applies RC-158 to RC-160, §3q, among them the four-step anchored commit (RC-158) and the equal-probability sampling rule (RC-160; Codex's alternative, inverse-probability weighting with its block variance and calibration, is the owner's to choose), and the round-19 commit that carries this matrix v20 and applies RC-161 and RC-163, §3r, among them the certification of every component at α − η_max (RC-161) and the issuance breach routed through the box rule (RC-163; Codex's alternative, making every comparison the breach touches non-confirmatory, is the owner's to choose), and the round-20 commit that carries this matrix v21 and applies RC-164, RC-168 and RC-169, §3s, among them the cohort-level η_max (RC-164), the adjudication of pre-declared VOID members (RC-168; Codex's alternative, making the affected claim non-confirmatory, is the owner's to choose) and source withdrawal deferred to the next cohort (RC-169; Codex's alternatives, a non-confirmatory current claim or an estimand and calibration that include the adaptive rule, are the owner's to choose)): RC-60 and RC-64 to RC-79 (§3c–§3e wording, applied), RC-80 to RC-83 (§3f) and RC-85, RC-86 (§3g, defects Codex found in the round-7 remedies for RC-67 and RC-79), each change carrying its matrix ID; the propagation fixes RC-57 and RC-59 stand unless reverted; the owner names any item to revert, and any item reverted returns to `OWNER_DECISION` with its evidence intact. The round budget question of the former OD10 is answered by the owner's audit and the §4.6 rule (findings are applied on assessment and closed on evidence) | no cost beyond review time; without OD10 T-34 and the secret-handling code of §3 item 5 are not built (A0, RC-64) while the rest of Phase 1 waits only on OD1, OD2 and OD9a; the items that already misstated evidence offered to OD4 (RC-70, RC-72, RC-83) are corrected in the diff and are the reason the figures in the OD4 row changed |
+| OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28); **§2 item 3 wording** so that "anytime-valid sequential tests" cannot be read as requiring the confirmatory test to be anytime-valid (RC-84, proposed text below); **§7 commit identity**: whether the two round-7 commits, which carry the tool identity `Claude <noreply@anthropic.com>` because the execution environment denied setting the owner's identity, are squashed on merge, re-created under the owner's identity, or accepted by designating that identity (RC-81; the round-9 commit carries the owner's identity, because the execution environment honoured the setting this time, so the three commits of rounds 7 and 8 remain the only ones at issue); **§2 item 1 (RC-106):** whether an exploratory single-arm Design C track record may be issued in Phase 2 before the three adapters and Jev operate, which the binding text forbids; until amended, no forecast is issued before Phase 4; **§4 layout (RC-122):** a row for `research/reproduction/`, the committed evidence scripts of this matrix, proposed below; **commit identities Codex reports that are in no ref of the repository** (RC-116 `50897415`, RC-126 `a47567ec`, RC-140 `fadd6adb`, RC-151 `51b580c1`, RC-162 `fc6296fc`, RC-165 `a2d8d4e5`, RC-172 `65b72d1a`): whether to ask Codex where these objects live, since none of the reviewed commits carries a non-owner identity | governance change; owner approves personally; not a prerequisite of A0; the §2 item 3 wording is a prerequisite of freezing the Phase 2 contract |
+| OD10 | **Approve or revert the version-5 to version-19 diffs of `17`** (commit `b19483a`, the round-8 commit `8af2ae9`, the round-9 commit `922956b`, the round-10 commit `04bc122` that applies RC-108 to RC-115, §3i, the round-11 commit `78225fd` that applies RC-117 to RC-123, §3j, among them the start-at-floor rule of RC-123 and the withdrawal of the Appendix J critical values under RC-118, and the round-12 commit that carries this matrix v13 and applies RC-124, RC-125, RC-127, RC-129, RC-130 and RC-132, §3k, among them the rule that a post-unblinding cutoff correction ends the confirmatory claim (RC-132; the alternative, keeping the corrected members, is the owner's to choose), and the round-13 commit `b1935db` that carries this matrix v14 and applies RC-133, RC-134, RC-135 and RC-138, §3l, among them the rule that an early-knowability breach stays in every statistic at its least favourable outcome (RC-135; the alternative, ending the confirmatory claim of every comparison a breach touches, is the owner's to choose), and the round-14 commit `0bef5f8` that carries this matrix v15 and applies RC-139 and RC-142, §3m, and the round-15 commit that carries this matrix v16 and applies RC-143 to RC-147, §3n, among them the rule that a registration-breach cluster is outside the scored population (RC-143; Codex's alternative, ending the confirmatory claim, is the owner's to choose) and the rule that a recorded late-source defect is scored at its least favourable outcome (RC-145; Codex's alternatives, a calibrated defect mechanism or a non-confirmatory comparison, are the owner's to choose), and the round-16 commit `018057b` that carried matrix v17 and applies RC-148 to RC-150 and RC-152 to RC-154, §3o, among them the box rule that replaces the least favourable outcome of RC-135 and RC-145 (RC-148; the alternative, ending the confirmatory claim at the first breach or defect, is the owner's to choose), the decision date T_D with the budget η_max (RC-149), and the rule that a cutoff correction after the first registration under an arm version ends the claim (RC-150; the alternatives, withdrawal before any forecast on the cohort and keeping the corrected members, are the owner's to choose), and the round-17 commit that carries this matrix v18 and applies RC-155 to RC-157, §3p, among them the rule that an arm's effective cutoff is the latest over its inputs (RC-156; Codex's alternative, freeing every downstream forecast without a recorded arm graph, is the owner's to choose) and monitor factors committed at H_k + D with later records withdrawing crossings (RC-157; Codex's alternative, invalidating and relabelling the whole monitor at the first late defect, is the owner's to choose), and the round-18 commit that carries this matrix v19 and applies RC-158 to RC-160, §3q, among them the four-step anchored commit (RC-158) and the equal-probability sampling rule (RC-160; Codex's alternative, inverse-probability weighting with its block variance and calibration, is the owner's to choose), and the round-19 commit that carries this matrix v20 and applies RC-161 and RC-163, §3r, among them the certification of every component at α − η_max (RC-161) and the issuance breach routed through the box rule (RC-163; Codex's alternative, making every comparison the breach touches non-confirmatory, is the owner's to choose), and the round-20 commit that carries this matrix v21 and applies RC-164, RC-168 and RC-169, §3s, among them the cohort-level η_max (RC-164), the adjudication of pre-declared VOID members (RC-168; Codex's alternative, making the affected claim non-confirmatory, is the owner's to choose) and source withdrawal deferred to the next cohort (RC-169; Codex's alternatives, a non-confirmatory current claim or an estimand and calibration that include the adaptive rule, are the owner's to choose), and the round-21 commit that carries this matrix v22 and applies RC-171, RC-173 and RC-174, §3t, among them the registration close of the η budget with the estimand stated over [T_0, τ) (RC-171; Codex's alternative, a pre-registered cohort ceiling or a uniform sampling probability that guarantees every selected registration fits the budget, is the owner's to choose, and a ceiling binding before T_R is a close by count), the miscoverage spent in the level budget (RC-173; Codex's alternative, describing the result as a 99 %-confidence size certificate rather than a level-α test, is the owner's to choose) and G over emitting blocks (RC-174)): RC-60 and RC-64 to RC-79 (§3c–§3e wording, applied), RC-80 to RC-83 (§3f) and RC-85, RC-86 (§3g, defects Codex found in the round-7 remedies for RC-67 and RC-79), each change carrying its matrix ID; the propagation fixes RC-57 and RC-59 stand unless reverted; the owner names any item to revert, and any item reverted returns to `OWNER_DECISION` with its evidence intact. The round budget question of the former OD10 is answered by the owner's audit and the §4.6 rule (findings are applied on assessment and closed on evidence) | no cost beyond review time; without OD10 T-34 and the secret-handling code of §3 item 5 are not built (A0, RC-64) while the rest of Phase 1 waits only on OD1, OD2 and OD9a; the items that already misstated evidence offered to OD4 (RC-70, RC-72, RC-83) are corrected in the diff and are the reason the figures in the OD4 row changed |
 
 **Proposed `AGENTS.md` wording (for OD9a and OD9b; not applied here):**
 
@@ -1072,15 +1099,15 @@ is not met by this commit: Codex has not reviewed version 14.
 ## 7. Machine-readable state
 
 ```yaml
-matrix_version: 21
+matrix_version: 22
 date: 2026-10-18
-round: 20   # Codex's PR #4 comment 6248401610 on the version-17 text; seven findings, six applied (RC-164, RC-168, RC-169 in 17 v18; RC-166, RC-167, RC-170 in 16 section 7 and research/README.md), RC-165 not reproduced; round 19: Codex's PR #4 comment 6248247231 on the version-16 text; three findings, two applied in 17 v17 (RC-161, RC-163), RC-162 not reproduced; round 18: Codex's review 5562262057 of the version-15 text; three findings, all applied in 17 v16 (RC-158 to RC-160); round 17: Codex's review 5562186477 of the version-14 text; three findings, all applied in 17 v15 (RC-155 to RC-157); round 16: Codex's review 5562093769 of the version-13 text; seven findings, six applied in 17 v14 (RC-148 to RC-150, RC-152 to RC-154), RC-151 not reproduced; round 15: Codex's review 5562023932 of the version-12 text; five findings, all applied in 17 v13 (RC-143 to RC-147); round 14: Codex's review 5561953685 of the version-11 text; four findings, three applied (RC-139 and RC-142 in 17 v12, RC-141 in 16 Appendix N and its script), RC-140 not reproduced; round 13: Codex's review 5560193272 of the version-10 text; six findings, all applied (four in 17 v11, RC-136 in research/reproduction, RC-137 in research/README.md and the header); round 12: Codex's two reviews of the version-9 text; nine findings, eight applied (six in 17 v10, RC-128 in research/reproduction, RC-131 in this section) and one not reproduced (section 3k, 4.6); round 11 applied seven of the eight findings on the version-8 text (section 3j)
+round: 21   # Codex's review 5562492917 of the version-18 text; four findings, three applied in 17 v19 (RC-171, RC-173, RC-174), RC-172 not reproduced; round 20: Codex's PR #4 comment 6248401610 on the version-17 text; seven findings, six applied (RC-164, RC-168, RC-169 in 17 v18; RC-166, RC-167, RC-170 in 16 section 7 and research/README.md), RC-165 not reproduced; round 19: Codex's PR #4 comment 6248247231 on the version-16 text; three findings, two applied in 17 v17 (RC-161, RC-163), RC-162 not reproduced; round 18: Codex's review 5562262057 of the version-15 text; three findings, all applied in 17 v16 (RC-158 to RC-160); round 17: Codex's review 5562186477 of the version-14 text; three findings, all applied in 17 v15 (RC-155 to RC-157); round 16: Codex's review 5562093769 of the version-13 text; seven findings, six applied in 17 v14 (RC-148 to RC-150, RC-152 to RC-154), RC-151 not reproduced; round 15: Codex's review 5562023932 of the version-12 text; five findings, all applied in 17 v13 (RC-143 to RC-147); round 14: Codex's review 5561953685 of the version-11 text; four findings, three applied (RC-139 and RC-142 in 17 v12, RC-141 in 16 Appendix N and its script), RC-140 not reproduced; round 13: Codex's review 5560193272 of the version-10 text; six findings, all applied (four in 17 v11, RC-136 in research/reproduction, RC-137 in research/README.md and the header); round 12: Codex's two reviews of the version-9 text; nine findings, eight applied (six in 17 v10, RC-128 in research/reproduction, RC-131 in this section) and one not reproduced (section 3k, 4.6); round 11 applied seven of the eight findings on the version-8 text (section 3j)
 budget: per_execution   # one commit per execution; no commit without a new finding or an owner decision; findings never close by count
 inputs_processed:
   research_head: 8b2dba79fe9077df53a96a6b61b1823b80930ee8
   codex_review_commit: 59206fe5f652cc3ea63114ad1c2b0fd7252962c2
   pr2_comments: [6215215092, 6215369656]
-  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670, 6220313901, 6220770348, 6222759237, 6231265852, 6231483746, 6236946882, 6237338855, 6237998297, 6241083483, 6241359504, 6247126535, 6247290530, 6247503183, 6247752807, 6248004117, 6248188858, 6248331602]
+  issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670, 6220313901, 6220770348, 6222759237, 6231265852, 6231483746, 6236946882, 6237338855, 6237998297, 6241083483, 6241359504, 6247126535, 6247290530, 6247503183, 6247752807, 6248004117, 6248188858, 6248331602, 6248523476]
   pr4_comments: [6218467449, 6236238443, 6236863824, 6237340628, 6241076464]   # the owner's @codex review request, the owner's directive, the owner's progress request, the routine's one progress update, the status note on the failed round-12 dispatch that requested review 5560119353
   pr4_reviews:
     - review_id: 5548201046
@@ -1225,6 +1252,14 @@ inputs_processed:
       items: [RC-164, RC-165, RC-166, RC-167, RC-168, RC-169, RC-170]
       handling: applied_round_20 (RC-164, RC-166, RC-167, RC-168, RC-169, RC-170); recorded_not_reproduced (RC-165)
       raised_nothing_on: [RC-163]   # reviewed once at f20d1fc without objection in substance; RC-161 extended (RC-164: the level is cohort-level), RC-161 and RC-163 missing from applied_items (RC-166); not agreement
+    - review_id: 5562492917
+      commit: d18a4b7e4fc8446d7ab8120c393b9f7df1d97d5a
+      summary_comment: 6216072575   # edited 2026-10-18 10:08 UTC, has_unresolved_findings: true; this execution was dispatched on that edit
+      comment_ids: [4306617507, 4306617510, 4306617512, 4306617514]
+      items: [RC-171, RC-172, RC-173, RC-174]
+      handling: applied_round_21 (RC-171, RC-173, RC-174); recorded_not_reproduced (RC-172)
+      raised_nothing_on: [RC-166, RC-167, RC-168, RC-169, RC-170]   # reviewed once at d18a4b7 without objection; RC-164 extended (RC-171: the budget's refusal reweights the window), RC-117 and RC-161 extended (RC-173), RC-97 extended (RC-174); not agreement
+  review_threads_at_d18a4b7: {total: 135, carried_from_7d11065_accounting_not_reclassified: 131, live_round_21: 4, resolved_by_this_execution: 0}   # rounds 19 and 20 had no inline threads
   review_threads_at_7d11065: {total: 131, carried_from_018057b_accounting_not_reclassified: 128, live_round_18: 3, resolved_by_this_execution: 0}
   review_threads_at_36a1768: {total: 125, carried_from_0bef5f8_accounting_not_reclassified: 118, live_round_16: 7, resolved_by_this_execution: 0}
   review_threads_at_0bef5f8: {total: 118, carried_from_b1935db_accounting_not_reclassified: 113, live_round_15: 5, resolved_by_this_execution: 0}
@@ -1238,17 +1273,18 @@ inputs_processed:
     - {pr: 10, review_id: 5552523817, commit: b5d104cd25ee82a094cae1b4a04deb801e8ee674, comment_ids: [4298363597, 4298363612, 4298363627, 4298363638, 4298363646, 4298363660, 4298363671, 4298363680, 4298363691, 4298363703], bearing_on_17: []}
 specification:
   file: 17-phase1-amended-specification.md
-  version: 18
-  commit: this_commit   # round 20; the version-17 diff is f20d1fca5db674dc16ede206c12b88f731ac0f81; round 19; the version-16 diff is ceaeda1ad488054946a2a626d7616e396d103f77; round 18; the version-15 diff is 7d110654727400b3a17e236a2915567e52ae1d0e; the version-14 diff is 018057bab0162b2bc9bd7487e99f169005d086e1; the version-13 diff is 36a1768b4c9cd35a401b3654142a8aa15ba9ca4f; the version-12 diff is 0bef5f826ec578e30ddd7fb9dd7c8c3f2d58d9c5; the version-11 diff is b1935db028f28b1157889f4a45669251a37d630c; the version-10 diff is 6fa4f0cb106cd40f4d4436dc15982d5ee4e004a7; the version-5 diff is b19483a909bc948f6775fb5ce3b510d2bdfe9261, the version-6 diff 8af2ae9d0a6a10fbcd070456b569b31e5506b72d, the version-7 diff 922956b0a7c06dc8b10849f8146ad2d90f072262, the version-8 diff 04bc1223d099059bc9f47585281028f01ed023ae, the version-9 diff 78225fdbf4b264e5a71e57fc12b68c7fd6a4c75d
-  role: OD10_decision_diff   # versions 5 to 18 together (RC-131: this block named version 8 through round 11)
-  applied_items: [RC-60, RC-64, RC-65, RC-66, RC-67, RC-68, RC-69, RC-70, RC-71, RC-72, RC-73, RC-74, RC-75, RC-76, RC-77, RC-78, RC-79, RC-80, RC-81, RC-82, RC-83, RC-85, RC-86, RC-87, RC-88, RC-89, RC-90, RC-92, RC-93, RC-94, RC-95, RC-96, RC-97, RC-98, RC-99, RC-100, RC-101, RC-103, RC-104, RC-105, RC-106, RC-108, RC-109, RC-110, RC-111, RC-112, RC-113, RC-114, RC-115, RC-117, RC-118, RC-119, RC-120, RC-121, RC-123, RC-124, RC-125, RC-127, RC-129, RC-130, RC-132, RC-133, RC-134, RC-135, RC-138, RC-139, RC-142, RC-143, RC-144, RC-145, RC-146, RC-147, RC-148, RC-149, RC-150, RC-152, RC-153, RC-154, RC-155, RC-156, RC-157, RC-158, RC-159, RC-160, RC-161, RC-163, RC-164, RC-168, RC-169]   # RC-166: RC-161 and RC-163 were missing in v20
+  version: 19
+  commit: this_commit   # round 21; the version-18 diff is d18a4b7e4fc8446d7ab8120c393b9f7df1d97d5a; round 20; the version-17 diff is f20d1fca5db674dc16ede206c12b88f731ac0f81; round 19; the version-16 diff is ceaeda1ad488054946a2a626d7616e396d103f77; round 18; the version-15 diff is 7d110654727400b3a17e236a2915567e52ae1d0e; the version-14 diff is 018057bab0162b2bc9bd7487e99f169005d086e1; the version-13 diff is 36a1768b4c9cd35a401b3654142a8aa15ba9ca4f; the version-12 diff is 0bef5f826ec578e30ddd7fb9dd7c8c3f2d58d9c5; the version-11 diff is b1935db028f28b1157889f4a45669251a37d630c; the version-10 diff is 6fa4f0cb106cd40f4d4436dc15982d5ee4e004a7; the version-5 diff is b19483a909bc948f6775fb5ce3b510d2bdfe9261, the version-6 diff 8af2ae9d0a6a10fbcd070456b569b31e5506b72d, the version-7 diff 922956b0a7c06dc8b10849f8146ad2d90f072262, the version-8 diff 04bc1223d099059bc9f47585281028f01ed023ae, the version-9 diff 78225fdbf4b264e5a71e57fc12b68c7fd6a4c75d
+  role: OD10_decision_diff   # versions 5 to 19 together (RC-131: this block named version 8 through round 11)
+  applied_items: [RC-60, RC-64, RC-65, RC-66, RC-67, RC-68, RC-69, RC-70, RC-71, RC-72, RC-73, RC-74, RC-75, RC-76, RC-77, RC-78, RC-79, RC-80, RC-81, RC-82, RC-83, RC-85, RC-86, RC-87, RC-88, RC-89, RC-90, RC-92, RC-93, RC-94, RC-95, RC-96, RC-97, RC-98, RC-99, RC-100, RC-101, RC-103, RC-104, RC-105, RC-106, RC-108, RC-109, RC-110, RC-111, RC-112, RC-113, RC-114, RC-115, RC-117, RC-118, RC-119, RC-120, RC-121, RC-123, RC-124, RC-125, RC-127, RC-129, RC-130, RC-132, RC-133, RC-134, RC-135, RC-138, RC-139, RC-142, RC-143, RC-144, RC-145, RC-146, RC-147, RC-148, RC-149, RC-150, RC-152, RC-153, RC-154, RC-155, RC-156, RC-157, RC-158, RC-159, RC-160, RC-161, RC-163, RC-164, RC-168, RC-169, RC-171, RC-173, RC-174]   # RC-166: RC-161 and RC-163 were missing in v20
   applied_outside_17: {RC-91: 02-item-8-note, RC-102: 16-appendix-H, RC-107: 12-amendment-13-and-08-amendment-5, RC-122: research-reproduction-scripts, RC-128: research-reproduction-requirements, RC-131: 16-section-7, RC-136: research-reproduction-check-script, RC-137: research-README-and-16-header, RC-141: 16-appendix-N-and-round13-script, RC-166: 16-section-7, RC-167: research-README, RC-170: 16-section-7}
   superseded_within: {RC-67: RC-85, RC-79: RC-86, RC-85-freeze-instant: RC-87, RC-75-key: RC-96, RC-83-bound-sentence: RC-101, RC-83-null-check: RC-93, RC-77-late-report: RC-88, RC-73-drift-rule: RC-100, RC-74-rotation: RC-103, RC-94-four-scalar-class: RC-108, RC-104-empty-baseline-slot: RC-109, RC-99-maturity-bound: RC-110, RC-94-T36-nominal-oracle: RC-111, RC-98-cutoff-on-forecast: RC-112, RC-88-RC-105-outage-plus-late-record: RC-113, RC-68-cut-off-naming: RC-114, RC-67-T17-pre-declared: RC-115, RC-48-A3-as-calibration-criterion: RC-117, RC-94-grid-c-star: RC-118, RC-95-registered-only-buffer: RC-119, RC-94-one-pair-c-star: RC-121, RC-103-demotion-without-anchor: RC-123, RC-118-two-decimal-labels: RC-124, RC-119-smaller-H-only: RC-125, RC-121-weak-inequality: RC-127, RC-117-per-component-K: RC-130, RC-112-post-unblinding-cohort-withdrawal: RC-132, RC-49-chronological-filtration-sentence: RC-133, RC-103-anchor-inside-demotion-transaction-item-5: RC-134, RC-98-exclusion-of-early-knowable-member: RC-135, RC-29-registration-before-earliest-not_before: RC-138, RC-139-registration-breach-at-X-0: RC-143, RC-88-bias-bounded-by-defect-count: RC-145, RC-135-RC-145-least-favourable-outcome: RC-148, RC-145-decision-at-T_A-withdrawal-by-amendment: RC-149, RC-132-pre-unblinding-cohort-withdrawal: RC-150, RC-74-one-transaction-acknowledgement: RC-153, RC-148-unit-constant-in-closed-form-bound: RC-155, RC-112-declared-cutoff-per-arm-only: RC-156, RC-149-monitor-factor-committed-at-H_k: RC-157, RC-153-change-effective-before-commit-anchored: RC-158, RC-154-scored-population-denominator: RC-159, RC-78-unequal-inclusion-probabilities: RC-160}
-  owner_fields_left_open: {OD4: [block_assignment_timestamp_default_maturity, enumerated_set_N0_and_spacing, replication_count_R, H_max, d_max, catastrophe_share_bound_eps_min, null_class_N_generator_box_theta, serial_dependence_bound_rho_max, supply_shock_coordinate, calibrated_crit_follows, power_floor, G_min, block_length, shock_amplitude, estimand_naming, comparator_dependence_assumption_or_frechet, delta, void_cap, abstention_cap_per_arm, latent_record_budget_eta_max], OD5: [latency_windows, inclusion_predicate, sampling_rule, inclusion_probability_pi, source_rules_failure_condition, observation_duty_at_finality, post_finality_defect_rate_bound, monotone_publication_condition, falsifier_observable_from_per_source, registration_breach_bound_per_source, defect_closure_horizon_D_s_per_source, late_record_bound_confidence_u_s_m_and_stationarity, source_withdrawal_scope], OD8: [model_knowledge_cutoff_duty], OD9b: [agents_2_item_1_exception_for_phase_2_track_record]}
+  owner_fields_left_open: {OD4: [calibration_miscoverage_gamma_cal (RC-173), block_assignment_timestamp_default_maturity, enumerated_set_N0_and_spacing, replication_count_R, H_max, d_max, catastrophe_share_bound_eps_min, null_class_N_generator_box_theta, serial_dependence_bound_rho_max, supply_shock_coordinate, calibrated_crit_follows, power_floor, G_min, block_length, shock_amplitude, estimand_naming, comparator_dependence_assumption_or_frechet, delta, void_cap, abstention_cap_per_arm, latent_record_budget_eta_max], OD5: [latency_windows, inclusion_predicate, sampling_rule, inclusion_probability_pi, source_rules_failure_condition, observation_duty_at_finality, post_finality_defect_rate_bound, monotone_publication_condition, falsifier_observable_from_per_source, registration_breach_bound_per_source, defect_closure_horizon_D_s_per_source, late_record_bound_confidence_u_s_m_and_stationarity, source_withdrawal_scope, planned_supply_and_pi_so_that_eta_budget_does_not_close_before_T_R], OD8: [model_knowledge_cutoff_duty], OD9b: [agents_2_item_1_exception_for_phase_2_track_record]}
   new_schema_records: [ArmVersion (RC-112)]
   new_tests: [T-37, T-38(Phase 5), T-39]
   new_fixtures: [F-02a, F-02b, F-02c, F-02d, F-02e, F-21b, F-24(seven clusters; G rewritten in v8), F-25, F-26, F-27(rewritten in v8; pre-unblinding variant added in v10)]
   new_schema_fields_v11: [EventSpec.falsifier_observable_from and the earliest-knowable bound e_i (RC-138)]
+  new_oracles_v19: [T-12 budget-close family with the version-18 refusal as invalid control (RC-171), T-12 certification of a simulated family at alpha - eta_max - gamma_cal (RC-173), T-12 non-emitting-block families and the 2 + 22 block case (RC-174)]
   new_oracles_v18: [T-12 cohort-level late-record family and Boole-sum registration check (RC-164), T-17 pre-declared VOID member with a registration breach (RC-168), T-37 source crossing its breach or defect bound in month 11 (RC-169)]
   new_oracles_v17: [T-12 certification at alpha - eta_max with the two-point oracle values (RC-161), T-02 and F-27 issuance breach (RC-163)]
   new_oracles_v16: [T-30 commit-anchor crash points and post-acknowledgement restore (RC-158), T-17 all-VOID cluster in the cap population (RC-159), T-37 equal-probability whole-cluster draw (RC-160)]
@@ -1260,6 +1296,19 @@ specification:
   new_oracles_v11: [T-39 record-order pairs (RC-133), T-12 early-knowability breach families (RC-135), T-02 and F-27 breach and terminal-falsifier cutoff cases (RC-135, RC-138), T-17 falsifier registration fixture (RC-138)]
   new_oracles_v10: [T-36 tie oracle (RC-127), T-36 block-assignment oracle (RC-129), T-39 equal-maturity fixture (RC-125)]
 awaiting: codex_review_of_this_commit; owner_decisions_OD1_OD2_OD9a_OD10
+round21_items:
+  applied: [RC-171, RC-173, RC-174]
+  recorded_not_reproduced: [RC-172]   # 65b72d1a01f0a834527bcc492a3128d28cafb3f7 is in none of 37 refs (74 commits reachable); d18a4b7 carries the owner's identity as author and committer; OD9b
+  reproduced: [RC-171, RC-174]
+  deterministic_or_textual: [RC-173]   # a gap in the proof of the level, not an observed oversize: on one continuous point the rule miscovers w.p. 0.0096 and averages 0.0464 at level 0.05
+  own_remedies_found_defective: [RC-164 (RC-171, the registration refusal truncates the window while the estimand stays at T_R)]
+  propagation_gaps: [RC-117 and RC-161 to the calibration's miscoverage (RC-173), RC-97 to blocks that are eligible but emit nothing (RC-174)]
+  rc171_magnitude: {delta_0.01: {full_window: [0.0422, 0.0132], v18_truncated: [0.3244, 0.2019], window_null_on_T0_tau: [0.0515, 0.0252]}, delta_0.02: {full_window: [0.0229, 0.0052], v18_truncated: [0.7742, 0.6263], window_null_on_T0_tau: [0.0495, 0.0221]}, columns: [nominal, c_2.254], extra_low_bound_registrations_after_first_refusal: {ratio_2: 1, ratio_10: 9, ratio_100: 99}}
+  rc173_values: {worst_case_certified_at_0.05: 0.0595, spent_levels: {eta_0_gamma_0.01: 0.04, eta_0_gamma_0.001: 0.049, eta_0.01_gamma_0.01: 0.03, eta_0.01_gamma_0.001: 0.039}, single_point_exact_R_20000: {a_0.05_K_1: {P_size_above_a: 0.00959, E_size: 0.04645}, a_0.04_K_1: {ceiling: 0.03675, E_size: 0.0368}, a_0.04_K_100: {ceiling: 0.0349}}, two_point_c_star: unchanged_exact}
+  rc174_magnitude: {codex_case: {G_2: {t: 3.0, crit_1df: 6.3138, rejects: false}, G_24: {t: 4.1533, crit_23df: 1.7139, rejects: true}}, valid_null_poisson_0.5_to_2_nonemitting_0.1_to_0.4: {eligible_blocks: [0.0486, 0.0614], emitting_blocks: [0.0358, 0.0532]}}
+  design_rules_changed: {eta_budget: refuse_each_registration_over_budget -> close_registration_window_at_tau_with_estimand_over_T0_tau (RC-171), simulated_certification_level: alpha_minus_eta_max -> alpha_minus_eta_max_minus_gamma_cal (RC-173), G: blocks_with_an_eligible_cluster -> blocks_with_an_emitted_increment (RC-174)}
+  rerun_of_committed_scripts: {byte_identical: [U], not_run_this_round: [A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P, Q, R, S, T]}
+  provenance: this commit is authored and committed under the owner's identity; the three commits of rounds 7 and 8 still carry the tool identity (OD9b)
 round20_items:
   applied: [RC-164, RC-166, RC-167, RC-168, RC-169, RC-170]
   recorded_not_reproduced: [RC-165]   # a2d8d4e5e9e12553055b2ca33ab9f2f2bce090ba is in none of 37 refs; f20d1fc carries the owner's identity as author and committer; OD9b
@@ -1450,12 +1499,12 @@ earlier_rounds:
   round5_items: {recorded_then_applied_round_7: [RC-64, RC-65, RC-66, RC-67, RC-68, RC-69, RC-70, RC-71], reproduced: [RC-65, RC-69, RC-70]}
   round6_items: {recorded_then_applied_round_7: [RC-72, RC-73, RC-74, RC-75, RC-76, RC-77, RC-78, RC-79], reproduced: [RC-72, RC-73, RC-74, RC-75, RC-77]}
 next_execution:
-  on_codex_review_of_this_commit_or_later: assess each new finding (dedupe by comment ID and content), reproduce, apply in 17 v19 with matrix IDs, one commit, and advance in the same commit this section's specification block, the header's Awaiting sentence and research/README.md items 9 and 10 (RC-131, RC-137); record premises not reproduced without applying
+  on_codex_review_of_this_commit_or_later: assess each new finding (dedupe by comment ID and content), reproduce, apply in 17 v20 with matrix IDs, one commit, and advance in the same commit this section's specification block, the header's Awaiting sentence and research/README.md items 9 and 10 (RC-131, RC-137); record premises not reproduced without applying
   on_owner_decision: apply the named reversions or decisions; record OD values as named fields
   on_no_new_input: do_nothing
 disagreements_open: [RC-20-timing]   # both positions recorded; settled by OD6, not by a further round
 disagreements_resolved_pending_codex_review: [RC-01-scope]
-owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b), RC-84 (OD9b), RC-81-commit-identity (OD9b), RC-106-agents-2-item-1 (OD9b), version-5, version-6 and version-7 diffs (OD10), RC-94-null-class-and-power-floor and RC-97-G_min and RC-101-dependence-or-frechet (OD4), RC-88-defect-rate-bound and RC-105-observation-duty (OD5), RC-98-cutoff-duty (OD8), RC-56-early-confirmation-option (OD4), RC-85-void-cap (OD4), RC-85-source-failure-condition (OD5), RC-68-H_max and RC-69-estimand-naming and RC-70-shock-amplitude and RC-72-skew-bound and RC-83-dependence-assumption (OD4), RC-77-latency-windows and RC-78-inclusion-predicate (OD5), RC-74-external-store (OD6), RC-76-cohort-start (OD1), RC-129-block-timestamp (OD4), RC-132-keep-members-alternative (OD10), RC-126-commit-identity (OD9b), RC-135-end-the-claim-alternative (OD10), RC-138-falsifier_observable_from (OD5), RC-140-commit-identity (OD9b), RC-148-end-the-claim-alternative (OD10), RC-149-eta_max (OD4) and D_s (OD5), RC-150-pre-forecast-withdrawal-and-keep-members-alternatives (OD10), RC-151-commit-identity (OD9b), RC-162-commit-identity (OD9b), RC-164-eta_max-cohort-feasibility (OD4, OD5), RC-165-commit-identity (OD9b), RC-168-non-confirmatory-alternative (OD10), RC-169-withdrawal-scope (OD5, OD10)]
+owner_decision_items: [RC-20-timing (OD6), RC-07-retention (owner may strike), RC-28 (OD9b), RC-84 (OD9b), RC-81-commit-identity (OD9b), RC-106-agents-2-item-1 (OD9b), version-5, version-6 and version-7 diffs (OD10), RC-94-null-class-and-power-floor and RC-97-G_min and RC-101-dependence-or-frechet (OD4), RC-88-defect-rate-bound and RC-105-observation-duty (OD5), RC-98-cutoff-duty (OD8), RC-56-early-confirmation-option (OD4), RC-85-void-cap (OD4), RC-85-source-failure-condition (OD5), RC-68-H_max and RC-69-estimand-naming and RC-70-shock-amplitude and RC-72-skew-bound and RC-83-dependence-assumption (OD4), RC-77-latency-windows and RC-78-inclusion-predicate (OD5), RC-74-external-store (OD6), RC-76-cohort-start (OD1), RC-129-block-timestamp (OD4), RC-132-keep-members-alternative (OD10), RC-126-commit-identity (OD9b), RC-135-end-the-claim-alternative (OD10), RC-138-falsifier_observable_from (OD5), RC-140-commit-identity (OD9b), RC-148-end-the-claim-alternative (OD10), RC-149-eta_max (OD4) and D_s (OD5), RC-150-pre-forecast-withdrawal-and-keep-members-alternatives (OD10), RC-151-commit-identity (OD9b), RC-162-commit-identity (OD9b), RC-164-eta_max-cohort-feasibility (OD4, OD5), RC-165-commit-identity (OD9b), RC-168-non-confirmatory-alternative (OD10), RC-169-withdrawal-scope (OD5, OD10), RC-171-ceiling-or-uniform-sampling-alternative (OD10) and planned-supply (OD5), RC-172-commit-identity (OD9b), RC-173-gamma_cal (OD4) and size-certificate-wording-alternative (OD10)]
 owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b, OD10]
 prerequisites_for_A0: [OD1, OD2, OD9a, OD10-for-T-34-only]
 experiments_required: [H1, H3, H5, H6, transfer-claim, persistent-regime-dependence-model (OD4/OD5), comparator-error-dependence (OD4; needs outcomes, not estimable from the blinded burn-in), late-record-delay-per-source-and-mechanism (RC-149, RC-164; sets D_s and the cohort-level eta_max as the Boole sum over the registered cohort, measured to the ledger record on the Phase 2 candidate log)]
@@ -12170,6 +12219,513 @@ Output:
       }
     },
     "reading": "under the strong null (delta = 0) withdrawal changes little; under the weak null it reweights the cohort toward the source on which FULL is better and the rejection rate rises with delta; keeping the cohort as registered restores the rate"
+  },
+  "python": "3.11.17"
+}
+```
+
+## Appendix V. Round-21 checks (REPRODUCED)
+
+Needs no reference code and no network. Run from the repository root with
+`python -I research/reproduction/round21_checks.py` in an isolated venv built from `research/reproduction/requirements.txt`
+(Python 3.11.17; 45 s). The file is byte-identical to the block between the `round21-script` markers
+(`python -I research/reproduction/check_appendix_scripts.py`: `21 appendix blocks, 21 scripts checked, 0 failures`).
+Seeds are fixed, and two consecutive runs produced byte-identical output. Blocks are keyed by the comment ID of
+Codex's review `5562492917`. RC-171 runs 1,200 eligible singletons over 24 blocks on law (a) of Appendix N with
+FULL's effect +δ in the first twelve blocks and −δ in the last twelve, a budget that binds at the 600th registration,
+and compares the full window, the version-18 truncated cohort and a null over the closed window [T_0, τ), at the
+nominal one-sided value and at c* = 2.254; it also counts the low-bound registrations the version-18 refusal admits
+after the first refused high-bound one. RC-173 computes Codex's worst case, the spent certification levels, and the
+exact distribution of the true size of the upper-bound rule on one continuous point (Beta(k + 1, R − k), k the
+largest certified count). RC-174 computes Codex's 2 + 22 block case and runs the RC-97 valid null with Poisson supply
+and a share of non-emitting clusters, counting G over eligible and over emitting blocks. RC-172 has no script: it was
+checked with `git fetch` of every branch and `refs/pull/*` (37 refs), `git cat-file -t
+65b72d1a01f0a834527bcc492a3128d28cafb3f7` (could not get object info), `git log --all --format='%an <%ae> | %cn <%ce>'`
+and `git show -s --format=fuller d18a4b7` (owner identity as author and committer).
+
+Also run this round: `python -I research/reproduction/round20_checks.py`, byte-identical to the committed Appendix U
+output. Not run this round: Appendix A to T, Lean, any external fetch.
+
+<!-- round21-script:start -->
+```python
+"""Round-21 checks for the Codex findings on PR #4 at d18a4b7 (no reference code, no network).
+
+Codex review 5562492917 (four inline findings). Blocks are keyed by comment ID; comment 4306617510 (RC-172) is a
+commit-identity claim checked against the repository's refs and has no block here. The block-sum statistic is the
+primary of 17 section 3 item 3: mean over clusters, variance sum_b (sum_{k in b} (X_k - theta))^2 / N^2 * G/(G - 1),
+rejection iff t > c on G - 1 degrees of freedom.
+"""
+import json, math, sys
+import numpy as np
+from scipy.stats import beta, norm, t as student_t
+
+out = {}
+
+def binom_upper(k, n, conf):
+    return 1.0 if k >= n else float(beta.ppf(conf, k + 1, n - k))
+def rate(reject):
+    return {'rate': round(float(reject.mean()), 4), 'upper_99': round(binom_upper(int(reject.sum()), reject.size, 0.99), 4)}
+
+def block_t(x, block, emits, g_from):
+    """t statistic and G for one sample. x: increments, block: block index, emits: bool mask of emitting clusters,
+    g_from: 'emitting' counts blocks with an emitted increment, 'eligible' every block with any eligible cluster."""
+    xe, be = x[emits], block[emits]
+    n = xe.size
+    g = np.unique(be).size if g_from == 'emitting' else np.unique(block).size
+    if n == 0 or g < 2:
+        return -math.inf, g
+    theta = xe.mean()
+    s = np.bincount(be, weights=xe - theta)
+    v = (s ** 2).sum() / n ** 2 * g / (g - 1)
+    return (theta / math.sqrt(v) if v > 0 else -math.inf), g
+
+# ================= 4306617507 (RC-171): the eta budget truncates the eligible population =================
+# Singleton clusters, 50 eligible candidates per block over 24 blocks (1,200), each maturing in its registration
+# block (horizon 0, a simplification that leaves T_A out of the check). Law (a) of 16 Appendix N: X = -0.24 at Y = 1
+# and +0.16 at Y = 0, E[X] = 0.16 - 0.4 q at P(Y = 1) = q. FULL's effect is +delta in blocks 1-12 and -delta in
+# blocks 13-24, so the eligible population of the window [T_0, T_R] satisfies the average null. Every candidate carries
+# the same per-member bound u = eta_max / 600, so the Boole sum reaches eta_max at the 600th registration.
+# Version 18: every later registration is refused, the cohort is blocks 1-12 and the estimand is still stated over
+# [T_0, T_R]. Proposed: the budget closes the registration window at tau, the record time of the first refused
+# registration, every source at once, and the estimand is the eligible population of [T_0, tau); the null class is
+# stated and calibrated on that window, so the null law is one whose average is zero over the cohort as registered.
+REPS = 20000
+NB, PER = 24, 50
+rng = np.random.default_rng(2171)
+blocks_all = np.repeat(np.arange(NB), PER)
+c_nom_24 = float(student_t.ppf(0.95, NB - 1))
+c_nom_12 = float(student_t.ppf(0.95, 12 - 1))
+rc171 = {'critical_values': {'nominal_G=24': round(c_nom_24, 4), 'nominal_G=12': round(c_nom_12, 4), 'c_2.254': 2.254}}
+def law_a(q):
+    return np.where(rng.random(q.shape) < q, -0.24, 0.16)
+for delta in (0.01, 0.02):
+    q_split = np.where(blocks_all < 12, (0.16 - delta) / 0.4, (0.16 + delta) / 0.4)
+    q_null = np.full(NB * PER, 0.16 / 0.4)
+    emit_all = np.ones(NB * PER, bool)
+    cells = {'full_window_weak_null': [], 'v18_truncated_weak_null_of_window': [], 'proposed_window_null_on_[T0,tau)': []}
+    first = blocks_all < 12
+    for _ in range(REPS):
+        x = law_a(q_split)
+        t_full, _ = block_t(x, blocks_all, emit_all, 'emitting')
+        t_trunc, _ = block_t(x[first], blocks_all[first], emit_all[first], 'emitting')
+        x0 = law_a(q_null[first])
+        t_win, _ = block_t(x0, blocks_all[first], emit_all[first], 'emitting')
+        cells['full_window_weak_null'].append((t_full, 24))
+        cells['v18_truncated_weak_null_of_window'].append((t_trunc, 12))
+        cells['proposed_window_null_on_[T0,tau)'].append((t_win, 12))
+    row = {}
+    for name, vals in cells.items():
+        tt = np.array([v[0] for v in vals])
+        g = vals[0][1]
+        row[name] = {'G': g, 'nominal': rate(tt > float(student_t.ppf(0.95, g - 1))), 'c_2.254': rate(tt > 2.254)}
+    rc171[f'delta={delta}'] = row
+# Unequal per-member bounds: under the version-18 refusal a high-bound candidate is refused while a later low-bound one
+# still fits, so after the budget first binds only low-bound sources enter; with bounds u_A < u_B at most
+# ceil(u_B / u_A) - 1 further A registrations follow the first refused B one. The close rule admits none.
+rc171['v18_refusal_boundary_extra_low_bound_registrations'] = {f'u_B/u_A={r}': math.ceil(r) - 1 for r in (2, 10, 100)}
+rc171['reading'] = ('refusing every registration after the Boole sum reaches eta_max gives later eligible candidates '
+                    'probability zero; under a weak null over [T_0, T_R] with +delta early and -delta late the truncated '
+                    'cohort rejects far above alpha; stating the estimand and the null class over [T_0, tau), tau an '
+                    'outcome-blind stopping time of the registration counts, restores the level on that window')
+out['RC171_eta_budget_window'] = rc171
+
+# ================= 4306617512 (RC-173): calibration miscoverage in the level budget =================
+# A simulated calibration certifies every evaluated point with simultaneous confidence 1 - gamma (gamma = 0.01).
+# Over repetitions of calibration and experiment the rejection probability is E[size(c*)]; on the miscoverage event
+# size(c*) is bounded only by 1, so P(reject) <= (1 - gamma) * a + gamma for a certification level a.
+alpha, gamma = 0.05, 0.01
+rc173 = {'codex_worst_case_at_a=0.05': round((1 - gamma) * alpha + gamma, 4)}
+spend = {}
+for eta_max in (0.0, 0.005, 0.01):
+    for g in (0.01, 0.001):
+        a = alpha - eta_max - g
+        spend[f'eta_max={eta_max},gamma={g}'] = {'certification_level': round(a, 4),
+                                                 'worst_case_bound_a+gamma+eta_max': round(a + g + eta_max, 4)}
+rc173['spent_level'] = spend
+# Exact behaviour of the upper-bound rule on one point of a continuous family (K = 1): with R replications, c* is the
+# (k + 1)-th largest simulated statistic, k the largest count whose one-sided upper bound at confidence 1 - gamma is
+# <= a; its true size is then 1 - U_(R-k), distributed Beta(k + 1, R - k), exactly and whatever the continuous law.
+def ucb_rule(a, R, conf):
+    k = 0
+    while binom_upper(k + 1, R, conf) <= a:
+        k += 1
+    if binom_upper(k, R, conf) > a:
+        return None
+    sz = beta(k + 1, R - k)
+    return {'max_count': k, 'observed_rate_ceiling': round(k / R, 5), 'P_true_size_above_a': float(f'{sz.sf(a):.3g}'),
+            'E_true_size': round(float(sz.mean()), 5)}
+exact = {}
+for a in (0.05, 0.04, 0.03):
+    for R in (20000, 100000):
+        for K in (1, 100):
+            exact[f'a={a},R={R},K={K}'] = ucb_rule(a, R, 1 - gamma / K)
+rc173['upper_bound_rule_single_point_exact'] = exact
+rc173['normal_cutoff_at_level'] = {f'a={a}': round(float(norm.isf(a)), 4) for a in (0.05, 0.04, 0.03)}
+rc173['reading'] = ('the coverage failure of a simulated calibration is a probability the level-alpha claim must spend; '
+                    'certifying at alpha - eta_max - gamma bounds the rejection rate by alpha in the worst case; on a '
+                    'continuous point the rule miscovers with probability below gamma and its expected size is well below '
+                    'the certified level, so the worst case is a bound, not an observed rate')
+out['RC173_calibration_miscoverage'] = rc173
+
+# ================= 4306617514 (RC-174): blocks with no emitted increment counted in G =================
+# Codex's case: two blocks with scored clusters and 22 blocks whose eligible clusters are all pending or VOID.
+x2 = np.array([0.30, 0.10, 0.20, 0.00])
+b2 = np.array([0, 0, 1, 1])
+t2, _ = block_t(x2, b2, np.ones(4, bool), 'emitting')
+x24 = np.concatenate([x2, np.zeros(22)])
+b24 = np.concatenate([b2, np.arange(2, 24)])
+e24 = np.concatenate([np.ones(4, bool), np.zeros(22, bool)])
+t24, _ = block_t(x24, b24, e24, 'eligible')
+rc174 = {'codex_case': {'G=2_emitting': {'t': round(t2, 4), 'critical_nominal_1df': round(float(student_t.ppf(0.95, 1)), 4),
+                                          'rejects': bool(t2 > student_t.ppf(0.95, 1))},
+                        'G=24_eligible': {'t': round(t24, 4), 'critical_nominal_23df': round(float(student_t.ppf(0.95, 23)), 4),
+                                          'rejects': bool(t24 > student_t.ppf(0.95, 23))}}}
+# Null X in {-0.2, +0.2} equiprobable (16 Appendix F and J), Poisson supply per period over 24 periods, empty periods
+# allowed; each eligible cluster is non-emitting (all members adjudicated VOID or pending at T_A) w.p. q, independently
+# of its outcome. Version 18 counts every block with an eligible cluster in G and the degrees of freedom; proposed:
+# only blocks with at least one emitted increment.
+REPS = 20000
+rng = np.random.default_rng(2174)
+sim = {}
+for lam in (0.5, 1.0, 2.0):
+    for q in (0.1, 0.2, 0.4):
+        rej = {'eligible': [], 'emitting': []}
+        g_extra = []
+        for _ in range(REPS):
+            counts = rng.poisson(lam, 24)
+            block = np.repeat(np.arange(24), counts)
+            x = np.where(rng.random(block.size) < 0.5, -0.2, 0.2)
+            emits = rng.random(block.size) >= q
+            for mode in rej:
+                tt, g = block_t(x, block, emits, mode)
+                rej[mode].append(g >= 2 and tt > student_t.ppf(0.95, g - 1))
+            g_extra.append(np.unique(block).size - np.unique(block[emits]).size)
+        sim[f'poisson_mean={lam},nonemitting_share={q}'] = {
+            'mean_nonemitting_blocks': round(float(np.mean(g_extra)), 3),
+            'v18_G_eligible_blocks': rate(np.array(rej['eligible'])),
+            'proposed_G_emitting_blocks': rate(np.array(rej['emitting']))}
+rc174['valid_null_nominal_cutoff'] = sim
+rc174['reading'] = ('a block whose eligible clusters all emit nothing adds a zero block sum and one to G, which shrinks the '
+                    'G/(G - 1) factor and the critical value without adding an observation; counting only blocks with an '
+                    'emitted increment is the RC-97 rule applied to emission rather than to registration')
+out['RC174_G_from_emitting_blocks'] = rc174
+
+out['python'] = '.'.join(map(str, sys.version_info[:3]))
+print(json.dumps(out, indent=2))
+```
+<!-- round21-script:end -->
+
+Output:
+
+```json
+{
+  "RC171_eta_budget_window": {
+    "critical_values": {
+      "nominal_G=24": 1.7139,
+      "nominal_G=12": 1.7959,
+      "c_2.254": 2.254
+    },
+    "delta=0.01": {
+      "full_window_weak_null": {
+        "G": 24,
+        "nominal": {
+          "rate": 0.0422,
+          "upper_99": 0.0456
+        },
+        "c_2.254": {
+          "rate": 0.0132,
+          "upper_99": 0.0153
+        }
+      },
+      "v18_truncated_weak_null_of_window": {
+        "G": 12,
+        "nominal": {
+          "rate": 0.3244,
+          "upper_99": 0.3321
+        },
+        "c_2.254": {
+          "rate": 0.2019,
+          "upper_99": 0.2086
+        }
+      },
+      "proposed_window_null_on_[T0,tau)": {
+        "G": 12,
+        "nominal": {
+          "rate": 0.0515,
+          "upper_99": 0.0553
+        },
+        "c_2.254": {
+          "rate": 0.0252,
+          "upper_99": 0.0279
+        }
+      }
+    },
+    "delta=0.02": {
+      "full_window_weak_null": {
+        "G": 24,
+        "nominal": {
+          "rate": 0.0229,
+          "upper_99": 0.0255
+        },
+        "c_2.254": {
+          "rate": 0.0052,
+          "upper_99": 0.0065
+        }
+      },
+      "v18_truncated_weak_null_of_window": {
+        "G": 12,
+        "nominal": {
+          "rate": 0.7742,
+          "upper_99": 0.781
+        },
+        "c_2.254": {
+          "rate": 0.6263,
+          "upper_99": 0.6343
+        }
+      },
+      "proposed_window_null_on_[T0,tau)": {
+        "G": 12,
+        "nominal": {
+          "rate": 0.0495,
+          "upper_99": 0.0531
+        },
+        "c_2.254": {
+          "rate": 0.0221,
+          "upper_99": 0.0247
+        }
+      }
+    },
+    "v18_refusal_boundary_extra_low_bound_registrations": {
+      "u_B/u_A=2": 1,
+      "u_B/u_A=10": 9,
+      "u_B/u_A=100": 99
+    },
+    "reading": "refusing every registration after the Boole sum reaches eta_max gives later eligible candidates probability zero; under a weak null over [T_0, T_R] with +delta early and -delta late the truncated cohort rejects far above alpha; stating the estimand and the null class over [T_0, tau), tau an outcome-blind stopping time of the registration counts, restores the level on that window"
+  },
+  "RC173_calibration_miscoverage": {
+    "codex_worst_case_at_a=0.05": 0.0595,
+    "spent_level": {
+      "eta_max=0.0,gamma=0.01": {
+        "certification_level": 0.04,
+        "worst_case_bound_a+gamma+eta_max": 0.05
+      },
+      "eta_max=0.0,gamma=0.001": {
+        "certification_level": 0.049,
+        "worst_case_bound_a+gamma+eta_max": 0.05
+      },
+      "eta_max=0.005,gamma=0.01": {
+        "certification_level": 0.035,
+        "worst_case_bound_a+gamma+eta_max": 0.05
+      },
+      "eta_max=0.005,gamma=0.001": {
+        "certification_level": 0.044,
+        "worst_case_bound_a+gamma+eta_max": 0.05
+      },
+      "eta_max=0.01,gamma=0.01": {
+        "certification_level": 0.03,
+        "worst_case_bound_a+gamma+eta_max": 0.05
+      },
+      "eta_max=0.01,gamma=0.001": {
+        "certification_level": 0.039,
+        "worst_case_bound_a+gamma+eta_max": 0.05
+      }
+    },
+    "upper_bound_rule_single_point_exact": {
+      "a=0.05,R=20000,K=1": {
+        "max_count": 928,
+        "observed_rate_ceiling": 0.0464,
+        "P_true_size_above_a": 0.00959,
+        "E_true_size": 0.04645
+      },
+      "a=0.05,R=20000,K=100": {
+        "max_count": 886,
+        "observed_rate_ceiling": 0.0443,
+        "P_true_size_above_a": 8.95e-05,
+        "E_true_size": 0.04435
+      },
+      "a=0.05,R=100000,K=1": {
+        "max_count": 4839,
+        "observed_rate_ceiling": 0.04839,
+        "P_true_size_above_a": 0.00968,
+        "E_true_size": 0.0484
+      },
+      "a=0.05,R=100000,K=100": {
+        "max_count": 4745,
+        "observed_rate_ceiling": 0.04745,
+        "P_true_size_above_a": 9.93e-05,
+        "E_true_size": 0.04746
+      },
+      "a=0.04,R=20000,K=1": {
+        "max_count": 735,
+        "observed_rate_ceiling": 0.03675,
+        "P_true_size_above_a": 0.00931,
+        "E_true_size": 0.0368
+      },
+      "a=0.04,R=20000,K=100": {
+        "max_count": 698,
+        "observed_rate_ceiling": 0.0349,
+        "P_true_size_above_a": 9.37e-05,
+        "E_true_size": 0.03495
+      },
+      "a=0.04,R=100000,K=1": {
+        "max_count": 3856,
+        "observed_rate_ceiling": 0.03856,
+        "P_true_size_above_a": 0.00999,
+        "E_true_size": 0.03857
+      },
+      "a=0.04,R=100000,K=100": {
+        "max_count": 3771,
+        "observed_rate_ceiling": 0.03771,
+        "P_true_size_above_a": 9.99e-05,
+        "E_true_size": 0.03772
+      },
+      "a=0.03,R=20000,K=1": {
+        "max_count": 544,
+        "observed_rate_ceiling": 0.0272,
+        "P_true_size_above_a": 0.00991,
+        "E_true_size": 0.02725
+      },
+      "a=0.03,R=20000,K=100": {
+        "max_count": 511,
+        "observed_rate_ceiling": 0.02555,
+        "P_true_size_above_a": 8.67e-05,
+        "E_true_size": 0.0256
+      },
+      "a=0.03,R=100000,K=1": {
+        "max_count": 2874,
+        "observed_rate_ceiling": 0.02874,
+        "P_true_size_above_a": 0.00965,
+        "E_true_size": 0.02875
+      },
+      "a=0.03,R=100000,K=100": {
+        "max_count": 2800,
+        "observed_rate_ceiling": 0.028,
+        "P_true_size_above_a": 9.34e-05,
+        "E_true_size": 0.02801
+      }
+    },
+    "normal_cutoff_at_level": {
+      "a=0.05": 1.6449,
+      "a=0.04": 1.7507,
+      "a=0.03": 1.8808
+    },
+    "reading": "the coverage failure of a simulated calibration is a probability the level-alpha claim must spend; certifying at alpha - eta_max - gamma bounds the rejection rate by alpha in the worst case; on a continuous point the rule miscovers with probability below gamma and its expected size is well below the certified level, so the worst case is a bound, not an observed rate"
+  },
+  "RC174_G_from_emitting_blocks": {
+    "codex_case": {
+      "G=2_emitting": {
+        "t": 3.0,
+        "critical_nominal_1df": 6.3138,
+        "rejects": false
+      },
+      "G=24_eligible": {
+        "t": 4.1533,
+        "critical_nominal_23df": 1.7139,
+        "rejects": true
+      }
+    },
+    "valid_null_nominal_cutoff": {
+      "poisson_mean=0.5,nonemitting_share=0.1": {
+        "mean_nonemitting_blocks": 0.743,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0486,
+          "upper_99": 0.0523
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0452,
+          "upper_99": 0.0487
+        }
+      },
+      "poisson_mean=0.5,nonemitting_share=0.2": {
+        "mean_nonemitting_blocks": 1.539,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0551,
+          "upper_99": 0.059
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0471,
+          "upper_99": 0.0507
+        }
+      },
+      "poisson_mean=0.5,nonemitting_share=0.4": {
+        "mean_nonemitting_blocks": 3.216,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0551,
+          "upper_99": 0.059
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0358,
+          "upper_99": 0.039
+        }
+      },
+      "poisson_mean=1.0,nonemitting_share=0.1": {
+        "mean_nonemitting_blocks": 0.934,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0542,
+          "upper_99": 0.0581
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0529,
+          "upper_99": 0.0566
+        }
+      },
+      "poisson_mean=1.0,nonemitting_share=0.2": {
+        "mean_nonemitting_blocks": 1.948,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0541,
+          "upper_99": 0.0579
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0507,
+          "upper_99": 0.0544
+        }
+      },
+      "poisson_mean=1.0,nonemitting_share=0.4": {
+        "mean_nonemitting_blocks": 4.358,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0614,
+          "upper_99": 0.0655
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0532,
+          "upper_99": 0.0571
+        }
+      },
+      "poisson_mean=2.0,nonemitting_share=0.1": {
+        "mean_nonemitting_blocks": 0.716,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0525,
+          "upper_99": 0.0563
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0522,
+          "upper_99": 0.056
+        }
+      },
+      "poisson_mean=2.0,nonemitting_share=0.2": {
+        "mean_nonemitting_blocks": 1.592,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0539,
+          "upper_99": 0.0578
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.0529,
+          "upper_99": 0.0567
+        }
+      },
+      "poisson_mean=2.0,nonemitting_share=0.4": {
+        "mean_nonemitting_blocks": 3.963,
+        "v18_G_eligible_blocks": {
+          "rate": 0.0556,
+          "upper_99": 0.0595
+        },
+        "proposed_G_emitting_blocks": {
+          "rate": 0.052,
+          "upper_99": 0.0558
+        }
+      }
+    },
+    "reading": "a block whose eligible clusters all emit nothing adds a zero block sum and one to G, which shrinks the G/(G - 1) factor and the critical value without adding an observation; counting only blocks with an emitted increment is the RC-97 rule applied to emission rather than to registration"
   },
   "python": "3.11.17"
 }
