@@ -13,7 +13,13 @@ matches is then run, and its stdout must be byte-identical to the committed outp
 its end marker (RC-224: comparing the source alone passed a stale or hand-edited output block). The probe needs a
 scratch copy of the archived reference code; without `--reference-code` its output is reported as not compared,
 never as passed, and `--reference-code` without exactly one existing directory, or any other argument, exits with
-status 2 before anything is checked (RC-226). Run from the repository root, in the environment of README.md:
+status 2 before anything is checked (RC-226). The scripts that must exist are read from `inventory.txt`, a committed
+list kept apart from the matrix and the directory (RC-230: an inventory derived from the appendix keys and the files
+present passed when a script and its appendix block were deleted together); every inventory entry must have its file
+and its block, every file and block must be in the inventory, and a missing or malformed inventory fails. Finally the
+version labels of the matrix, the specification and the reading order of `research/README.md` must agree (RC-231: the
+reading order was left behind three times, RC-137, RC-167, RC-231). Run from the repository root, in the environment
+of README.md:
 
     python -I research/reproduction/check_appendix_scripts.py [--reference-code /path/to/scratch/v02]
 """
@@ -23,9 +29,12 @@ import sys
 from pathlib import Path
 
 MATRIX = Path('research/16-reconciliation-matrix.md')
+SPEC = Path('research/17-phase1-amended-specification.md')
+README = Path('research/README.md')
 HERE = Path(__file__).resolve().parent
 MARKERS = {'reconciliation_probes.py': 'probe'}
 MARKERS.update({f'round{n}_checks.py': f'round{n}' for n in range(2, 100)})
+INVENTORY = HERE / 'inventory.txt'
 
 
 def marker_lines(text: str, key: str, kind: str) -> list:
@@ -70,6 +79,40 @@ def output_failure(text: str, key: str, path: Path, args: list) -> str:
     return ''
 
 
+def read_inventory() -> dict:
+    """File name -> appendix key, one `<file> <key>` pair per line of `inventory.txt`, `#` starting a comment."""
+    inventory = {}
+    for number, line in enumerate(INVENTORY.read_text(encoding='utf-8').splitlines(), 1):
+        fields = line.split('#', 1)[0].split()
+        if not fields:
+            continue
+        if len(fields) != 2 or fields[0] in inventory or MARKERS.get(fields[0]) != fields[1]:
+            raise ValueError(f'{INVENTORY.name} line {number}: {line.strip()!r} is not a new `<file> <key>` pair '
+                             'with the key defined for that file name')
+        inventory[fields[0]] = fields[1]
+    return inventory
+
+
+def version_failures(matrix: str, spec: str, readme: str) -> list:
+    """The matrix version and round, the specification version and round, and the two reading-order entries must
+    agree; a label that cannot be found is a failure too."""
+    labels = {
+        'matrix': re.search(r'^\*\*Version:\*\* v(\d+), [-\d]+\. \*\*Round:\*\* (\d+) ', matrix, flags=re.MULTILINE),
+        'specification': re.search(r'^version (\d+) \(round (\d+):', spec, flags=re.MULTILINE),
+        'reading order, matrix': re.search(r'`16-reconciliation-matrix\.md`: [^(]*\(v(\d+), round (\d+):', readme),
+        'reading order, specification': re.search(
+            r'`17-phase1-amended-specification\.md`: [^(]*\(version (\d+); versions 5 to (\d+) ', readme),
+    }
+    missing = [name for name, found in labels.items() if not found]
+    if missing:
+        return [f'version label not found: {name}' for name in missing]
+    (mv, mr), (sv, sr), (rv, rr), (rs, rs5) = (tuple(int(g) for g in labels[n].groups()) for n in labels)
+    stated = {'matrix version / reading order': (mv, rv), 'matrix round / reading order': (mr, rr),
+              'matrix round / specification round': (mr, sr), 'specification version / reading order': (sv, rs),
+              'specification version / reading-order OD10 range': (sv, rs5)}
+    return [f'version labels disagree, {name}: {a} and {b}' for name, (a, b) in stated.items() if a != b]
+
+
 def parse_reference(argv: list) -> list:
     """[] without arguments, [path] for exactly `--reference-code <existing directory>`; anything else is an error
     (RC-226: a valueless option was read as no option, so the probe output went uncompared with exit status 0)."""
@@ -91,8 +134,22 @@ def main(argv: list) -> int:
     text = MATRIX.read_text(encoding='utf-8')
     keys = set(re.findall(r'^<!-- (\w+)-script:start -->$', text, flags=re.MULTILINE))
     files = {p.name for p in HERE.glob('*.py') if p.name != Path(__file__).name}
-    expected = {name for name, key in MARKERS.items() if key in keys}
     failures = unrun = 0
+    try:
+        inventory = read_inventory()
+    except FileNotFoundError:
+        print(f'{INVENTORY.name}: MISSING, so no script is known to be required')
+        failures += 1
+        inventory = {}
+    except (OSError, UnicodeDecodeError, ValueError) as error:
+        print(error if isinstance(error, ValueError) else f'{INVENTORY.name}: unreadable ({type(error).__name__})')
+        failures += 1
+        inventory = {}
+    present = {name for name, key in MARKERS.items() if key in keys} | (files & set(MARKERS))
+    for name in sorted(present - set(inventory)):
+        print(f'{name}: not in {INVENTORY.name}')
+        failures += 1
+    expected = present | set(inventory)
     malformed = marker_failures(text)
     for line in malformed.values():
         print(line)
@@ -103,7 +160,7 @@ def main(argv: list) -> int:
     for key in sorted(keys - set(MARKERS.values())):
         print(f'appendix block {key}-script: no script name is defined for this marker')
         failures += 1
-    for name in sorted(expected | (files & set(MARKERS))):
+    for name in sorted(expected):
         key = MARKERS[name]
         path = HERE / name
         if name not in files:
@@ -125,8 +182,11 @@ def main(argv: list) -> int:
             failures += 1
         else:
             print(f'{name}: identical to the appendix block, output identical to the committed output')
-    print(f'{len(keys)} appendix blocks, {len(files)} scripts checked, {unrun} outputs not compared, '
-          f'{failures} failures')
+    for line in version_failures(text, SPEC.read_text(encoding='utf-8'), README.read_text(encoding='utf-8')):
+        print(line)
+        failures += 1
+    print(f'{len(inventory)} inventory entries, {len(keys)} appendix blocks, {len(files)} scripts checked, '
+          f'{unrun} outputs not compared, {failures} failures')
     return 1 if failures else 0
 
 
