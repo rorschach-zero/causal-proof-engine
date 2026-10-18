@@ -7,7 +7,7 @@ scripts for the research documents, not project code: nothing under `cpe/` (when
 | File | Appendix | Needs |
 |---|---|---|
 | `reconciliation_probes.py` | A (output in B) | a scratch copy of the archived v0.2 reference code, passed as the first argument; the pinned packages, httpx and its dependencies included (the archived `cpe.saxo_sim` imports httpx) |
-| `round2_checks.py` to `round21_checks.py`, `round23_checks.py` to `round34_checks.py` (round 22 had none) | C to V, W to Z, AA to AH | numpy and scipy of the pinned packages |
+| `round2_checks.py` to `round21_checks.py`, `round23_checks.py` to `round35_checks.py` (round 22 had none) | C to V, W to Z, AA to AI | numpy and scipy of the pinned packages |
 | `check_appendix_scripts.py` | — | nothing; verifies every file above against its appendix block, and fails on an appendix block without its file, a file without its block, any other `*.py` file here (RC-196), and a key without exactly one start and one end marker line (RC-217) |
 
 Run from the repository root, in an isolated virtual environment:
@@ -15,7 +15,7 @@ Run from the repository root, in an isolated virtual environment:
 ```sh
 python -m venv /path/to/venv && /path/to/venv/bin/pip install --require-hashes --no-deps -r research/reproduction/requirements.txt
 /path/to/venv/bin/python -I research/reproduction/check_appendix_scripts.py
-/path/to/venv/bin/python -I research/reproduction/round34_checks.py
+/path/to/venv/bin/python -I research/reproduction/round35_checks.py
 cp -r research/original/CPE_Forschungspaket_2026-10-16/08_Anhang/Referenz_Code_Vorschlaege_NICHT_IMPLEMENTIEREN/source_v0_2 /path/to/scratch/v02
 /path/to/venv/bin/python -I research/reproduction/reconciliation_probes.py /path/to/scratch/v02
 ```
