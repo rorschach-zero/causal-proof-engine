@@ -37,8 +37,8 @@ def q(g):
 
 # ================= 4306742760 (RC-180): an allocation that depends on the realised S =================
 # (a) Oracle stopping, the supremum over stopping rules: stop at the first S whose newest record, certified at
-# gamma_cal / S, miscovers. Its probability is 1 - prod_{s <= N} (1 - q(gamma_cal / s)), a lower bound on the
-# version-20 failure probability for every rule that may stop anywhere up to N attempts.
+# gamma_cal / S, miscovers. Its probability is 1 - prod_{s <= N} (1 - q(gamma_cal / s)), an upper bound on the
+# version-20 failure probability of every rule that stops within N attempts, attained by this oracle (RC-184).
 rc180 = {'L': L, 'gamma_cal': G, 'K': 1, 'R': R}
 qs, ms, surv = {}, {}, 1.0
 checkpoints = (1, 2, 5, 10, 20, 50, 100, 1000)
