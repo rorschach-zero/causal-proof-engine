@@ -26,8 +26,12 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v24, round 23: three findings on the round-22 commit, one applied to the
-   specification, which moves to version 20: a simulated calibration's seed is now derived from a value that does not
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v25, round 24: three findings on the round-23 commit, all applied to the
+   specification, which moves to version 21: a simulated family's first calibration record now fixes the most records
+   it may have and the search budget, because an allocation over the records realised so far and a record that had to
+   contain the search's own output both failed, and the seed value comes only from a public beacon round named in the
+   record, because a value its contributor could try offline was selectable; round 23: three findings on the round-22
+   commit, one applied to the specification, which moved to version 20: a simulated calibration's seed is now derived from a value that does not
    exist until its calibration record is anchored, because a seed only committed before the cohort could be chosen
    among several runs; one provenance claim not reproduced, and one whose evidence showed that the round-22 test was
    confounded by the order of the push and the PR edit; round 22: two provenance findings on the round-21 commit, none on the
@@ -76,7 +80,7 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 20; versions 5 to 20 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 21; versions 5 to 21 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
 11. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
