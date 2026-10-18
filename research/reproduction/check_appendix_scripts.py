@@ -12,7 +12,8 @@ collected into a set, a second, stale block under the same key was never compare
 matches is then run, and its stdout must be byte-identical to the committed output, the first ```json block after
 its end marker (RC-224: comparing the source alone passed a stale or hand-edited output block). The probe needs a
 scratch copy of the archived reference code; without `--reference-code` its output is reported as not compared,
-never as passed. Run from the repository root, in the environment of README.md:
+never as passed, and `--reference-code` without exactly one existing directory, or any other argument, exits with
+status 2 before anything is checked (RC-226). Run from the repository root, in the environment of README.md:
 
     python -I research/reproduction/check_appendix_scripts.py [--reference-code /path/to/scratch/v02]
 """
@@ -69,8 +70,24 @@ def output_failure(text: str, key: str, path: Path, args: list) -> str:
     return ''
 
 
+def parse_reference(argv: list) -> list:
+    """[] without arguments, [path] for exactly `--reference-code <existing directory>`; anything else is an error
+    (RC-226: a valueless option was read as no option, so the probe output went uncompared with exit status 0)."""
+    if not argv:
+        return []
+    if len(argv) != 2 or argv[0] != '--reference-code' or argv[1].startswith('--'):
+        raise ValueError(f'invalid arguments {argv}; usage: [--reference-code /path/to/scratch/v02]')
+    if not Path(argv[1]).is_dir():
+        raise ValueError(f'--reference-code {argv[1]}: not a directory')
+    return argv[1:]
+
+
 def main(argv: list) -> int:
-    reference = argv[argv.index('--reference-code') + 1:][:1] if '--reference-code' in argv else []
+    try:
+        reference = parse_reference(argv)
+    except ValueError as error:
+        print(error)
+        return 2
     text = MATRIX.read_text(encoding='utf-8')
     keys = set(re.findall(r'^<!-- (\w+)-script:start -->$', text, flags=re.MULTILINE))
     files = {p.name for p in HERE.glob('*.py') if p.name != Path(__file__).name}
