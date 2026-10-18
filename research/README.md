@@ -26,7 +26,10 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v15, round 14: the four
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v16, round 15: the five
+   findings of Codex's review of the version-12 specification, all applied, among them registration-breach
+   clusters now outside the scored population because zeros placed after the outcomes move the statistic, and
+   late-source defects scored at their least favourable outcome; round 14: the four
    findings of Codex's review of the version-11 specification, three applied and one not reproduced, among them
    a member knowable before its cluster's registration, now named and shown to enter at X = 0, and the §6
    estimand gated by the earliest-knowable bound; round 13: the six
@@ -47,7 +50,7 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 12; versions 5 to 12 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 13; versions 5 to 13 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
 11. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
