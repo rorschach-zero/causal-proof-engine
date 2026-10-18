@@ -26,7 +26,10 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v18, round 17: the three
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v19, round 18: the three
+   findings of Codex's review of the version-15 specification, all applied, among them the protected operation's
+   commit record anchored before the change takes effect and is acknowledged, all-VOID clusters counted in the VOID
+   cap, and one inclusion probability for every sampled cluster; round 17: the three
    findings of Codex's review of the version-14 specification, all applied, among them the closed-form box bound
    now carrying the design's own constant for unequal blocks, cutoff breaches propagated to every arm that consumes
    the breached provider, and monitor factors committed only after the defect-closure horizon; round 16: the seven
@@ -57,7 +60,7 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
    seventeen findings recorded in rounds 4–6 and the four of Codex's seventh review as the OD10 decision diff,
    on the owner's instruction that a round budget never closes a finding), reproduced evidence, the one
    remaining disagreement (hosting timing, an owner decision) and owner decisions.
-10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 15; versions 5 to 15 are the
+10. `17-phase1-amended-specification.md`: the proposed amended Phase 1 (version 16; versions 5 to 16 are the
     OD10 decision diff) and its acceptance-test matrix, including the restated mandatory counterexample
     fixtures (§5.1).
 11. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
