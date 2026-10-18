@@ -9,17 +9,18 @@ without an appendix block (RC-136: a check over the files that happen to exist p
 over the files whose names are in MARKERS passes an unregistered or misspelled evidence script). Every key must
 have exactly one start and one end marker line, in that order (RC-217: with the last start marker read and the keys
 collected into a set, a second, stale block under the same key was never compared). Every script whose source
-matches is then run, and its stdout must be byte-identical to the committed output, the first ```json block after
-its end marker (RC-224: comparing the source alone passed a stale or hand-edited output block). The probe needs a
-scratch copy of the archived reference code; without `--reference-code` its output is reported as not compared,
-never as passed, and `--reference-code` without exactly one existing directory, or any other argument, exits with
-status 2 before anything is checked (RC-226). The scripts that must exist are read from `inventory.txt`, a committed
-list kept apart from the matrix and the directory (RC-230: an inventory derived from the appendix keys and the files
-present passed when a script and its appendix block were deleted together); every inventory entry must have its file
-and its block, every file and block must be in the inventory, and a missing or malformed inventory fails. Finally the
-version labels of the matrix, the specification and the reading order of `research/README.md` must agree (RC-231: the
-reading order was left behind three times, RC-137, RC-167, RC-231). Run from the repository root, in the environment
-of README.md:
+matches is then run, and its stdout must be byte-identical to the committed output, the one ```json block after its
+end marker and before the next script's start marker (RC-224: comparing the source alone passed a stale or
+hand-edited output block; RC-240: with only the first of several blocks compared, a second, stale block passed).
+The probe needs a scratch copy of the archived reference code; without `--reference-code` its output is reported as
+not compared, never as passed, and `--reference-code` without exactly one existing directory, or any other argument,
+exits with status 2 before anything is checked (RC-226). The scripts that must exist are read from `inventory.txt`,
+a committed list kept apart from the matrix and the directory (RC-230: an inventory derived from the appendix keys and
+the files present passed when a script and its appendix block were deleted together); every inventory entry must have
+its file and its block, every file and block must be in the inventory, and a missing or malformed inventory fails.
+Finally the version labels of the matrix, the specification and the reading order of `research/README.md` must agree
+(RC-231: the reading order was left behind three times, RC-137, RC-167, RC-231). Run from the repository root, in the
+environment of README.md:
 
     python -I research/reproduction/check_appendix_scripts.py [--reference-code /path/to/scratch/v02]
 """
@@ -60,17 +61,19 @@ def fenced_block(text: str, key: str) -> str:
     return text[start:end].split('```python\n', 1)[1].rsplit('```', 1)[0]
 
 
-def output_block(text: str, key: str) -> str:
-    """The first ```json block after the end marker and before the next script's start marker, or ''."""
+def output_blocks(text: str, key: str) -> list:
+    """Every ```json block after the end marker and before the next script's start marker."""
     end, = marker_lines(text, key, 'end')
     rest = re.split(r'^<!-- \w+-script:start -->$', text[end:], maxsplit=1, flags=re.MULTILINE)[0]
-    return rest.split('```json\n', 1)[1].split('```', 1)[0] if '```json\n' in rest else ''
+    return [block.split('```', 1)[0] for block in rest.split('```json\n')[1:]]
 
 
 def output_failure(text: str, key: str, path: Path, args: list) -> str:
-    expected = output_block(text, key)
-    if not expected:
-        return f'{path.name}: no committed output block after its appendix block'
+    blocks = output_blocks(text, key)
+    if len(blocks) != 1:
+        return (f'{path.name}: {len(blocks)} committed output blocks after its appendix block, '
+                'exactly one is required')
+    expected, = blocks
     run = subprocess.run([sys.executable, '-I', str(path), *args], capture_output=True, text=True)
     if run.returncode != 0:
         return f'{path.name}: RUN FAILED with exit code {run.returncode}'

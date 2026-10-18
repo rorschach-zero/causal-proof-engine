@@ -12,8 +12,9 @@ Codex's PR #4 comment 6252440988 on 784183f, four findings (three P1, one P2); t
 - finding 4 (RC-235): the intact fixture of round38_checks.py holds no specification and no research README, so
   the remedy checker of 784183f raised FileNotFoundError in all three scenarios, and its recorded exit code 1 for
   the intact tree contradicts the round-38 claim that it exits 0. The checker, unchanged since 784183f, is read from
-  that commit and run here on version-matched fixtures with every exit code asserted.
+  a committed fixture of that commit (RC-236) and run here on version-matched fixtures with every exit code asserted.
 """
+import hashlib
 import json
 import subprocess
 import sys
@@ -25,7 +26,6 @@ from scipy import stats
 
 out = {}
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
 
 # ================= findings 1 and 3 (RC-232, RC-234): the burn-in supply screen =================
 # Burn-in law: no skill, J = 6 confirmatory components (Design C, three single providers, single-provider-three-roles,
@@ -145,9 +145,9 @@ out[f'findings 1 and 3, RC-232 and RC-234: rejection rate of the supply screen o
 # ================= finding 4 (RC-235): the checker fixtures =================
 # The round-38 fixture (a matrix only), intact, and a version-matched fixture (matrix v5 / round 1, specification
 # version 5 / round 1, reading order v5 / round 1 and version 5 / versions 5 to 5), intact, with round3_checks.py and
-# its block deleted together, and with the inventory deleted as well. The checker is read from commit 784183f, not
-# from the working tree, so that this output does not change with a later checker (round38_checks.py reads the
-# working checker, so Appendix AL reproduces only while the checker is unchanged).
+# its block deleted together, and with the inventory deleted as well. The checker is that of commit 784183f, not the
+# working tree's, so that this output does not change with a later checker; it is read from a committed fixture
+# (RC-236).
 SCRIPT = "print('{\"x\": %d}')\n"
 DOCS = {'research/17-phase1-amended-specification.md': 'version 5 (round 1: fixture)\n',
         'research/README.md': '9. `16-reconciliation-matrix.md`: fixture (v5, round 1: fixture)\n'
@@ -173,9 +173,16 @@ def tree(root, rounds, inventory, docs, checker_source):
     (rep / 'check_appendix_scripts.py').write_text(checker_source)
 
 
-CHECKER = subprocess.run(
-    ['git', '-C', str(REPO), 'show', '784183f118f4218091ac6408510b05b4984de4ef:'
-     'research/reproduction/check_appendix_scripts.py'], capture_output=True, text=True, check=True).stdout
+def fixture(name, sha256):
+    """A committed historical input under fixtures/, pinned by its SHA-256 (RC-236: reading it with git show from
+    a commit that a squash merge leaves unreachable broke the reproduction from the committed revision)."""
+    data = (HERE / 'fixtures' / name).read_bytes()
+    assert hashlib.sha256(data).hexdigest() == sha256, name
+    return data.decode('utf-8')
+
+
+CHECKER = fixture('check_appendix_scripts.784183f.py.txt',
+                  'ed85ed70a300b4d245c4d3080cfe25d0aaf5df3c6b1f45419123e2bb31f2d31d')
 # (fixture, rounds, inventory, documents, expected exit code, expected traceback)
 SCENARIOS = (('round-38 fixture, intact', (2, 3), True, (), 1, True),
              ('version-matched, intact', (2, 3), True, tuple(DOCS), 0, False),

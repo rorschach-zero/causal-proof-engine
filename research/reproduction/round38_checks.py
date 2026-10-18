@@ -13,6 +13,7 @@ Codex's review 5563809881 of 98b03fc, three inline findings (one P1, two P2); tw
   of this class (RC-137, RC-167); the remedy adds a version-label check to the checker, run here on 98b03fc.
 """
 import json
+import hashlib
 import subprocess
 import sys
 import tempfile
@@ -23,7 +24,6 @@ from scipy import stats
 
 out = {}
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parents[1]
 
 # ================= 4307728264 (RC-229): the increment screen on a burn-in-sized log =================
 # The laws of Appendix AK (b): no skill, X_k = s_g + e_k with s_g = +-0.05 per block and e_k = +-0.2; an honest
@@ -89,7 +89,8 @@ out['4307728264 RC-229 increment screen, two-sided 5 %, rejection rate over 4,00
 # ================= 4307728271 (RC-230): deleting a script with its appendix block =================
 # A synthetic tree with two evidence scripts, round2 and round3, each byte-identical to its appendix block and
 # printing its committed output. Scenario `co_deleted` removes round3_checks.py and the round3 block together;
-# `inventory_deleted` removes the inventory as well. The version-34 checker is read from commit 98b03fc.
+# `inventory_deleted` removes the inventory as well. The version-34 checker is that of commit 98b03fc and the remedy
+# checker that of 784183f, both read from committed fixtures (RC-236).
 SCRIPT = "print('{\"x\": %d}')\n"
 
 
@@ -109,11 +110,19 @@ def tree(root, rounds, inventory, checker_source):
     (rep / 'check_appendix_scripts.py').write_text(checker_source)
 
 
+def fixture(name, sha256):
+    """A committed historical input under fixtures/, pinned by its SHA-256 (RC-236: reading it with git show from
+    commits that a squash merge leaves unreachable broke the reproduction from the committed revision)."""
+    data = (HERE / 'fixtures' / name).read_bytes()
+    assert hashlib.sha256(data).hexdigest() == sha256, name
+    return data.decode('utf-8')
+
+
 checkers = {
-    'version34_checker': subprocess.run(
-        ['git', '-C', str(REPO), 'show', '98b03fc992548043c35b1a83a6eacc15e74b654b:'
-         'research/reproduction/check_appendix_scripts.py'], capture_output=True, text=True, check=True).stdout,
-    'remedy_checker': (HERE / 'check_appendix_scripts.py').read_text(encoding='utf-8'),
+    'version34_checker': fixture('check_appendix_scripts.98b03fc.py.txt',
+                                 '544b95d1a131e3295d354720d76baf4e28167b1e5d7a28b95b3b8b4cd8b10d9f'),
+    'remedy_checker': fixture('check_appendix_scripts.784183f.py.txt',
+                              'ed85ed70a300b4d245c4d3080cfe25d0aaf5df3c6b1f45419123e2bb31f2d31d'),
 }
 res = {}
 for scenario, rounds, inventory in (('intact', (2, 3), True), ('co_deleted', (2,), True),
@@ -128,15 +137,21 @@ for scenario, rounds, inventory in (('intact', (2, 3), True), ('co_deleted', (2,
 out['4307728271 RC-230 checker on a synthetic tree'] = res
 
 # ================= 4307728277 (RC-231): version labels of the reading order =================
-sys.path.insert(0, str(HERE))
-from check_appendix_scripts import version_failures  # noqa: E402
-
+# The remedy checker's version_failures, run on the lines of each commit's three documents that its four labels are
+# read from (fixtures labels-3fe4b06 and labels-98b03fc, RC-236).
+remedy = {'__name__': 'remedy_checker', '__file__': str(HERE / 'fixtures' / 'check_appendix_scripts.784183f.py.txt')}
+exec(compile(checkers['remedy_checker'], remedy['__file__'], 'exec'), remedy)
+LABELS = {'3fe4b06': ('baf8d425377ae5fab430a66ca2122f2a62fef958e2b6385f83ed77dd6cf506ad',
+                      '182e30901e29f02eb502df39e010a0aa1ba8f403f66c88dc78a34337246190d3',
+                      'e5f7cb18af387f173881b54f4be572d395b90a15b9e880d374ae40181184a714'),
+          '98b03fc': ('0226470eeef9f549bf8e00867c6144d45acf247f33a057d44766bd42ef5c17cc',
+                      'a5c3113eaa2048fb8c2aedd87008fb98b70a52f1b3636c5fdcebb8a1479dc83f',
+                      'e5f7cb18af387f173881b54f4be572d395b90a15b9e880d374ae40181184a714')}
 res = {}
-for commit in ('3fe4b06fc86ca58918c0762bb4b68494788629cf', '98b03fc992548043c35b1a83a6eacc15e74b654b'):
-    texts = [subprocess.run(['git', '-C', str(REPO), 'show', f'{commit}:research/{name}'], capture_output=True,
-                            text=True, check=True).stdout
-             for name in ('16-reconciliation-matrix.md', '17-phase1-amended-specification.md', 'README.md')]
-    res[commit[:7]] = version_failures(*texts) or ['labels agree']
+for commit, digests in LABELS.items():
+    texts = [fixture(f'labels-{commit}/{name}', digest) for name, digest in
+             zip(('16-reconciliation-matrix.md', '17-phase1-amended-specification.md', 'README.md'), digests)]
+    res[commit] = remedy['version_failures'](*texts) or ['labels agree']
 out['4307728277 RC-231 version-label check'] = res
 
 print(json.dumps(out, indent=1))
