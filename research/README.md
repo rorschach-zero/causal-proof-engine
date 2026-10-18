@@ -26,7 +26,9 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 7. `14-unverified-claims.md`: every claim that is not yet verified, with a verification path.
 8. `15-codex-review.md`: the independent Codex review (on branch `review/codex-20261016`, PR #2; not yet in
    this branch's tree).
-9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v22, round 21: the four
+9. `16-reconciliation-matrix.md`: the versioned Claude–Codex reconciliation matrix (v23, round 22: two provenance findings on the round-21 commit, none on the
+   specification, which stays at version 19; one not reproduced, and one that found the pull request's title and
+   description nine rounds stale, now advanced; round 21: the four
    findings of Codex's review of the version-18 specification, three applied and one not reproduced: the η budget
    closes the registration window for every source and the estimand is stated over that window, a simulated
    calibration spends its miscoverage in the level budget, and G counts only blocks with an emitted increment;
