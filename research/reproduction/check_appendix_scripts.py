@@ -19,7 +19,8 @@ a committed list kept apart from the matrix and the directory (RC-230: an invent
 the files present passed when a script and its appendix block were deleted together); every inventory entry must have
 its file and its block, every file and block must be in the inventory, and a missing or malformed inventory fails.
 Finally the version labels of the matrix, the specification and the reading order of `research/README.md` must agree
-(RC-231: the reading order was left behind three times, RC-137, RC-167, RC-231). Run from the repository root, in the
+(RC-231: the reading order was left behind three times, RC-137, RC-167, RC-231), and each must occur exactly once
+(RC-249: a second, stale label of the same form passed). Run from the repository root, in the
 environment of README.md:
 
     python -I research/reproduction/check_appendix_scripts.py [--reference-code /path/to/scratch/v02]
@@ -98,18 +99,25 @@ def read_inventory() -> dict:
 
 def version_failures(matrix: str, spec: str, readme: str) -> list:
     """The matrix version and round, the specification version and round, and the two reading-order entries must
-    agree; a label that cannot be found is a failure too."""
-    labels = {
-        'matrix': re.search(r'^\*\*Version:\*\* v(\d+), [-\d]+\. \*\*Round:\*\* (\d+) ', matrix, flags=re.MULTILINE),
-        'specification': re.search(r'^version (\d+) \(round (\d+):', spec, flags=re.MULTILINE),
-        'reading order, matrix': re.search(r'`16-reconciliation-matrix\.md`: [^(]*\(v(\d+), round (\d+):', readme),
-        'reading order, specification': re.search(
-            r'`17-phase1-amended-specification\.md`: [^(]*\(version (\d+); versions 5 to (\d+) ', readme),
+    agree. Each label must occur exactly once in its document, so a label that cannot be found, and a second label of
+    the same form, are failures too (RC-249: with the first match read, a later, stale label passed)."""
+    patterns = {
+        'matrix': (r'^\*\*Version:\*\* v(\d+), [-\d]+\. \*\*Round:\*\* (\d+) ', matrix, re.MULTILINE),
+        'specification': (r'^version (\d+) \(round (\d+):', spec, re.MULTILINE),
+        'reading order, matrix': (r'`16-reconciliation-matrix\.md`: [^(]*\(v(\d+), round (\d+):', readme, 0),
+        'reading order, specification': (
+            r'`17-phase1-amended-specification\.md`: [^(]*\(version (\d+); versions 5 to (\d+) ', readme, 0),
     }
-    missing = [name for name, found in labels.items() if not found]
-    if missing:
-        return [f'version label not found: {name}' for name in missing]
-    (mv, mr), (sv, sr), (rv, rr), (rs, rs5) = (tuple(int(g) for g in labels[n].groups()) for n in labels)
+    labels, failures = {}, []
+    for name, (pattern, text, flags) in patterns.items():
+        found = list(re.finditer(pattern, text, flags=flags))
+        if len(found) != 1:
+            failures.append(f'version label {name}: {len(found)} found, exactly one is required')
+        else:
+            labels[name] = tuple(int(g) for g in found[0].groups())
+    if failures:
+        return failures
+    (mv, mr), (sv, sr), (rv, rr), (rs, rs5) = (labels[n] for n in patterns)
     stated = {'matrix version / reading order': (mv, rv), 'matrix round / reading order': (mr, rr),
               'matrix round / specification round': (mr, sr), 'specification version / reading order': (sv, rs),
               'specification version / reading-order OD10 range': (sv, rs5)}
