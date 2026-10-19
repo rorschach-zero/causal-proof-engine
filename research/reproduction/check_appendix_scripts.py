@@ -22,8 +22,10 @@ Finally the version labels of the matrix, the specification and the reading orde
 (RC-231: the reading order was left behind three times, RC-137, RC-167, RC-231), and each must occur exactly once
 (RC-249: a second, stale label of the same form passed). The OD10 range of the matrix header's Awaiting sentence and
 of its section 6 OD10 row must end at the specification version too (RC-277: the header named versions 5 to 41 from
-round 45 to round 50, unseen because no check read it). Run from the repository root, in the environment of
-README.md:
+round 45 to round 50, unseen because no check read it), and that OD10 row must hold exactly one entry, citing a
+matrix ID, for every specification version from 23, the first it names by number, to the specification version
+(RC-280: with the endpoint alone checked, the row asked for approval through version 48 while its record stopped at
+version 46 and had never named version 41). Run from the repository root, in the environment of README.md:
 
     python -I research/reproduction/check_appendix_scripts.py [--reference-code /path/to/scratch/v02]
 """
@@ -99,9 +101,34 @@ def read_inventory() -> dict:
     return inventory
 
 
+FIRST_NUMBERED_OD10_VERSION = 23
+
+
+def od10_record_failures(matrix: str, spec_version: int) -> list:
+    """Every specification version from the first the section 6 OD10 row names by number to the current one must
+    have exactly one entry there ("and version N ..." or ", version N ..."), and the entry must cite a matrix ID before
+    the next entry starts (RC-280: an endpoint check passed a record that named neither version 47 nor 48)."""
+    row = re.search(r'^\| OD10 \|.*$', matrix, flags=re.MULTILINE)
+    if row is None:
+        return ['OD10 record: no section 6 OD10 row']
+    starts = list(re.finditer(r'(?:\band |, )version (\d+) ', row.group(0)))
+    entries = {}
+    for i, match in enumerate(starts):
+        end = starts[i + 1].start() if i + 1 < len(starts) else len(row.group(0))
+        entries.setdefault(int(match.group(1)), []).append(row.group(0)[match.end():end])
+    failures = []
+    for version in range(FIRST_NUMBERED_OD10_VERSION, spec_version + 1):
+        found = entries.get(version, [])
+        if len(found) != 1:
+            failures.append(f'OD10 record, version {version}: {len(found)} entries found, exactly one is required')
+        elif not re.search(r'RC-\d+', found[0]):
+            failures.append(f'OD10 record, version {version}: the entry cites no matrix ID')
+    return failures
+
+
 def version_failures(matrix: str, spec: str, readme: str) -> list:
     """The matrix version and round, the specification version and round, the two reading-order entries and the
-    two OD10 ranges of the matrix must agree. Each label must occur exactly once in its document, so a label that
+    two OD10 ranges of the matrix must agree, and the OD10 record must reach the specification version. Each label must occur exactly once in its document, so a label that
     cannot be found, and a second label of the same form, are failures too (RC-249: with the first match read, a
     later, stale label passed)."""
     patterns = {
@@ -131,7 +158,8 @@ def version_failures(matrix: str, spec: str, readme: str) -> list:
               'specification version / reading-order OD10 range': (sv, rs5),
               'specification version / matrix Awaiting OD10 range': (sv, ma),
               'specification version / matrix section 6 OD10 range': (sv, m6)}
-    return [f'version labels disagree, {name}: {a} and {b}' for name, (a, b) in stated.items() if a != b]
+    return ([f'version labels disagree, {name}: {a} and {b}' for name, (a, b) in stated.items() if a != b]
+            + od10_record_failures(matrix, sv))
 
 
 def parse_reference(argv: list) -> list:
