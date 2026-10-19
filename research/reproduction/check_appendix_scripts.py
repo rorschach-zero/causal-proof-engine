@@ -20,8 +20,10 @@ the files present passed when a script and its appendix block were deleted toget
 its file and its block, every file and block must be in the inventory, and a missing or malformed inventory fails.
 Finally the version labels of the matrix, the specification and the reading order of `research/README.md` must agree
 (RC-231: the reading order was left behind three times, RC-137, RC-167, RC-231), and each must occur exactly once
-(RC-249: a second, stale label of the same form passed). Run from the repository root, in the
-environment of README.md:
+(RC-249: a second, stale label of the same form passed). The OD10 range of the matrix header's Awaiting sentence and
+of its section 6 OD10 row must end at the specification version too (RC-277: the header named versions 5 to 41 from
+round 45 to round 50, unseen because no check read it). Run from the repository root, in the environment of
+README.md:
 
     python -I research/reproduction/check_appendix_scripts.py [--reference-code /path/to/scratch/v02]
 """
@@ -98,15 +100,21 @@ def read_inventory() -> dict:
 
 
 def version_failures(matrix: str, spec: str, readme: str) -> list:
-    """The matrix version and round, the specification version and round, and the two reading-order entries must
-    agree. Each label must occur exactly once in its document, so a label that cannot be found, and a second label of
-    the same form, are failures too (RC-249: with the first match read, a later, stale label passed)."""
+    """The matrix version and round, the specification version and round, the two reading-order entries and the
+    two OD10 ranges of the matrix must agree. Each label must occur exactly once in its document, so a label that
+    cannot be found, and a second label of the same form, are failures too (RC-249: with the first match read, a
+    later, stale label passed)."""
     patterns = {
         'matrix': (r'^\*\*Version:\*\* v(\d+), [-\d]+\. \*\*Round:\*\* (\d+) ', matrix, re.MULTILINE),
         'specification': (r'^version (\d+) \(round (\d+):', spec, re.MULTILINE),
         'reading order, matrix': (r'`16-reconciliation-matrix\.md`: [^(]*\(v(\d+), round (\d+):', readme, 0),
         'reading order, specification': (
             r'`17-phase1-amended-specification\.md`: [^(]*\(version (\d+); versions 5 to (\d+) ', readme, 0),
+        'matrix Awaiting OD10 range': (
+            r'\*\*Awaiting:\*\* [^(]*\(now: approve or revert the version-5 to version-(\d+) diffs', matrix, 0),
+        'matrix section 6 OD10 range': (
+            r'^\| OD10 \| \*\*Approve or revert the version-5 to version-(\d+) diffs of `17`\*\*', matrix,
+            re.MULTILINE),
     }
     labels, failures = {}, []
     for name, (pattern, text, flags) in patterns.items():
@@ -117,10 +125,12 @@ def version_failures(matrix: str, spec: str, readme: str) -> list:
             labels[name] = tuple(int(g) for g in found[0].groups())
     if failures:
         return failures
-    (mv, mr), (sv, sr), (rv, rr), (rs, rs5) = (labels[n] for n in patterns)
+    (mv, mr), (sv, sr), (rv, rr), (rs, rs5), (ma,), (m6,) = (labels[n] for n in patterns)
     stated = {'matrix version / reading order': (mv, rv), 'matrix round / reading order': (mr, rr),
               'matrix round / specification round': (mr, sr), 'specification version / reading order': (sv, rs),
-              'specification version / reading-order OD10 range': (sv, rs5)}
+              'specification version / reading-order OD10 range': (sv, rs5),
+              'specification version / matrix Awaiting OD10 range': (sv, ma),
+              'specification version / matrix section 6 OD10 range': (sv, m6)}
     return [f'version labels disagree, {name}: {a} and {b}' for name, (a, b) in stated.items() if a != b]
 
 
