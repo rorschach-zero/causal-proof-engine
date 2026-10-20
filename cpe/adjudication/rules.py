@@ -28,6 +28,8 @@ from cpe.schemas.event import EventSpec, ResolutionTimestamps
 
 Disposition = Literal["OPEN", "RESOLVED_YES", "RESOLVED_NO", "EXPIRED_NO", "VOID"]
 FINAL: frozenset[str] = frozenset({"RESOLVED_YES", "RESOLVED_NO", "EXPIRED_NO", "VOID"})
+IncidentKind = Literal["receipt_lag", "observer_outage", "late_publication"]
+INCIDENT_KINDS: tuple[str, ...] = ("receipt_lag", "observer_outage", "late_publication")
 
 
 @dataclass(frozen=True)
@@ -73,7 +75,7 @@ class Defect:
 
 @dataclass(frozen=True)
 class Incident:
-    kind: Literal["receipt_lag", "observer_outage"]
+    kind: IncidentKind
     reference_id: str
     detail: str
 
@@ -85,9 +87,9 @@ class Incident:
         mapping = require_mapping(payload, "Incident")
         require_keys(mapping, "Incident", frozenset({"kind", "reference_id", "detail"}), frozenset())
         kind = mapping["kind"]
-        if kind not in ("receipt_lag", "observer_outage"):
-            raise Refusal("invalid_choice", "incident kind must be receipt_lag or observer_outage")
-        return cls(cast(Literal["receipt_lag", "observer_outage"], kind),
+        if kind not in INCIDENT_KINDS:
+            raise Refusal("invalid_choice", f"incident kind must be one of {', '.join(INCIDENT_KINDS)}")
+        return cls(cast(IncidentKind, kind),
                    require_identifier(mapping["reference_id"], "reference_id"), str(mapping["detail"]))
 
 
@@ -294,6 +296,16 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
             absence_basis = (f"earliest matching record {first_late.record.record_id} published after finality "
                              "under the monotone-publication condition (RC-113)")
             evidence_receipt = first_late.receipt
+        # Before any disposition, a record published after finality that proves expiry on its content (an
+        # occurrence after the deadline, or definitive non-occurrence) still decides; its late publication is an
+        # incident. A late report of a timely occurrence proves nothing on its own.
+        late_expiry: tuple[ReceivedRecord, tuple[Disposition, datetime, str]] | None = None
+        if absence_at is None:
+            for received in late:
+                decision = _decide(received, spec, rule)
+                if decision is not None and decision[0] == "EXPIRED_NO":
+                    late_expiry = received, decision
+                    break
         if status_at_finality is not None and status_at_finality.failed:
             disposition, knowable, basis = "VOID", finality, "source rule failure condition met"
         elif absence_at is not None:
@@ -302,6 +314,11 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
             if absence_at > finality:
                 incidents.append(Incident("observer_outage", spec.event_id,
                                           f"the source was first read at {timestamp_payload(absence_at)}, after finality"))
+        elif late_expiry is not None:
+            deciding, (disposition, knowable, basis) = late_expiry
+            incidents.append(Incident("late_publication", deciding.record.record_id,
+                                      "expiry evidenced by a record published after finality (RC-105), adjudicated on "
+                                      "its content before any disposition"))
         elif not rule.publishes_evidenced_times:
             disposition, knowable, basis = "VOID", finality, (
                 "the source cannot evidence absence at finality and no observation exists (RC-113)")

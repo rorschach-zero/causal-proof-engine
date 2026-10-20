@@ -31,6 +31,8 @@ KIND_STATUS = "source_status"
 KIND_DISPOSITION = "disposition"
 KIND_DEFECT = "source_latency_defect"
 KIND_INCIDENT = "integrity_incident"
+KINDS: frozenset[str] = frozenset({KIND_EVENT, KIND_RULE, KIND_RECORD, KIND_OBSERVATION, KIND_STATUS, KIND_DISPOSITION,
+                                   KIND_DEFECT, KIND_INCIDENT})
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -64,8 +66,11 @@ def replay_state(records: tuple[Record, ...]) -> _State:
     state = _State()
     for record in records:
         state.head = record.entry_hash
+        if record.kind not in KINDS:
+            continue  # another registry's record on the same ledger, whatever its payload
         payload = record.payload
-        assert isinstance(payload, dict)
+        if not isinstance(payload, dict):
+            raise Refusal("invalid_payload", f"{record.record_id}: a {record.kind} record carries a mapping")
         if record.kind == KIND_EVENT:
             spec = EventSpec.from_payload(payload)
             state.event(spec.event_id).spec = spec
@@ -208,9 +213,12 @@ class AdjudicationRegistry:
                     hook, self.before_write = self.before_write, None
                     hook()
                 if event.disposition is not None:
+                    # The disposition record embeds the defects and incidents known when it was written; side
+                    # rows carry only those found later. Both sets are known, so a retry adds nothing twice.
                     stored = event.disposition
+                    known_defects = event.defect_record_ids | {d.record_id for d in stored.defects}
                     for defect in fresh.defects:
-                        if defect.record_id not in event.defect_record_ids:
+                        if defect.record_id not in known_defects:
                             self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
                                                 {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
                             stored = replace(stored, defects=stored.defects + (defect,))
@@ -223,6 +231,8 @@ class AdjudicationRegistry:
                     return stored
                 if fresh.disposition not in FINAL:
                     return fresh
+                # One record: the disposition with its defects and incidents embedded; nothing to lose between
+                # a commit and a side row.
                 try:
                     self._ledger.append(KIND_DISPOSITION, _ledger_id("disposition", event_id), fresh.to_payload(),
                                         expected_head=state.head)
@@ -230,11 +240,5 @@ class AdjudicationRegistry:
                     if refusal.reason != "stale_head":
                         raise
                     continue
-                for defect in fresh.defects:
-                    self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
-                                        {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
-                for incident in fresh.incidents:
-                    self._ledger.append(KIND_INCIDENT, _ledger_id("incident", event_id, incident.kind, incident.reference_id),
-                                        {"event_id": event_id, **incident.to_payload()})
                 return fresh
             raise Refusal("contended", f"{event_id}: the ledger kept advancing during adjudication")
