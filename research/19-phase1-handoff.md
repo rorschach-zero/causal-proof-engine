@@ -4,19 +4,20 @@ Dated hand-off from the research foundation to the first implementation session,
 delegated decisions recorded in issue #3 comment `6297828986` (OD11 (b), OD1, OD2, OD9a, OD10). Status:
 **PROPOSED**, a `REVISION` of this review. It **selects** from `17-phase1-amended-specification.md`,
 `18-method-reassessment.md`, that comment and Codex's strategy review of PR #4; it adds no specification, changes
-no text of `16`, `17` or `18` and chooses no owner field. Nothing here authorises code: the decisions become
-`OWNER_DECISION` when the owner replies "Confirmed" under the comment, and code starts only after the owner merges
-this document (comment `6297828986`, "Hand-off before code").
+no text of `16`, `17` or `18` and chooses no owner field. The owner confirmed the decisions on 2026-10-20 (issue #3
+comment `6297969313`, 18:18 UTC, relayed in `6297994651`), so they are `OWNER_DECISION`; code starts only after the
+owner merges this document (comment `6297828986`, "Hand-off before code").
 
 ## 1. Sources and exact SHAs
 
 | Source | Identity | Note |
 |---|---|---|
 | Branch `claude/reconciliation-round-1` (PR #4), head at writing | commit `8d5dbb97a9d8f7091491f44c9910ebd0e0583549` (R9, 2026-10-20 16:02 UTC) | the tree this document is written on |
+| `main` after the merges of PR #4 (`f68a222`) and PR #1 | commit `b2e6cbfc374c9b628a6956bffd0e98a6c0a5ac2e` | contains `8d5dbb9`; the base of the hand-off PR |
 | `17-phase1-amended-specification.md`, version 49 | blob `02c1203b421295373cbdf66846025eee237d41e5` | identical at `62d4c2a` and `8d5dbb9` (`git diff --quiet 62d4c2a 8d5dbb9 -- research/17-phase1-amended-specification.md`) |
 | `18-method-reassessment.md`, revision R9 | blob `fd2e51ef057b8bd80e55f43aa36fcf427b4d62b9` | R8 at `62d4c2a` is blob `f1d80edfedb61663f24bf617d54b607716cb8a7b`; R9 adds RC-315 (one confirmatory register for all of Phase 1) and RC-317 (checker), `16` §3bg |
 | `16-reconciliation-matrix.md`, v53 | blob `ccedb1e001dab4118f8627c529e2bf78e1dbf9a2` at `8d5dbb9` | §6 holds the consolidated owner decisions OD1 to OD11 and the proposed `AGENTS.md` wording for OD9a |
-| Decision comment | issue #3 comment `6297828986`, 2026-10-20 18:11 UTC | reads `18` at `62d4c2a0ebc6b6ac934aed63f61e2f308e838404`; at writing no "Confirmed" reply exists under it |
+| Decision comment | issue #3 comment `6297828986`, 2026-10-20 18:11 UTC | reads `18` at `62d4c2a0ebc6b6ac934aed63f61e2f308e838404`; confirmed by the owner's reply `6297969313` (18:18 UTC) |
 | Codex strategy review | PR #4 review `5586708590` on `62d4c2a`, inline comments `4326311665`, `4326311683`, `4326311701`, `4326311717` | §2 below records how each is answered |
 | Original research package | tree `122a1619cdad4f1c7f577e26f86709c34ce86298` (`research/original/CPE_Forschungspaket_2026-10-16`) | `MANIFEST.sha256`: 71 OK on this tree (run here, §6) |
 
@@ -76,7 +77,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | `JevRecord`, `Capability`, `ResearchOutput` JSON schema, `Cluster` registration record | retained | OD1: schemas |
 | Scoring slot key (event id, arm, slot), second record and other version refused at submission, primary slot named in advance (RC-75, RC-89, RC-96) | retained | registry rule; the slot's use in the increment is item 3 |
 | Logical finality: `knowable_at` = min(publication, public occurrence, deadline + window) (RC-77, RC-146); latency window applied to the evidenced publication time (RC-105); disposition at finality immutable (RC-88); observation of absence and the monotone-publication condition (RC-113); source-latency defect logged, never changes an outcome | retained | OD1: resolution-rule and adjudication registry; `18` §6 retains the resolution rules |
-| Withdrawal of a listing source from the next cohort on its breach count or defect rate (RC-169) | retired | listing sources are replaced by Q (`18` §6 "Replace" 1); the per-source defect log of a resolution source stays (above) |
+| Withdrawal of a source from the next cohort on its registration-breach count or defect rate (RC-169) | open | `18` §6 "Replace" 1 retires the listing role of sources, not a resolution source's pre-registered integrity bound, and OD1 does not name the rule; the per-source defect log stays (above) |
 | Late-record budget η_max, the η close of the registration window and its replay (RC-164, RC-171, RC-188, RC-193), calibration at α − η_max, decision date T_D = T_A + D and monitor factors at H_k + D (RC-149, RC-157), the Phase 2 late-record measurement | with item 3 | the A3 calibration over N is replaced by the calibration over 𝓛 (`18` §6 "Replace" 2); what survives of T_D and D is the amendment's to state |
 | Outcome-blind enrolment T_E (RC-219, RC-220), pre-enrolment breach audit against resolution records (RC-223, RC-244, RC-246), supply-exogeneity hypothesis and screen (RC-228 to RC-241) | retired | `18` F5: the audit adds no identification once Q is the universe; `18` §6 "Replace" 1 retires the screen; Q is fixed before forecasting |
 | Resolution rules (RC-11, RC-71): occurrence-time rule, YES needs evidence of timely occurrence, VOID when a YES has no time, `EXPIRED_NO` needs evidence | retained | OD1: resolution-rule registry |
@@ -94,7 +95,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Variance blocks from linked components, late links, every-subset partitions, M_late, K_max count (RC-250 to RC-274) | retired | `18` §6 "Replace" 2 and §3 "Late evidence"; OD11 (b): M_late and K_max lapse |
 | Batch of a cluster (RC-214), post-registration members (RC-215), point-in-time cluster assignment (RC-216), close replay (RC-193), registration schedule and batch calendar (RC-200), beacon deadline (RC-208) | retired | listing-window machinery of the audited-source design (`18` §6 "Replace" 1) |
 | Cluster membership fixed at registration; a later relationship never changes a registered cluster's members, record or key, and merges nothing (RC-66, RC-216, T-17, T-19) | retained | `18` §6 retains paired increments per outcome cluster; the immutability is a registry invariant |
-| Beacon-seeded draw 1{SHA-256(s_b ‖ id_k) < π·2^256} with s_b from a round published after the anchor, no draw before the round, one declaration per cluster (RC-187) | retained where a subsample is drawn; open whether Q is subsampled | `18` §6 retains "beacon-seeded sampling where a subsample is needed"; the same seed rule serves the calibration record (`18` M-1 (i), RC-304) |
+| Beacon-seeded draw 1{SHA-256(s_b ‖ id_k) < π·2^256} with s_b from a round published after the anchor, no draw before the round, one declaration per cluster (RC-187) | retained where a subsample is drawn; open whether Q is subsampled | `18` §4 states approach B over "every question of a set fixed by an independent party before forecasting (or a beacon-seeded subsample)" and §6 retains "beacon-seeded sampling where a subsample is needed", while §6 "Replace" 1 and M-5 forecast every event of Q; the same seed rule serves the calibration record (`18` M-1 (i), RC-304) |
 | Anchor trust boundary (RC-34): `AnchorStore` interface, harness-owned double in Phase 1, "self-attested" never reported as verified | retained | OD1: anchoring; the production holder is OD6 (§5) |
 | Clock (RC-37, RC-65, RC-73, RC-100): every check persisted before its verdict, high-water mark, discontinuity against the epoch baseline | retained | OD1: capability model and ledger |
 | Epoch rotation at start and at demotion (RC-74, RC-103); demotion without the anchor store, demoted-unanchored state, start at the floor (RC-123) | retained | OD1: offline capability model |
@@ -110,7 +111,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Item 6: negative controls and fault injection | per fixture, §4.2 | OD1: "only those negative controls and fixtures that survive under (b)" |
 | Item 7: power and protocol report (D1 table, detectable effect at 300 and 600 units, Phase 2 contract draft) | with item 3 | the figures are those of the retired primary; `18` §3 and M-4 give the simplified method's, inside the amendment |
 | Item 8: pinned hashed dependencies, Python 3.11 and 3.13, strict typing, property tests, attribution and commit-identity check (T-09), `research/original/` by manifest and excluded from tooling, static no-executor-import check | retained | OD1: CI |
-| Item 8: Lean job with a deliberately false proof, cache failure reported as "not verified" (T-40) | retained; open whether it ships before a Phase 1 lemma exists | no lemma is named for Phase 1 in `17`; `04-formal-verification.md` holds the retained lemmas |
+| Item 8: Lean job with a deliberately false proof, cache failure reported as "not verified" (T-40) | retained | OD1: CI; `17` A7 and item 8 include the job, and its false-proof and cache-failure cases need no Phase 1 lemma; `04-formal-verification.md` holds the retained lemmas |
 | "Explicitly out of scope" list of `17` §3 (credal LP, hazard model, allocator, adapters, Jev client, SIM, hosting, self-improvement loop, learned calibration, real events, `AGENTS.md`) | unchanged | out of scope before and after (b) |
 
 ## 4. Acceptance tests and fixtures
@@ -142,7 +143,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | T-36 | A3 / A6 | with item 3 | kernel positive controls and oracles | M-4 |
 | T-37 | A1 / A6 | retained in part | registration without a candidate entry refused; entry after a forecast refused; byte-for-byte replay of the log; report counts equal the log's; the beacon-draw refusals (other seed, early draw, double declaration, best-of-n control) where Q is subsampled; every audit, omission, close, schedule, beacon-deadline, universe and supply clause is retired | M-8 (a source-listed population is not Q) |
 | T-39 | A3 / A6 | with item 3 | monitor order | M-9 |
-| T-40 | A7 | retained (open timing, §3.3) | false lemma fails; cache failure is "not verified" | — |
+| T-40 | A7 | retained | false lemma fails; cache failure is "not verified" | — |
 | T-41 | A7 | retained | manifest 71 OK; tree `122a1619…` | — |
 
 ### 4.2 Fixtures of `17` §5.1 and controls of §3 item 6
@@ -151,7 +152,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 |---|---|---|
 | F-01, F-03, F-04, F-05, F-06, F-07, F-08, F-09, F-10, F-13, F-19, F-21, F-21b | retained | backdating, early NO, non-hex digest, phantom, replay, suffix rehash, anchor and ledger replaced together, gate replay, direct construction, fusion inputs, predicate lint, publication gap, expiry gap |
 | F-02a to F-02e | retained | all five dispositions; the F-02c box-rule clause is with item 3 |
-| F-24 | retained in part | pre-declared VOID members outside the population and in the audit (A, B); scoring from late records (C); adjudicated VOID at finality under a failed source (D, E); t*_k exclusion (F); empty FULL slot recorded as an abstention, member without a committed base rate refused, baseline submission and pre-close read refused (G); the request at 0.5 changes no state; emission, cap and imputation clauses are with item 3 |
+| F-24 | retained in part | pre-declared VOID members outside the population and in the audit (A, B); adjudication from both late records with both requests in the VOID audit (C); adjudicated VOID at finality under a failed source (D, E); t*_k exclusion (F); empty FULL slot recorded as an abstention, member without a committed base rate refused, baseline submission and pre-close read refused (G); the request at 0.5 changes no state; emission, cap and imputation clauses are with item 3 |
 | F-27 | retained in part | registration refusals against the arm version record and e_i; breach classification; correction before the first registration replaces the version; own-cutoff forecast refused; composite effective cutoff (RC-156); box-rule and non-confirmatory clauses are with item 3 |
 | F-25 | gated: OD9a | as-of oracle (T-15) |
 | F-12 | gated: OD10 | error context canary (T-34) |
@@ -182,9 +183,10 @@ The amendment of `17` §3 item 3 and §6 (OD11 (b)) carries M-1 to M-9 in full; 
 
 Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
 
-- **Pending owner actions named in comment `6297828986`:** the "Confirmed" reply; merge of PR #4 into
-  `research/claude-handoff`, then PR #1 into `main`; the OD9a PR (gates the point-in-time store and T-15); OD10
-  (gates T-34 and the secret-handling code); the amendment of `17` §3 item 3 and §6 (one document, one review).
+- **Owner actions named in comment `6297828986`:** done on 2026-10-20: the "Confirmed" reply (`6297969313`), the
+  merge of PR #4 into `research/claude-handoff` (`f68a222`) and of PR #1 into `main` (`b2e6cbf`). Remaining: the merge
+  of this document; the OD9a PR (gates the point-in-time store and T-15); OD10 (gates T-34 and the secret-handling
+  code); the amendment of `17` §3 item 3 and §6 (one document, one review).
 - **OD11 (b), fields of the amendment** (`18` §6, §9; Codex `4326311683`, `4326311701`, `4326311717`): the holder
   of Q and its fixing date; period length, G and G_min; δ; the validity class 𝓛 of each fixed-sequence component
   with its generative rationale, out-of-class sensitivity analysis and refusal policy; the estimand weighting
@@ -202,11 +204,12 @@ Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
 - **OD8:** the model knowledge cutoff each provider declares per model version (RC-98).
 - **OD9b:** the designated author and committer identities for T-09 (RC-81); the `AGENTS.md` §2 item 3 wording
   (RC-84); the reading of §7 on reviewer names (RC-28).
-- **Not assigned by OD1 (§3.3, §4.1):** the fusion pool and n_eff (T-23, T-24, F-14, F-17, F-18); the
-  nested-chain identity (T-21); whether the Lean job (T-40) ships in Phase 1 CI before a Phase 1 lemma exists;
-  whether Q is subsampled (the beacon-draw code); the SIM-phase clause of T-33.
+- **Not assigned by OD1 (§3.1 to §4.1):** the fusion pool and n_eff (T-23, T-24, F-14, F-17, F-18); the
+  nested-chain identity (T-21); the source withdrawal rule of RC-169; whether Q is subsampled (the beacon-draw code;
+  Codex's review of this document, comment `4328717748`, asks that Q never be subsampled); the SIM-phase clause of
+  T-33.
 - **Branch base:** this document is written on `8d5dbb9` (R9), while the decision comment reads `62d4c2a` (R8);
-  `17` is identical at both and the R9 change is carried (§1).
+  `17` is identical at both and the R9 change is carried (§1); `main` at `b2e6cbf` contains `8d5dbb9`.
 
 ## 6. Reproduction commands
 
@@ -249,7 +252,8 @@ committed code by a command named in the PR).
 - Dependencies pinned with hashes in project files and installed in a virtual environment outside the
   repository; the reproduction scripts are evidence, never imported by project code
   (`research/reproduction/README.md`).
-- No attribution of any kind in commits, PRs, comments, code or docs (`AGENTS.md` §7).
+- No AI attribution marking in commits, PRs, comments, code or docs: no attribution trailer, session link,
+  promotional footer or badge; required provenance lives in content (`AGENTS.md` §7).
 - Every PR reports what was run with its output; nothing is claimed that was not run (`AGENTS.md` §8, §12).
 
 Build order after the merge of this document (the Phase 1 brief): small PRs against `main`, one component each,
@@ -260,12 +264,22 @@ mapped tests; every deviation listed in the PR description; Codex reviews each P
 
 **Run** (2026-10-20, on `8d5dbb9`): the `git rev-parse` and `git diff --quiet` commands of §6, with the values of
 §1; `sha256sum -c MANIFEST.sha256` on the archived package, 71 OK; the version-label check of
-`research/reproduction/check_appendix_scripts.py` (`version_failures`) on the matrix, the specification and
-`research/README.md` after the reading-order entry for this document was added, reported in the PR.
+`research/reproduction/check_appendix_scripts.py` on the matrix, the specification and `research/README.md` after the
+reading-order entry for this document was added, run from the repository root as
+
+```sh
+python3 -I -c "
+import sys; sys.path.insert(0, 'research/reproduction')
+import check_appendix_scripts as c
+print(c.version_failures(c.MATRIX.read_text(encoding='utf-8'), c.SPEC.read_text(encoding='utf-8'), c.README.read_text(encoding='utf-8')))"
+```
+
+which printed `[]` (no failure; Python 3.13.16, no third-party package needed, the full checker and its evidence
+scripts not run).
 
 **Not run:** the evidence scripts of `16` and `18`; any Phase 1 code (none exists); any test of `17` §5 (all
 rows remain "not implemented").
 
 **Next responsible agent.** Codex: one review of this document at its exact commit. Factual errors are fixed; every
-other finding is listed for the owner in the PR description. The owner: "Confirmed" on comment `6297828986`, the
-merges named in §5, and the merge of this document, after which Phase 1 code starts.
+other finding is listed for the owner in the PR description. The owner: the merge of this document, after which
+Phase 1 code starts.
