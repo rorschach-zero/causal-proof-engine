@@ -1,7 +1,9 @@
 """Build the committed restore fixture deterministically (T-08).
 
-Run from the repository root: ``python -I tests/fixtures/restore/make_fixture.py``. The test regenerates the fixture
-in memory and compares it byte for byte with the committed files, so the fixture is reproducible from this code.
+Run from the repository root: ``python -I tests/fixtures/restore/make_fixture.py [output_dir]``. Without an
+argument the committed files are rewritten in place; with one, the whole file set is written into that directory
+(created empty), so that a comparison of the directories also catches a committed file the generator no longer
+emits. The test regenerates the fixture in memory and compares it byte for byte with the committed files.
 """
 from __future__ import annotations
 
@@ -43,8 +45,19 @@ def build() -> dict[str, str]:
     }
 
 
-if __name__ == "__main__":
+def main(argv: list[str] | None = None) -> int:
+    args = argv if argv is not None else sys.argv[1:]
+    target = Path(args[0]) if args else HERE
+    target.mkdir(parents=True, exist_ok=True)
+    if args and any(target.iterdir()):
+        print(f"{target} is not empty", file=sys.stderr)
+        return 2
     for name, text in build().items():
-        (HERE / name).write_text(text, encoding="ascii")
+        (target / name).write_bytes(text.encode("ascii"))
         print(f"wrote {name}")
-    print(json.dumps(json.loads((HERE / "expected.json").read_text()), indent=1))
+    print(json.dumps(json.loads((target / "expected.json").read_text()), indent=1))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

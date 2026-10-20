@@ -34,10 +34,11 @@ jobs:
         run: python -m mypy
       - name: Tests (property and fault-injection tests included)
         run: python -m pytest
-      - name: Restore fixture is reproducible from its generator (T-08)
+      - name: Restore fixture is reproducible from its generator, file set included (T-08)
         run: |
-          python -I tests/fixtures/restore/make_fixture.py
-          git diff --exit-code -- tests/fixtures/restore
+          fresh="$(mktemp -d)"
+          python -I tests/fixtures/restore/make_fixture.py "$fresh"
+          diff -r --exclude=make_fixture.py --exclude=__pycache__ "$fresh" tests/fixtures/restore
       - name: Static import boundary (no network facility, no executor import from research code)
         run: python tools/check_import_boundary.py cpe
 

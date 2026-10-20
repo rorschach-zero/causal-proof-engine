@@ -28,3 +28,16 @@ def test_restore_from_clean_checkout_matches_the_committed_digest_and_window(tmp
     assert report.attestation == "verified"
     assert report.anchored_prefix == expected["anchored_prefix"] == 9
     assert report.unanchored_window == expected["unanchored_window"] == 1
+
+
+def test_4329652627_the_generator_writes_exactly_the_committed_file_set(tmp_path: Path) -> None:
+    """A file the generator stops emitting would otherwise stay committed and keep passing a diff."""
+    from tests.fixtures.restore import make_fixture
+
+    committed = {p.name for p in FIXTURE.iterdir() if p.name not in ("make_fixture.py", "__pycache__")}
+    assert committed == set(build())
+    out = tmp_path / "fresh"
+    assert make_fixture.main([str(out)]) == 0
+    assert {p.name for p in out.iterdir()} == committed
+    for name in committed:
+        assert (out / name).read_bytes() == (FIXTURE / name).read_bytes(), name
