@@ -55,6 +55,8 @@ class ManualClock:
         return self._now
 
     def set(self, moment: datetime) -> None:
+        if moment.tzinfo is None or moment.utcoffset() is None:
+            raise Refusal("naive_timestamp", "the manual clock is set with an aware time only")
         self._now = moment.astimezone(timezone.utc)
 
     def advance(self, delta: timedelta) -> None:
