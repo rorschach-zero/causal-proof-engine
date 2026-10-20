@@ -86,8 +86,8 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
     2026-10-20 (identifiability, feasibility, alternatives, a recommendation for owner decision OD11); revision R2
     applies Codex's review of R1 (`16` §3az), revision R3 Codex's review of R2 (`16` §3ba), revision R4 Codex's
     review of R3 (`16` §3bb), revision R5 Codex's review of R4 (`16` §3bc), revision R6 Codex's review of R5
-    (`16` §3bd), revision R7 Codex's review of R6 (`16` §3be) and revision R8 Codex's review of R7 (`16` §3bf);
-    `PROPOSED`.
+    (`16` §3bd), revision R7 Codex's review of R6 (`16` §3be), revision R8 Codex's review of R7 (`16` §3bf) and
+    revision R9 Codex's review of R8 (`16` §3bg); `PROPOSED`.
 12. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
     and `check_appendix_scripts.py`, which verifies each file byte for byte against its appendix block; evidence
     scripts, not project code.

@@ -108,7 +108,9 @@ def od10_record_failures(matrix: str, spec_version: int) -> list:
     """Every specification version from the first the section 6 OD10 row names by number to the current one must
     have exactly one entry there ("and version N ..." or ", version N ..."), and the entry must cite a matrix ID before
     the next entry starts (RC-280: an endpoint check passed a record that named neither version 47 nor 48). An entry
-    for any other version is a failure too (RC-314: an entry for a version beyond the specification passed)."""
+    for any other version is a failure too (RC-314: an entry for a version beyond the specification passed), and so is
+    any "version N" in the row that does not start an entry (RC-317: "; version 50 ..." was parsed as no entry and
+    passed)."""
     row = re.search(r'^\| OD10 \|.*$', matrix, flags=re.MULTILINE)
     if row is None:
         return ['OD10 record: no section 6 OD10 row']
@@ -117,7 +119,11 @@ def od10_record_failures(matrix: str, spec_version: int) -> list:
     for i, match in enumerate(starts):
         end = starts[i + 1].start() if i + 1 < len(starts) else len(row.group(0))
         entries.setdefault(int(match.group(1)), []).append(row.group(0)[match.end():end])
-    failures = []
+    entry_positions = {match.start(1) - len('version ') for match in starts}
+    failures = [f'OD10 record: "{token.group(0)}" at character {token.start()} is not an entry '
+                f'("and version N ..." or ", version N ...")'
+                for token in re.finditer(r'\bversion\s+\d+', row.group(0), flags=re.IGNORECASE)
+                if token.start() not in entry_positions]
     for version in range(FIRST_NUMBERED_OD10_VERSION, spec_version + 1):
         found = entries.get(version, [])
         if len(found) != 1:
