@@ -12,6 +12,7 @@ import pytest
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, HarnessAnchorStore, Ledger
+from cpe.ledger.anchor import UnavailableAnchorStore
 from cpe.ledger.store import records_from_jsonl
 from cpe.schemas import ArmVersion, effective_cutoff
 from tests.test_ledger import fill
@@ -110,3 +111,86 @@ def test_4329521388_a_duplicate_key_in_an_imported_line_is_refused(ledger: Ledge
         records_from_jsonl(duplicated + "\n")
     assert refusal.value.reason == "invalid_export" and "duplicate" in refusal.value.detail
     assert records_from_jsonl(line + "\n")[0].kind == "event"
+
+
+# The three findings of the review of c5aa4c4 (4329707438, 4329707419, 4329707427), decided by the owner against
+# the deletion of a pending anchor row; each test fails at c5aa4c4 and e110c93.
+
+
+class _PersistsThenTimesOut:
+    """A store that commits the anchor and then reports a timeout: a refusal that proves nothing."""
+
+    def __init__(self) -> None:
+        self.inner = HarnessAnchorStore()
+
+    def publish(self, anchor: Anchor) -> None:
+        self.inner.publish(anchor)
+        raise Refusal("anchor_store_unavailable", "acknowledgement timed out")
+
+    def anchors(self) -> tuple[Anchor, ...]:
+        return self.inner.anchors()
+
+
+class _Refusing:
+    """A store that refuses every publish and holds nothing."""
+
+    def publish(self, anchor: Anchor) -> None:
+        raise Refusal("anchor_store_unavailable", "the anchor store did not answer")
+
+    def anchors(self) -> tuple[Anchor, ...]:
+        return ()
+
+
+def test_4329707438_a_pending_row_survives_a_refusal_that_may_have_committed(tmp_path: Path, clock: ManualClock) -> None:
+    store = _PersistsThenTimesOut()
+    path = tmp_path / "l.sqlite"
+    ledger = Ledger(path, clock, store)
+    fill(ledger, clock, 2)
+    clock.advance(timedelta(hours=1))
+    with pytest.raises(Refusal):
+        ledger.anchor()
+    assert ledger.local_anchors() == () and len(store.anchors()) == 1
+    clock.set(clock.now() - timedelta(minutes=30))
+    with pytest.raises(Refusal) as refused:  # the pending row still bounds the clock in this process
+        ledger.append("event", "late", {})
+    assert refused.value.reason == "clock_rollback"
+    ledger.close()
+    reopened = Ledger(path, clock, store.inner)  # reconciliation against a store that holds the anchor confirms it
+    assert reopened.local_anchors() == store.anchors()
+    with pytest.raises(Refusal):
+        reopened.append("event", "late", {})
+
+
+def test_4329707419_a_repeat_anchor_never_replaces_the_published_row(tmp_path: Path, clock: ManualClock) -> None:
+    inner = HarnessAnchorStore()
+    ledger = Ledger(tmp_path / "l.sqlite", clock, inner)
+    fill(ledger, clock, 2)
+    first = ledger.anchor()
+    assert ledger.anchor() == first and len(inner.anchors()) == 1  # a repeat at the same prefix is the same anchor
+    ledger._anchor_store = _Refusing()  # the store now fails; the published row must survive the failed attempt
+    with pytest.raises(Refusal):
+        ledger.anchor()
+    assert ledger.local_anchors() == (first,)
+    assert ledger.verify(inner).intact and ledger.verify(inner).anchored_prefix == 2
+
+
+def test_4329707427_memory_and_disk_agree_after_a_refused_publish(tmp_path: Path, clock: ManualClock) -> None:
+    path = tmp_path / "l.sqlite"
+    ledger = Ledger(path, clock, _Refusing())
+    fill(ledger, clock, 2)
+    clock.advance(timedelta(hours=1))
+    attempt = clock.now()
+    with pytest.raises(Refusal):
+        ledger.anchor()
+    assert ledger._anchor_high_water == ledger._load_anchor_high_water()
+    clock.set(attempt - timedelta(minutes=30))
+    with pytest.raises(Refusal):
+        ledger.append("event", "late", {})
+    ledger.close()
+    unreachable = Ledger(path, clock, UnavailableAnchorStore())  # no store to ask: the pending row stays
+    with pytest.raises(Refusal):
+        unreachable.append("event", "late", {})
+    unreachable.close()
+    cleared = Ledger(path, clock, _Refusing())  # a reachable store that provably lacks the anchor clears the row
+    cleared.append("event", "late", {})
+    assert cleared.local_anchors() == () and cleared._anchor_high_water == ""

@@ -29,8 +29,13 @@ CREATE TABLE IF NOT EXISTS records (
 CREATE TABLE IF NOT EXISTS anchors (
     prefix_length INTEGER PRIMARY KEY,
     digest TEXT NOT NULL,
+    published_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pending_anchors (
+    prefix_length INTEGER NOT NULL,
+    digest TEXT NOT NULL,
     published_at TEXT NOT NULL,
-    published INTEGER NOT NULL DEFAULT 1
+    PRIMARY KEY (prefix_length, digest)
 );
 """
 
@@ -81,9 +86,6 @@ class Ledger:
         self._lock = threading.Lock()
         self._conn = sqlite3.connect(str(path), isolation_level=None, check_same_thread=False)
         self._conn.executescript(_SCHEMA)
-        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(anchors)").fetchall()}
-        if "published" not in columns:  # a table created before the pending column existed
-            self._conn.execute("ALTER TABLE anchors ADD COLUMN published INTEGER NOT NULL DEFAULT 1")
         self._state: LedgerState = replay(self.records())
         self._anchor_high_water = self._load_anchor_high_water()
         self._reconcile_pending_anchors()
@@ -111,27 +113,34 @@ class Ledger:
             return self._records_locked()
 
     def _load_anchor_high_water(self) -> str:
-        """Over every local anchor row, pending ones included: a publication time recorded before the external
-        publish bounds the clock even when the process died before the row was confirmed."""
-        row = self._conn.execute("SELECT MAX(published_at) FROM anchors").fetchone()
+        """Over every anchor row on disk, published and pending alike: a publication time staged before the
+        external publish bounds the clock whatever became of that publish. Read from disk after every outcome,
+        so that memory and disk never disagree."""
+        row = self._conn.execute(
+            "SELECT MAX(published_at) FROM (SELECT published_at FROM anchors UNION ALL "
+            "SELECT published_at FROM pending_anchors)").fetchone()
         return row[0] if row is not None and row[0] is not None else ""
 
     def _reconcile_pending_anchors(self) -> None:
-        """Confirm every pending local row that the external store holds; without a reachable store the rows
-        stay pending, still bounding the clock, and never count as local anchors."""
+        """Settle every pending row against a reachable external store: a row the store holds becomes a local
+        anchor; a row the store provably lacks is cleared; without a reachable store every row stays pending,
+        still bounding the clock and never counting as a local anchor. Nothing else clears a pending row."""
         if self._anchor_store is None:
             return
-        pending = self._conn.execute(
-            "SELECT prefix_length, digest FROM anchors WHERE published = 0").fetchall()
+        pending = self._conn.execute("SELECT prefix_length, digest, published_at FROM pending_anchors").fetchall()
         if not pending:
             return
         try:
-            external = {(anchor.prefix_length, anchor.digest) for anchor in self._anchor_store.anchors()}
+            external = {(anchor.prefix_length, anchor.digest): anchor for anchor in self._anchor_store.anchors()}
         except Refusal:
             return
-        for prefix_length, digest in pending:
-            if (prefix_length, digest) in external:
-                self._conn.execute("UPDATE anchors SET published = 1 WHERE prefix_length = ?", (prefix_length,))
+        for prefix_length, digest, published_at in pending:
+            held = external.get((prefix_length, digest))
+            if held is not None:
+                self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                                   (prefix_length, digest, held.published_at))
+            self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?", (prefix_length, digest))
+        self._anchor_high_water = self._load_anchor_high_water()
 
     def _server_time(self) -> str:
         """The server clock as a canonical timestamp, refused when it is below the persisted high-water mark of
@@ -186,9 +195,11 @@ class Ledger:
         Before publishing, the chain is verified against every anchor the external store already holds, so that a
         local history rewritten or truncated below an existing anchor can never pollute the store with a conflicting
         later anchor; and the clock is checked against the high-water mark, so that an anchor never carries a time
-        before the records it covers. The local row is written as pending before the external publish and confirmed
-        after it, so that a process dying between the two leaves the publication time on disk; a publish the store
-        refuses removes the pending row again.
+        before the records it covers. The attempt is staged as a pending row before the external publish and
+        settled after it, so that a process dying between the two leaves the publication time on disk; a refused
+        or failed publish leaves the row pending, since a refusal does not prove the store did not commit, and
+        only open-time reconciliation against a reachable store confirms or clears it. A published row at the
+        same prefix is never replaced: a repeat attempt is staged beside it.
         """
         if self._anchor_store is None:
             raise Refusal("no_anchor_store", "this ledger has no anchor store")
@@ -203,23 +214,27 @@ class Ledger:
                     raise Refusal("anchor_conflict", f"the ledger does not verify against the external store: {report.detail}")
             anchor = Anchor(self._state.count, self._state.head, published_at)
             self._conn.execute(
-                "INSERT OR REPLACE INTO anchors (prefix_length, digest, published_at, published) VALUES (?, ?, ?, 0)",
+                "INSERT OR REPLACE INTO pending_anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
                 (anchor.prefix_length, anchor.digest, anchor.published_at),
             )
-            self._anchor_high_water = max(self._anchor_high_water, anchor.published_at)
+            self._anchor_high_water = self._load_anchor_high_water()
             try:
                 self._anchor_store.publish(anchor)
-            except Refusal:
-                self._conn.execute("DELETE FROM anchors WHERE prefix_length = ? AND published = 0",
-                                   (anchor.prefix_length,))
+            except BaseException:
+                self._anchor_high_water = self._load_anchor_high_water()
                 raise
-            self._conn.execute("UPDATE anchors SET published = 1 WHERE prefix_length = ?", (anchor.prefix_length,))
-            return anchor
+            self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                               (anchor.prefix_length, anchor.digest, anchor.published_at))
+            self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
+                               (anchor.prefix_length, anchor.digest))
+            self._anchor_high_water = self._load_anchor_high_water()
+            row = self._conn.execute("SELECT prefix_length, digest, published_at FROM anchors WHERE prefix_length = ?",
+                                     (anchor.prefix_length,)).fetchone()
+            return Anchor(row[0], row[1], row[2])
 
     def _local_anchors_locked(self) -> tuple[Anchor, ...]:
         rows = self._conn.execute(
-            "SELECT prefix_length, digest, published_at FROM anchors WHERE published = 1 ORDER BY prefix_length"
-        ).fetchall()
+            "SELECT prefix_length, digest, published_at FROM anchors ORDER BY prefix_length").fetchall()
         return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
 
     def local_anchors(self) -> tuple[Anchor, ...]:
