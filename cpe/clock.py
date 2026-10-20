@@ -24,10 +24,12 @@ def parse_timestamp(text: object, field: str = "timestamp") -> datetime:
     if not isinstance(text, str):
         raise Refusal("invalid_timestamp", f"{field} must be a string")
     try:
-        parsed = datetime.strptime(text, _FORMAT)
+        parsed = datetime.strptime(text, _FORMAT).replace(tzinfo=timezone.utc)
     except ValueError as error:
         raise Refusal("invalid_timestamp", f"{field}: {error}") from None
-    return parsed.replace(tzinfo=timezone.utc)
+    if format_timestamp(parsed) != text:
+        raise Refusal("invalid_timestamp", f"{field}: {text!r} is not in the canonical form {_FORMAT}")
+    return parsed
 
 
 class Clock(Protocol):

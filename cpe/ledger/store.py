@@ -13,6 +13,7 @@ from cpe.errors import Refusal
 from cpe.ledger.anchor import Anchor, AnchorStore
 from cpe.ledger.record import Record, entry_digest
 from cpe.ledger.replay import LedgerState, VerificationReport, replay, verify
+from cpe.schemas.common import require_identifier
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS records (
@@ -74,19 +75,29 @@ class Ledger:
     def state_digest(self) -> str:
         return self._state.digest()
 
-    def records(self) -> tuple[Record, ...]:
-        with self._lock:
-            rows = self._conn.execute(
-                "SELECT seq, record_id, kind, receipt_time, payload, prev_hash, entry_hash FROM records ORDER BY seq"
-            ).fetchall()
+    def _records_locked(self) -> tuple[Record, ...]:
+        rows = self._conn.execute(
+            "SELECT seq, record_id, kind, receipt_time, payload, prev_hash, entry_hash FROM records ORDER BY seq"
+        ).fetchall()
         return tuple(Record(row[0], row[1], row[2], row[3], json.loads(row[4]), row[5], row[6]) for row in rows)
 
-    def append(self, kind: str, record_id: str, payload: JsonValue) -> Record:
+    def records(self) -> tuple[Record, ...]:
         with self._lock:
-            receipt_time = format_timestamp(self._clock.now())
-            if receipt_time < self._state.high_water:
-                raise Refusal("clock_rollback", f"server clock {receipt_time} is below the high-water mark "
-                              f"{self._state.high_water}")
+            return self._records_locked()
+
+    def _server_time(self) -> str:
+        """The server clock as a canonical timestamp, refused when it is below the persisted high-water mark."""
+        receipt_time = format_timestamp(self._clock.now())
+        if receipt_time < self._state.high_water:
+            raise Refusal("clock_rollback", f"server clock {receipt_time} is below the high-water mark "
+                          f"{self._state.high_water}")
+        return receipt_time
+
+    def append(self, kind: str, record_id: str, payload: JsonValue) -> Record:
+        require_identifier(kind, "kind")
+        require_identifier(record_id, "record_id")
+        with self._lock:
+            receipt_time = self._server_time()
             seq = self._state.count + 1
             payload_text = canonical_bytes(payload).decode("ascii")
             canonical_payload: JsonValue = json.loads(payload_text)
@@ -120,13 +131,25 @@ class Ledger:
         Path(path).write_text(self.export_jsonl(), encoding="ascii")
 
     def anchor(self) -> Anchor:
-        """Anchor the whole committed prefix: publish externally first, then keep the local copy."""
+        """Anchor the whole committed prefix: publish externally first, then keep the local copy.
+
+        Before publishing, the chain is verified against every anchor the external store already holds, so that a
+        local history rewritten or truncated below an existing anchor can never pollute the store with a conflicting
+        later anchor; and the clock is checked against the high-water mark, so that an anchor never carries a time
+        before the records it covers.
+        """
         if self._anchor_store is None:
             raise Refusal("no_anchor_store", "this ledger has no anchor store")
         with self._lock:
             if self._state.count == 0:
                 raise Refusal("empty_ledger", "nothing to anchor")
-            anchor = Anchor(self._state.count, self._state.head, format_timestamp(self._clock.now()))
+            published_at = self._server_time()
+            existing = self._anchor_store.anchors()
+            if existing:
+                report = verify(self._records_locked(), existing, external=True)
+                if not report.intact:
+                    raise Refusal("anchor_conflict", f"the ledger does not verify against the external store: {report.detail}")
+            anchor = Anchor(self._state.count, self._state.head, published_at)
             self._anchor_store.publish(anchor)
             self._conn.execute(
                 "INSERT OR REPLACE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
