@@ -21,7 +21,14 @@ below backs one numbered claim of `18`:
   M-6;
 - S8 (RC-281, RC-284, RC-289): exact examples: the sharp bound d(2 - d) on a paired Brier increment under a divergence
   bound d, an event-weighted and a period-balanced mean of opposite sign, and two outcome laws with the same forecasts
-  and different increment standard deviations.
+  and different increment standard deviations;
+- S9 (reassessment R3, RC-292 and RC-296): a cutoff certified at size <= alpha by an order-statistic bound on the
+  calibration draws of each law of the class, against the empirical 0.95 quantile, and power at the certified cutoff
+  against the exact noncentral-t power at that cutoff;
+- S10 (RC-295): a fixed-sequence family whose later component has a different joint law, tested at the first
+  component's cutoff and at a cutoff certified for its own law;
+- S11 (RC-294): the variance estimate of the event-weighted mean of F10 with known weights, as written in R2 and with
+  the leverage correction, against the true variance and at the nominal t cutoff.
 Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
     python research/reproduction/reassessment_sims.py
 Deterministic: every section uses its own fixed seed. The output is one JSON object; a table row is one line of it
@@ -393,6 +400,134 @@ def s8_exact_examples():
     return {'increment_bound': bound, 'estimand_weighting': estimand, 'sigma_needs_outcomes': sigma}
 
 
+def certified_cutoff(t, n_laws):
+    """Smallest order statistic of the calibration draws t of one law whose exceedance probability is at most alpha
+    with probability at least 1 - 0.01 / n_laws (RC-292). For a continuous statistic the exceedance probability of
+    the (j + 1)-th largest draw is Beta(j + 1, n - j), whatever the law, so taking the largest such cutoff over the
+    n_laws laws of a class certifies size <= alpha on every one of them at 99 % joint confidence over the
+    calibration. The empirical 0.95 quantile has exceedance probability above alpha about half of the time."""
+    n = t.size
+    lo, hi = 0, n - 1
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if stats.beta.sf(ALPHA, mid + 1, n - mid) <= 0.01 / n_laws:
+            lo = mid
+        else:
+            hi = mid - 1
+    return float(np.sort(t)[::-1][lo])
+
+
+def s9_certified_cutoff():
+    """The S6 example class calibrated twice on the same draws: c_emp, the largest empirical 0.95 quantile (the R2
+    rule), and c_cert, the largest certified cutoff. Each is checked on 200,000 fresh draws per law. Power at the S3
+    point is compared with the exact noncentral-t power at the cutoff actually used (RC-296: the S2 oracle is exact
+    only at the nominal cutoff)."""
+    rng = np.random.default_rng(23)
+    g, cal_reps, reps, power_reps = 24, 200000, 200000, 20000
+    in_class = [(law, share) for law in ['iid normal', 'AR(1) rho=0.25', 'AR(1) rho=0.5', 'skewed two-point']
+                for share in [0.2, 0.8]]
+    q95, cert = {}, {}
+    for law, share in in_class:
+        t = t_statistic(null_period_means(rng, law, cal_reps, g, share))
+        q95[(law, share)] = float(np.quantile(t, 1 - ALPHA))
+        cert[(law, share)] = certified_cutoff(t, len(in_class))
+    c_emp, c_cert = max(q95.values()), max(cert.values())
+    level = 1 - 0.01 / len(in_class)
+    rows = []
+    for law, share in in_class:
+        t = t_statistic(null_period_means(rng, law, reps, g, share))
+        row = {'law': law, 'period_share': share, 'q95': round(q95[(law, share)], 3),
+               'certified': round(cert[(law, share)], 3)}
+        for name, c in [('c_emp', c_emp), ('c_cert', c_cert)]:
+            hits = int((t > c).sum())
+            row[f'size_{name}'] = round(hits / reps, 5)
+            row[f'lower_{name}'] = round(float(stats.beta.ppf(1 - level, hits, reps - hits + 1)), 5)
+            row[f'upper_{name}'] = round(float(stats.beta.ppf(level, hits + 1, reps - hits)), 5)
+        rows.append(row)
+    sd = (0.01 ** 2 + 0.10 ** 2 / 25) ** 0.5
+    power = []
+    for name, c in [('nominal', stats.t.ppf(1 - ALPHA, g - 1)), ('c_emp', c_emp), ('c_cert', c_cert)]:
+        for delta in [0.01, 0.02]:
+            t = t_statistic(delta + sd * null_period_means(rng, 'iid normal', power_reps, g, 0.2))
+            power.append({'cutoff': name, 'value': round(float(c), 3), 'delta': delta,
+                          'simulated': round(float((t > c).mean()), 4),
+                          'noncentral_t_at_cutoff': round(float(stats.nct.sf(c, g - 1, delta / (sd / np.sqrt(g)))), 4)})
+    return {'G': g, 'calibration_reps': cal_reps, 'reps': reps, 'power_reps': power_reps,
+            'simultaneous_confidence': round(level, 5), 'c_emp': round(c_emp, 3), 'c_cert': round(c_cert, 3),
+            'rows': rows, 'power_at_s3_point': power}
+
+
+def s10_component_cutoffs():
+    """Fixed sequence of two components: the first false (delta = 0.03, independent normal means, share 0.2), the
+    second a true null whose period means are equicorrelated (0.5, share 0.8). Tested at the first component's
+    certified cutoff, the second rejects a true null far above alpha once the first gate opens; at a cutoff certified
+    for its own law the familywise error is at most alpha. Marginal validity of each component suffices whatever the
+    dependence between components, because the first true null in the order must reject for any error to occur."""
+    rng = np.random.default_rng(29)
+    g, cal_reps, reps = 24, 200000, 100000
+    first, second = ('iid normal', 0.2), ('equicorrelated rho=0.5', 0.8)
+    c_first = certified_cutoff(t_statistic(null_period_means(rng, first[0], cal_reps, g, first[1])), 1)
+    c_second = certified_cutoff(t_statistic(null_period_means(rng, second[0], cal_reps, g, second[1])), 1)
+    sd = (0.01 ** 2 + 0.10 ** 2 / 25) ** 0.5
+    t1 = t_statistic(0.03 + sd * null_period_means(rng, first[0], reps, g, first[1]))
+    t2 = t_statistic(null_period_means(rng, second[0], reps, g, second[1]))
+    rows = []
+    for name, c in [('first component cutoff', c_first), ('own certified cutoff', c_second)]:
+        errors = int(((t1 > c_first) & (t2 > c)).sum())
+        rows.append({'second_cutoff': name, 'value': round(c, 3), 'first_rejects': round(float((t1 > c_first).mean()), 4),
+                     'fwer': round(errors / reps, 4),
+                     'upper_99': round(float(stats.beta.ppf(0.99, errors + 1, reps - errors)), 4)})
+    return {'G': g, 'calibration_reps': cal_reps, 'reps': reps, 'first': list(first), 'second_true_null': list(second),
+            'rows': rows}
+
+
+def r2_weighted_variance(means, w):
+    """The variance estimate of the event-weighted mean written in `18` R2: sum w_b^2 (M_b - theta_E)^2 G / (G - 1)."""
+    g = means.shape[1]
+    resid = means - (means @ w)[:, None]
+    return (w ** 2 * resid ** 2).sum(1) * g / (g - 1)
+
+
+def leverage_corrected_variance(means, w):
+    """sum w_b^2 (M_b - theta_E)^2 / (1 - 2 w_b + sum w^2): unbiased for Var(theta_E) when the period means are
+    independent with a common variance, because Var(M_b - theta_E) = v (1 - 2 w_b + sum w^2) then."""
+    resid = means - (means @ w)[:, None]
+    return (w ** 2 * resid ** 2 / (1 - 2 * w + (w ** 2).sum())).sum(1)
+
+
+def s11_weighted_variance():
+    """RC-294. Codex's example (two independent period means of variance 1, weights 100/101 and 1/101) and G = 24 with
+    three count vectors, under period means of common variance and of variance proportional to 1/n_b (independent
+    events, no period component): the mean of each variance estimate over the true variance, and the size of the
+    weighted t at the nominal t cutoff. Neither estimate makes the nominal cutoff valid, so the cutoff of the weighted
+    statistic is calibrated over the class with its weight vector."""
+    rng = np.random.default_rng(31)
+    w = np.array([100.0, 1.0]) / 101
+    means = rng.normal(0, 1, (400000, 2))
+    codex = {'weights': '100/101, 1/101', 'true_variance': round(float((w ** 2).sum()), 5),
+             'r2_expectation_exact': round(8 * 100 ** 2 / 101 ** 4, 6),
+             'r2_mean_simulated': round(float(r2_weighted_variance(means, w).mean()), 6),
+             'leverage_corrected_mean_simulated': round(float(leverage_corrected_variance(means, w).mean()), 4)}
+    g, reps = 24, 100000
+    nominal = stats.t.ppf(1 - ALPHA, g - 1)
+    rows = []
+    for label, counts in [('one dominant period', np.array([100] + [1] * 23)),
+                          ('two count levels', np.array([30] * 12 + [3] * 12)),
+                          ('geometric 1 to 100', np.round(np.geomspace(1, 100, g)))]:
+        w = counts / counts.sum()
+        for law, sd in [('common variance', np.ones(g)), ('variance 1/n_b', 1 / np.sqrt(counts))]:
+            means = rng.normal(0, 1, (reps, g)) * sd
+            true_var = float((w ** 2 * sd ** 2).sum())
+            theta = means @ w
+            row = {'counts': label, 'law': law}
+            for name, estimate in [('r2', r2_weighted_variance), ('leverage_corrected', leverage_corrected_variance)]:
+                v = estimate(means, w)
+                row[f'{name}_mean_over_true'] = round(float(v.mean()) / true_var, 3)
+                row[f'{name}_size_nominal_t'] = round(float((theta / np.sqrt(v) > nominal).mean()), 4)
+            rows.append(row)
+    return {'codex_example': codex, 'G': g, 'reps': reps, 'rows': rows}
+
+
 def dumps(value, depth=0):
     """JSON text of value: a container holding containers spans lines, anything else stays on one line, so the
     committed output is one JSON object whose table rows are single lines (RC-288)."""
@@ -410,7 +545,8 @@ def main():
                 ('S3b betting horizon', s3b_betting_horizon), ('S3c bounded persistence', s3c_bounded_persistence),
                 ('S4 selection', s4_selection), ('S5 conjunction', s5_conjunction),
                 ('S6 validity class', s6_validity_class), ('S7 fixed sequence', s7_fixed_sequence),
-                ('S8 exact examples', s8_exact_examples)]
+                ('S8 exact examples', s8_exact_examples), ('S9 certified cutoff', s9_certified_cutoff),
+                ('S10 component cutoffs', s10_component_cutoffs), ('S11 weighted variance', s11_weighted_variance)]
     print(dumps({name: section() for name, section in sections}))
 
 

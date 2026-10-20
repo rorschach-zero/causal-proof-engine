@@ -84,7 +84,7 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
     fixtures (§5.1).
 11. `18-method-reassessment.md`: the reassessment of the Phase 1 confirmatory method requested by the owner on
     2026-10-20 (identifiability, feasibility, alternatives, a recommendation for owner decision OD11); revision R2
-    applies Codex's review of R1 (`16` §3az); `PROPOSED`.
+    applies Codex's review of R1 (`16` §3az) and revision R3 Codex's review of R2 (`16` §3ba); `PROPOSED`.
 12. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
     and `check_appendix_scripts.py`, which verifies each file byte for byte against its appendix block; evidence
     scripts, not project code.
