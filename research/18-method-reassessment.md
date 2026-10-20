@@ -56,6 +56,19 @@ the one that reproduces, RC-302 (`16` §3bc):
 
 The commit-identity finding (RC-303) does not reproduce and is recorded for OD9b.
 
+**Revision R6 (2026-10-20).** Codex reviewed R5 at `2a37e0d` (PR comment `6288785191`, four findings). R6 applies
+the three that reproduce, RC-304, RC-306 and RC-307 (`16` §3bd):
+- the unconditional size is a statement over the calibration randomness, so that randomness must be redrawn in every
+  repetition of the procedure. M-1 no longer recomputes c_𝓛 from pre-registered seeds: the seed is drawn from a
+  public beacon round published after the calibration record is anchored, the rule `17` already applies to its
+  simulated families, and the calibration runs once. A fixed, chosen seed makes the cutoff a constant whose size only
+  the conditional certificate covers (F3, M-1; RC-304);
+- for a class of several laws, (j + 1)/(n + 1) is an upper bound on the size, not its value, and S16 now simulates
+  the complete multi-law calibration and test (F3, §8; S16; RC-306);
+- the reading order of `research/README.md` names R5 and R6 (RC-307).
+
+The commit-identity finding (RC-305) does not reproduce and is recorded for OD9b.
+
 **Evidence.** Every number below marked `REPRODUCED` comes from `research/reproduction/reassessment_sims.py`.
 Its output is committed in `16` Appendix AW and checked by `check_appendix_scripts.py`. Derivations are paper
 arguments, not Lean proofs. External literature is cited for orientation only: it was not re-read in this
@@ -246,16 +259,48 @@ cutoff. On its own it bounds the probability that calibration and test together 
 unconditional size is smaller than both (derivation). Let the true centred law be ℓ in 𝓛_j, with its own certified
 cutoff c_ℓ, the (j + 1)-th largest of its n calibration draws. Then c_𝓛j ≥ c_ℓ, so a rejection at c_𝓛j is also a
 rejection at c_ℓ. The fresh statistic and the n calibration draws are n + 1 exchangeable draws of a continuous
-statistic, and j depends on n and the budget only, so P(T > c_ℓ) = (j + 1)/(n + 1) exactly, whatever ℓ is. A θ ≤ 0 shift only lowers T. The fixed sequence
+statistic, and j depends on n and the budget only, so P(T > c_ℓ) = (j + 1)/(n + 1) exactly, whatever ℓ is. The
+procedure's size on ℓ, P(T > c_𝓛j), is therefore at most (j + 1)/(n + 1); with more than one law in 𝓛_j it is
+generally smaller, because c_𝓛j is the largest of the law-wise cutoffs (R6, RC-306). A θ ≤ 0 shift only lowers T. The fixed sequence
 rejects a true null only if its first true null rejects, so the familywise error is at most the same quantity. None
 of this uses the union bound or the 0.01 budget.
 
+**The calibration randomness is redrawn in every repetition** (R6, RC-304). "Unconditional" averages over the n
+calibration draws. That average describes the procedure only if each repetition of the whole experiment draws them
+afresh and independently of the forecasts and outcomes. With a fixed, pre-registered seed, as R5's M-1 had, every
+repetition reuses one realised cutoff, and its size is that cutoff's conditional size. Only the 99 % certificate
+covers that: on the 1 % event it can exceed α. R6 therefore draws the seed as `17` draws the seed of a simulated
+family (RC-153, RC-182): s = SHA-256(the anchored calibration record ‖ v), v the verified output of a public
+randomness beacon round named in the record and published after the record's external anchor. The calibration then
+runs once on s, and its cutoff is the one the record designates. The record fixes the laws of every 𝓛_j, n, the
+budget and the code. A repetition of the protocol anchors a new record and reads a new round, so the exchangeability
+argument applies to it. Two assumptions remain, both stated rather than proved:
+- the beacon output is unpredictable at the anchor and independent of the period means;
+- the generator stream derived from s behaves as independent draws of each law.
+
+A second calibration record for the same cohort would let the cutoff be picked among realised calibrations, and the
+argument above does not cover that. Under the rule here it makes the claim non-confirmatory; how many records `17`
+admits is its OD4 field S_max. Codex's other two remedies were considered:
+- a deterministic certificate of the realised cutoff would need the exceedance probability of every law of 𝓛 in
+  closed form, which the example class does not have;
+- keeping the 0.01 inside α would cost power that the drawn seed makes unnecessary.
+
 (j + 1)/(n + 1) ≤ α is not proved in general for the certified index, so `certified_cutoff` checks it and refuses a
 cutoff that fails. S16 (REPRODUCED) gives:
-- 4.854 % for S9's certification (n = 200,000, K = 8), 4.838 % at K = 24 and 0.758 % at S14's minimum n = 131;
+- bounds of 4.854 % for S9's certification (n = 200,000, K = 8), 4.838 % at K = 24 and 0.758 % at S14's minimum
+  n = 131. These are bounds on the procedure, exact only for a class of one law (RC-306);
 - a worst case of 4.949 % over 1,973 calibration sizes from 131 to 10⁶ and seven budgets, so the check never fires;
-- end to end over 200,000 repetitions, 0.779 % against an exact 0.758 % at n = 131, and 3.528 % against 3.497 % at
-  n = 1,000 with a budget of 0.01, where the certificate failed in 0.94 % of calibrations.
+- for one law, end to end over 200,000 repetitions, 0.779 % against an exact 0.758 % at n = 131, and 3.528 % against
+  3.497 % at n = 1,000 with a budget of 0.01, where the certificate failed in 0.94 % of calibrations;
+- for a three-law class (normal, Student t with 3 df, and normal scaled by 0.7), each law calibrated on its own
+  n = 1,000 draws at budget 0.01/3 and cut off at the maximum, over 200,000 repetitions against a bound of 3.197 %:
+  - Student t: 3.195 %, because its cutoff is almost always the maximum;
+  - normal: 0.250 %;
+  - scaled normal: 0.005 %.
+
+  Against each law's own cutoff, the rates are 3.195 %, 3.340 % and 3.170 %. The normal law's 3.340 % lies about
+  3.6 standard errors above the exact 3.197 %. Three other seeds (60 to 62), run once as a check and not committed,
+  gave 3.236 %, 3.256 % and 3.208 %, so the committed seed is kept and the deviation is read as sampling variation.
 
 Codex's first remedy, deducting the failure probability from α, is therefore not needed. The conditional
 certificate keeps its 0.01 budget as a separate statement: with 99 % probability the calibration actually drawn has
@@ -542,7 +587,7 @@ falsified, and the difficulty lies in the problem, not in the method.
    The calibration of A3 becomes the calibration of this one test over the laws of 𝓛, with size and power fixtures (F1–F3). It is no longer a certification over a generator family of the whole pipeline.
 3. *Multiplicity.* A fixed-sequence family replaces the six-comparator IUT. Its first hypothesis is H0: θ(FULL − Design C) ≤ 0; the next is FULL against the best pre-registered single provider, then FULL against the equal-weight committee, each at α only after its predecessor rejects (F7). Each component j has its own validity class 𝓛_j and certified cutoff c_𝓛j (F7, RC-295). The order is an owner decision.
 
-**Narrow the claim.** Proposed wording: "On the pre-registered question set Q, fixed by [holder] before forecasting, over periods [T_0, T_A), the [period-balanced | event-weighted] mean improvement in Brier score of CPE's issued forecasts over the Design C base rate is positive (one-sided, unconditional size ≤ 0.05 over calibration and test together; the cutoff also certified at size ≤ 0.05 with 99 % confidence over the calibration). This holds under two stated assumptions: the joint law of the centred period means lies in the pre-registered class 𝓛 whatever the mean, and Q's composition is independent of the arms' relative skill." The bracket is the OD4 weighting (F10). The claim makes no claim outside Q or 𝓛, none about investment value, and none from the monitor.
+**Narrow the claim.** Proposed wording: "On the pre-registered question set Q, fixed by [holder] before forecasting, over periods [T_0, T_A), the [period-balanced | event-weighted] mean improvement in Brier score of CPE's issued forecasts over the Design C base rate is positive (one-sided, unconditional size ≤ 0.05 over calibration and test together; the calibration seed drawn from a public beacon round published after the calibration record is anchored; the cutoff also certified at size ≤ 0.05 with 99 % confidence over the calibration). This holds under two stated assumptions: the joint law of the centred period means lies in the pre-registered class 𝓛 whatever the mean, and Q's composition is independent of the arms' relative skill." The bracket is the OD4 weighting (F10). The claim makes no claim outside Q or 𝓛, none about investment value, and none from the monitor.
 
 **Decision matrix** (++ strong, + adequate, − weak, −− fails; evidence in §2–§4):
 
@@ -561,7 +606,7 @@ Each test is phrased so that a wrong implementation fails it. Thresholds follow 
 
 | ID | Test | Pass condition |
 |---|---|---|
-| M-1 | Certified cutoff and fresh size of the block t on every law of 𝓛, for each component j of the fixed sequence with its own 𝓛_j, and for the weighted statistic with its weight vector (RC-292, RC-294, RC-295, RC-297, RC-298, RC-300, RC-302) | (i) c_𝓛 recomputed from the pre-registered seeds and calibration size equals the registered value; it is the largest over 𝓛 of the smallest calibration order statistic whose exceedance probability is ≤ α with probability ≥ 1 − 0.01/K, K the number of laws certified across all components and statistics (F3). (ii) On 200,000 fresh draws per law, no one-sided lower Clopper–Pearson bound, simultaneous at 99 % over all K laws, exceeds 0.05. S9: c_𝓛 = 3.357, binding law 4.93 % (bounds 4.78–5.07 %). The empirical-quantile cutoff 3.335 passes (ii) but fails (i); the nominal cutoff fails (ii). (iii) A calibration with (1 − α)^n > 0.01/K is refused, not certified: S14 refuses n = 100 at K = 8. (iv) On the same draws shifted below θ = 0, no draw rejects that did not reject at θ = 0 (S12). (v) Each certified index j satisfies (j + 1)/(n + 1) ≤ 0.05, the unconditional size of calibration and test together; an index that fails is refused (RC-302; S16: 4.854 % for S9's certification) |
+| M-1 | Certified cutoff and fresh size of the block t on every law of 𝓛, for each component j of the fixed sequence with its own 𝓛_j, and for the weighted statistic with its weight vector (RC-292, RC-294, RC-295, RC-297, RC-298, RC-300, RC-302, RC-304, RC-306) | (i) c_𝓛 recomputed from the seed s = SHA-256(anchored calibration record ‖ v) and the recorded calibration size equals the registered value. v must be the verified output of the beacon round named in the record, published after the record's anchor; a record whose seed was chosen, whose round precedes its anchor, or which is the cohort's second calibration record fails (RC-304); it is the largest over 𝓛 of the smallest calibration order statistic whose exceedance probability is ≤ α with probability ≥ 1 − 0.01/K, K the number of laws certified across all components and statistics (F3). (ii) On 200,000 fresh draws per law, no one-sided lower Clopper–Pearson bound, simultaneous at 99 % over all K laws, exceeds 0.05. S9: c_𝓛 = 3.357, binding law 4.93 % (bounds 4.78–5.07 %). The empirical-quantile cutoff 3.335 passes (ii) but fails (i); the nominal cutoff fails (ii). (iii) A calibration with (1 − α)^n > 0.01/K is refused, not certified: S14 refuses n = 100 at K = 8. (iv) On the same draws shifted below θ = 0, no draw rejects that did not reject at θ = 0 (S12). (v) Each certified index j satisfies (j + 1)/(n + 1) ≤ 0.05, the bound on the unconditional size of calibration and test together; an index that fails is refused (RC-302, RC-306; S16: a bound of 4.854 % for S9's certification) |
 | M-2 | Invalid control: the cluster-iid t on the same data | its one-sided 99 % lower Clopper–Pearson bound must exceed 0.05 at τ > 0; S3 gives 6.85 % (99 % upper bound 7.28 %), so the control needs τ large enough to separate (OD4 sets the family) |
 | M-3 | Out-of-class control: a law outside 𝓛 that satisfies the same scalar persistence bound | its one-sided 99 % lower Clopper–Pearson bound at c_𝓛 must exceed 0.05, so that the report cannot extend the claim beyond 𝓛. S6 gives 21.5 % (equicorrelation 0.5) and 23.2 % (odd/even shocks) |
 | M-4 | Power at the pre-registered δ, τ, n and G on independent normal means, at the cutoff actually used (RC-296) | simulated power within ± 0.02 of the noncentral-t power at that cutoff, P(T > c) with T noncentral t on G − 1 df and noncentrality δ/se. At the nominal cutoff S2 gives 0.802, 0.803, 0.795 at 0.8; at c_𝓛 = 3.357, S9 gives 0.152 against 0.155 (δ = 0.01) and 0.827 against 0.829 (δ = 0.02). Power at c_𝓛 under a law of 𝓛 other than independent normal means has no closed form and is reported, not tested |
@@ -587,7 +632,7 @@ size claim. M-5 and M-7 to M-9 are specifications here, not yet code.
 | F8 betting power vs G | REPRODUCED for the plug-in rule; a zero count is reported with its upper bound; another betting rule could do somewhat better, but not escape the G bound of F1 |
 | F10 period-balanced and event-weighted estimands differ, in sign too | exact example (S8); the choice is the OD4 field of RC-69 |
 | Certified cutoff: size ≤ α on every law of 𝓛 with probability ≥ 0.99 over the calibration | derivation (order statistics of a continuous statistic; paper); checked on the example class (S9); says nothing outside 𝓛 |
-| Unconditional size of calibration and test together ≤ (j + 1)/(n + 1) ≤ α on every law of 𝓛, every θ ≤ 0 shift and the fixed-sequence family | derivation (exchangeability; paper); (j + 1)/(n + 1) ≤ α checked by the script on every certification, not proved in general; exact values and an end-to-end simulation in S16; says nothing outside 𝓛 |
+| Unconditional size of calibration and test together ≤ (j + 1)/(n + 1) ≤ α on every law of 𝓛, every θ ≤ 0 shift and the fixed-sequence family | derivation (exchangeability; paper); an upper bound, exact for a class of one law (RC-306); (j + 1)/(n + 1) ≤ α checked by the script on every certification, not proved in general; end-to-end simulations for one law and for a three-law class in S16; holds only if the calibration seed is drawn from a beacon round after the record's anchor and the calibration runs once (RC-304), and assumes the beacon output independent of the period means; says nothing outside 𝓛 |
 | Fixed sequence: marginal level α of each component suffices for familywise α | derivation (paper); the failure with a shared cutoff and the repair are REPRODUCED (S10) |
 | Boundary θ = 0 least favourable for both statistics when 𝓛 holds centred shapes that do not depend on θ | derivation (translation equivariance; paper); checked draw by draw on the example class (S12); the shape assumption is UNPROVED and untestable from G = 24 |
 | Family certificate at 99 % with the budget 0.01/K over all laws of all components | union bound (paper); exact Beta failure bounds in S13 |
@@ -610,10 +655,10 @@ Options (b) to (d) leave OD1–OD10 in place. Under (b), several OD4 fields laps
 
 ## 10. What was run and what was not
 
-**Run (R5):**
-- `python -I research/reproduction/reassessment_sims.py`, twice, byte-identical, about 50 s each, under Python 3.11.17 in a venv built with `pip install --require-hashes --no-deps -r research/reproduction/requirements.txt` (numpy 2.4.6, scipy 1.17.1). The output is committed in `16` Appendix AW and parses as one JSON object.
+**Run (R6):**
+- `python -I research/reproduction/reassessment_sims.py`, twice, byte-identical, about 60 s each, under Python 3.11.17 in a venv built with `pip install --require-hashes --no-deps -r research/reproduction/requirements.txt` (numpy 2.4.6, scipy 1.17.1). The output is committed in `16` Appendix AW and parses as one JSON object.
 - `check_appendix_scripts.py` without `--reference-code`, on the committed tree. The result is reported in the commit and the handoff.
-- S1 to S15 give output byte-identical to R4's. S16 is new (RC-302).
+- S1 to S15 give output byte-identical to R5's. In S16, R6 renames the order-statistic value to a bound and adds the three-law end-to-end simulation; its other values are unchanged (RC-306).
 
 **Not run:**
 - a power simulation of the serial-correlation test at G = 24;
@@ -626,7 +671,7 @@ Options (b) to (d) leave OD1–OD10 in place. Under (b), several OD4 fields laps
 **Next responsible agent.** Codex: an independent adversarial review of this document and Appendix AW at the exact
 commit that carries them. The checks to make:
 - reproduce S1–S16;
-- check the exchangeability argument of the unconditional size, and whether a law inside 𝓛 breaks it;
+- check the exchangeability argument of the unconditional size, the drawn calibration seed it now relies on, and whether a law inside 𝓛 or a protocol repetition breaks it;
 - check the order-statistic argument of the certified cutoff, and look for a law inside a declared 𝓛 that it misses;
 - check the location-shift argument of F3 and the family budget 0.01/K;
 - check whether the leverage-corrected weighted statistic needs more than a certified cutoff over 𝓛 to be valid;

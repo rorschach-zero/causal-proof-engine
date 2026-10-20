@@ -37,7 +37,10 @@ below backs one numbered claim of `18`:
 - S15 (RC-301): the variance of a period mean when the period component and the cluster errors are correlated;
 - S16 (reassessment R5, RC-302): the unconditional size of the whole procedure, calibration and test together, which
   is (j + 1)/(n + 1) at a certified index j by exchangeability, against the bound alpha + 0.01 that the 99 %
-  certificate alone gives, exactly and by an end-to-end simulation.
+  certificate alone gives, exactly and by an end-to-end simulation;
+- S16 (reassessment R6, RC-306): for a class of several laws, where the cutoff is the maximum of the law-wise cutoffs,
+  (j + 1)/(n + 1) is an upper bound on the procedure's size, not its value; an end-to-end simulation of the whole
+  multi-law calibration and test shows the size of each law against that bound.
 Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
     python research/reproduction/reassessment_sims.py
 Deterministic: every section uses its own fixed seed. The output is one JSON object; a table row is one line of it
@@ -681,10 +684,13 @@ def s15_within_period_covariance():
 def s16_unconditional_size():
     """RC-302. The 99 % certificate is a statement about the random cutoff: with probability 0.99 over the calibration
     its size is <= alpha. On its own that bounds the unconditional size of calibration and test together only by
-    0.99 alpha + 0.01. The procedure's unconditional size on the calibrated law is P(T_new > T_(j+1)) = (j + 1)/(n + 1),
-    exact for a continuous statistic whatever the law, because the n calibration draws and the fresh draw are
-    exchangeable. Reported exactly for the certifications of S9, S10, S13 and S14, over a grid of n and budgets, and
-    by an end-to-end simulation on uniform draws (the result does not depend on the law)."""
+    0.99 alpha + 0.01. Rejection against one law's own cutoff has unconditional probability P(T_new > T_(j+1)) =
+    (j + 1)/(n + 1), exact for a continuous statistic whatever the law, because the n calibration draws and the fresh
+    draw are exchangeable. A class of several laws rejects only above the largest law-wise cutoff, so for it (j + 1)/(n + 1)
+    is an upper bound on the size, generally not attained (RC-306). Reported as that bound for the certifications of
+    S9, S10, S13 and S14 and over a grid of n and budgets; by an end-to-end simulation on uniform draws for one law,
+    where the bound is exact; and by an end-to-end simulation of a three-law class, calibrated law by law, cut off at
+    the maximum and tested on a fresh draw of each law."""
     used = [('S9, K = 8', 200000, 0.01 / 8), ('S10, two laws', 200000, 0.01 / 2),
             ('S13 per component', 200000, 0.01 / 8), ('S13 union, K = 24', 200000, 0.01 / 24),
             ('S14 minimum n, K = 8', 131, 0.01 / 8), ('S14 minimum n, K = 24', 152, 0.01 / 24)]
@@ -692,16 +698,16 @@ def s16_unconditional_size():
     for name, n, budget in used:
         j = certified_index(n, budget)
         rows.append({'certification': name, 'n': n, 'budget_per_law': round(budget, 6), 'index_j': j,
-                     'unconditional_size': round(marginal_size(j, n), 6),
+                     'unconditional_size_bound': round(marginal_size(j, n), 6),
                      'certificate_only_bound': round((1 - 0.01) * ALPHA + 0.01, 4)})
-    worst = {'n': None, 'budget_per_law': None, 'unconditional_size': 0.0}
+    worst = {'n': None, 'budget_per_law': None, 'unconditional_size_bound': 0.0}
     grid = np.unique(np.round(np.logspace(np.log10(131), 6, 2000)).astype(int))
     for k in [1, 2, 3, 8, 24, 100, 1000]:
         for n in grid:
             j = certified_index(int(n), 0.01 / k)
-            if j is not None and marginal_size(j, int(n)) > worst['unconditional_size']:
+            if j is not None and marginal_size(j, int(n)) > worst['unconditional_size_bound']:
                 worst = {'n': int(n), 'budget_per_law': round(0.01 / k, 6),
-                         'unconditional_size': round(marginal_size(j, int(n)), 6)}
+                         'unconditional_size_bound': round(marginal_size(j, int(n)), 6)}
     rng = np.random.default_rng(53)
     simulated, reps, batch = [], 200000, 10000
     for n, budget in [(131, 0.01 / 8), (1000, 0.01 / 8), (1000, 0.01)]:
@@ -720,7 +726,35 @@ def s16_unconditional_size():
                           'certificate_failure_rate': round(failures / reps, 5)})
     return {'certifications_used': rows, 'grid_worst': {'n_range': [131, 1000000], 'points': int(grid.size),
                                                          'budgets': '0.01/k, k in 1, 2, 3, 8, 24, 100, 1000', **worst},
-            'end_to_end': simulated}
+            'end_to_end': simulated, 'end_to_end_three_laws': multi_law_size()}
+
+
+def multi_law_size():
+    """RC-306. The whole procedure on a class of three laws of the statistic: each law is calibrated on its own n draws,
+    the cutoff is the largest of the three certified cutoffs, and a fresh draw of each law is tested against it. Per law
+    the rejection rate against the class cutoff is compared with the bound (j + 1)/(n + 1) and with the rejection rate
+    against that law's own cutoff, where the bound is exact. The laws differ in their upper tails, so the maximum binds
+    for some and not for others."""
+    rng = np.random.default_rng(59)
+    laws = {'normal': lambda size: rng.standard_normal(size), 'student t3': lambda size: rng.standard_t(3, size),
+            'normal x 0.7': lambda size: 0.7 * rng.standard_normal(size)}
+    n, reps, batch = 1000, 200000, 5000
+    budget = 0.01 / len(laws)
+    j = certified_index(n, budget)
+    at_class = dict.fromkeys(laws, 0)
+    at_own = dict.fromkeys(laws, 0)
+    for _ in range(reps // batch):
+        own = {name: -np.partition(-draw((batch, n)), j, axis=1)[:, j] for name, draw in laws.items()}
+        cutoff = np.max(np.stack(list(own.values())), axis=0)
+        for name, draw in laws.items():
+            fresh = draw(batch)
+            at_class[name] += int((fresh > cutoff).sum())
+            at_own[name] += int((fresh > own[name]).sum())
+    rows = [{'law': name, 'rejection_at_class_cutoff': round(at_class[name] / reps, 5),
+             'upper_99': round(float(stats.beta.ppf(0.99, at_class[name] + 1, reps - at_class[name])), 5),
+             'rejection_at_own_cutoff': round(at_own[name] / reps, 5)} for name in laws]
+    return {'n': n, 'laws': len(laws), 'budget_per_law': round(budget, 6), 'index_j': j, 'reps': reps,
+            'bound': round(marginal_size(j, n), 5), 'rows': rows}
 
 
 def dumps(value, depth=0):
