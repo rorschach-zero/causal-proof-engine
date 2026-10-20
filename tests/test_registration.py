@@ -150,7 +150,7 @@ def test_rc138_registration_refusals_against_e_i_cutoff_window_and_base_rate(reg
     assert refusal.value.reason == "registration_after_e_i"
     clock.set(day(10))
     with pytest.raises(Refusal) as refusal:  # F-27: a cutoff at or after e_i
-        registry.register_cluster(registration([spec("F-1", "C-F", not_before=15)], "C-F",
+        registry.register_cluster(registration([spec("F-1", "C-F")], "C-F",
                                                arms={"FULL": "FULL-1", "LATE": "LATE-1", "DESIGN_C": "DESIGN_C-1"}), clock.now())
     assert refusal.value.reason == "unknown_arm_version"
     registry.register_arm_version(arm("LATE-1", "2026-02-28"))
