@@ -19,7 +19,7 @@ python_version = "3.11"
 strict = true
 warn_unreachable = true
 disallow_any_unimported = true
-files = ["cpe", "tests"]
+files = ["cpe", "tests", "tools"]
 
 [[tool.mypy.overrides]]
 module = ["tests.test_review_dispatch"]
