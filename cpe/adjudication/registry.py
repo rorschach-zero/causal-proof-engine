@@ -4,6 +4,7 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
+from datetime import datetime
 
 from cpe.adjudication.records import AbsenceObservation, ResolutionRecord, SourceRule, SourceStatus
 from cpe.adjudication.rules import (
@@ -43,6 +44,7 @@ class _EventState:
     spec: EventSpec | None = None
     records: list[ReceivedRecord] = field(default_factory=list)
     observations: list[AbsenceObservation] = field(default_factory=list)
+    observation_receipts: dict[str, datetime] = field(default_factory=dict)
     disposition: Adjudication | None = None
     defect_record_ids: set[str] = field(default_factory=set)
 
@@ -51,7 +53,7 @@ class _EventState:
 class _State:
     head: str = ""
     rules: dict[str, SourceRule] = field(default_factory=dict)
-    status: dict[str, list[SourceStatus]] = field(default_factory=dict)
+    status: dict[str, list[tuple[SourceStatus, datetime]]] = field(default_factory=dict)  # with the receipt
     events: dict[str, _EventState] = field(default_factory=dict)
 
     def event(self, event_id: str) -> _EventState:
@@ -76,10 +78,13 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                 ReceivedRecord(resolution, parse_timestamp(record.receipt_time, "receipt_time")))
         elif record.kind == KIND_OBSERVATION:
             observation = AbsenceObservation.from_payload(payload)
-            state.event(observation.event_id).observations.append(observation)
+            event = state.event(observation.event_id)
+            event.observations.append(observation)
+            event.observation_receipts[observation.observation_id] = parse_timestamp(record.receipt_time, "receipt_time")
         elif record.kind == KIND_STATUS:
             status = SourceStatus.from_payload(payload)
-            state.status.setdefault(status.source_id, []).append(status)
+            state.status.setdefault(status.source_id, []).append(
+                (status, parse_timestamp(record.receipt_time, "receipt_time")))
         elif record.kind == KIND_DISPOSITION:
             adjudication = Adjudication.from_payload(payload)
             state.event(adjudication.event_id).disposition = adjudication
@@ -194,7 +199,11 @@ class AdjudicationRegistry:
                     raise Refusal("unknown_source", f"{spec.predicate.source} has no registered source rule (OD5)")
                 event = state.event(event_id)
                 now = self._ledger.now()
-                fresh = adjudicate(spec, rule, event.records, event.observations, state.status.get(rule.source_id, []), now)
+                # Only a status the registry held by logical finality can decide the failure condition (RC-88).
+                statuses = [status for status, receipt in state.status.get(rule.source_id, [])
+                            if receipt <= spec.logical_finality]
+                fresh = adjudicate(spec, rule, event.records, event.observations, statuses, now,
+                                   event.observation_receipts)
                 if self.before_write is not None:
                     hook, self.before_write = self.before_write, None
                     hook()

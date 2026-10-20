@@ -153,9 +153,9 @@ def test_source_failure_condition_gives_void_at_finality() -> None:
 
 def test_rc146_knowable_at_is_the_earliest_of_the_three_times() -> None:
     # occurrence public at 90 (inside the predicate window opening at 80), deadline + window 110 (deadline 101,
-    # window 9), publication 118: knowable_at is 90
+    # window 9), publication 105 inside the window: knowable_at is 90, the earliest of the three
     late_spec = spec(deadline=101, window_days=9, not_before=80, issuance=(20, 80))
-    out = adjudicate(late_spec, rule(public_act=True), [record("r", occurrence=90, published=118)], [], [], day(119))
+    out = adjudicate(late_spec, rule(public_act=True), [record("r", occurrence=90, published=105)], [], [], day(119))
     assert (out.disposition, out.knowable_at) == ("RESOLVED_YES", day(90))
     t_star = cluster_knowable_time([out])
     assert t_star == day(90)
