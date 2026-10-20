@@ -64,6 +64,12 @@ python -m venv /path/to/venv && /path/to/venv/bin/pip install --require-hashes -
 
 Nothing under `cpe/` reads a network, a provider, a broker or a credential; every test is synthetic.
 
+CI (`.github/workflows/ci.yml`) runs the same checks on Python 3.11 and 3.13, replays the committed restore fixture
+in a container as well, checks every commit and the pull-request text for attribution markings, commit identity
+and stale merge-message labels (`tools/check_provenance.py`), verifies `research/original/` by manifest and tree
+(`tools/check_archive.sh`), and builds the retained Lean lemmas with a deliberately false proof that must fail
+(`proofs/`, `tools/lean_check.sh`).
+
 ## Working in this repository
 
 All work goes through pull requests against `main` with independent review. Enable the versioned hooks once
