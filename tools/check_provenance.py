@@ -27,15 +27,18 @@ DESIGNATED_IDENTITIES: frozenset[str] = frozenset({"Salah Aouaj <salah@hydeout.c
 
 # Provider-neutral: trailers, session links and promotional lines of any assistant.
 PROHIBITED_PATTERNS: tuple[tuple[str, str], ...] = (
-    ("attribution trailer", r"^\s*(Co-Authored-By|Co-authored-by|Signed-off-by: (Claude|Codex|Copilot|ChatGPT|GPT))\b"),
+    ("attribution trailer", r"(?i)^\s*(Co-Authored-By|Signed-off-by: (Claude|Codex|Copilot|ChatGPT|GPT))\b"),
     ("session link", r"(claude\.ai/code/session|chatgpt\.com/codex/tasks|Claude-Session:)"),
     ("promotional footer", r"(?i)generated (with|by)\b.*\b(claude|codex|copilot|chatgpt|openai|anthropic|gemini)\b"),
     ("tool identity", r"(noreply@anthropic\.com|noreply@openai\.com|users\.noreply\.github\.com.*\b(claude|codex|copilot)\b)"),
     ("assistant emoji badge", "🤖"),
 )
 
-# "round 50" and "rounds 1–50" both name round 50 (the last of a range).
+# "round 50" and "rounds 1–50" both name round 50 (the last of a range). A round is a reconciliation label only
+# in that context: the word "reconciliation" on the same line, or a matrix or specification label in the message;
+# "Address review round 2" names no document version.
 ROUND_PATTERN = re.compile(r"\b[Rr]ounds? (?:\d+\s*(?:–|-|to)\s*)?(\d+)\b")
+RECONCILIATION_LINE = re.compile(r"(?i)\breconciliation\b.*\brounds? ")
 MATRIX_PATTERN = re.compile(r"\bmatrix v(\d+)\b")
 SPEC_PATTERN = re.compile(r"\bspecification (?:v|version )(\d+)\b")
 
@@ -125,12 +128,17 @@ def tree_labels(tree: str, repo: Path) -> TreeLabels:
 def label_findings(message: str, labels: TreeLabels, where: str) -> list[str]:
     """A message that names a round, matrix version or specification version must name the tree's (RC-277)."""
     findings = []
+    names_document = bool(MATRIX_PATTERN.search(message) or SPEC_PATTERN.search(message))
     for name, pattern, expected in (
         ("round", ROUND_PATTERN, labels.matrix_round),
         ("matrix version", MATRIX_PATTERN, labels.matrix_version),
         ("specification version", SPEC_PATTERN, labels.spec_version),
     ):
         for match in pattern.finditer(message):
+            if name == "round" and not names_document:
+                line = message[message.rfind("\n", 0, match.start()) + 1:message.find("\n", match.end()) % (len(message) + 1)]
+                if not RECONCILIATION_LINE.search(line):
+                    continue
             named = int(match.group(1))
             if expected is None:
                 findings.append(f"{where}: names {name} {named} but the tree carries no such label")

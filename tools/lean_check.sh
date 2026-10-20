@@ -4,6 +4,7 @@
 # exit status; the job never reports a pass it did not earn. Run from the repository root.
 set -u
 ELAN_VERSION="v4.2.4"
+ELAN_SHA256="42b94d4244e8353142c456ec0e4ca6528fd898a6c604d4059f494e706e431f63"  # elan-x86_64-unknown-linux-gnu.tar.gz
 ELAN_HOME="${ELAN_HOME:-$HOME/.elan}"
 export ELAN_HOME
 export PATH="$ELAN_HOME/bin:$PATH"
@@ -14,6 +15,7 @@ if ! command -v elan >/dev/null 2>&1; then
   curl -sSfL --retry 2 -m 300 \
     "https://github.com/leanprover/elan/releases/download/$ELAN_VERSION/elan-x86_64-unknown-linux-gnu.tar.gz" \
     -o /tmp/elan.tar.gz || not_verified "elan $ELAN_VERSION download failed"
+  echo "$ELAN_SHA256  /tmp/elan.tar.gz" | sha256sum -c --quiet || not_verified "elan archive digest mismatch"
   tar -xzf /tmp/elan.tar.gz -C "$ELAN_HOME/bin" elan-init || not_verified "elan archive unreadable"
   "$ELAN_HOME/bin/elan-init" -y --no-modify-path --default-toolchain none >/dev/null 2>&1 \
     || not_verified "elan-init failed"

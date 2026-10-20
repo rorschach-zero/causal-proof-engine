@@ -128,3 +128,54 @@ def test_import_boundary_flags_network_executor_and_evidence_imports(tmp_path: P
 
 def test_import_boundary_holds_on_the_real_package() -> None:
     assert check_import_boundary.check_package(Path(__file__).resolve().parents[1] / "cpe") == []
+
+
+# Regression tests for the Codex review of PR #17 (commit d155f56); each fails on d155f56.
+
+
+def test_4329073557_the_workflow_reruns_the_provenance_check_on_pull_request_edits() -> None:
+    workflow = (Path(__file__).resolve().parents[1] / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "pull_request:\n    types: [opened, synchronize, reopened, edited]" in workflow
+
+
+def test_4329073569_relative_and_from_package_imports_of_the_executor_are_flagged(tmp_path: Path) -> None:
+    package = tmp_path / "cpe"
+    (package / "executor").mkdir(parents=True)
+    (package / "research").mkdir()
+    (package / "__init__.py").write_text("")
+    (package / "executor" / "__init__.py").write_text("")
+    (package / "research" / "__init__.py").write_text("")
+    (package / "research" / "a.py").write_text("from ..executor import place_order\n")
+    (package / "research" / "b.py").write_text("from cpe import executor\n")
+    (package / "research" / "c.py").write_text("from .. import executor\n")
+    (package / "research" / "d.py").write_text("from . import helpers\n")
+    (package / "executor" / "inner.py").write_text("from . import core\nfrom .core import run\n")
+    findings = check_import_boundary.check_package(package)
+    flagged = sorted(Path(f.split(":", 1)[0]).name for f in findings if "executor package" in f)
+    assert flagged == ["a.py", "b.py", "c.py"]
+    assert not any("inner.py" in f or "d.py" in f for f in findings)
+
+
+def test_4329073620_process_apis_outside_subprocess_are_flagged(tmp_path: Path) -> None:
+    package = tmp_path / "cpe"
+    package.mkdir()
+    (package / "__init__.py").write_text("")
+    (package / "spawn.py").write_text("from os import system\nimport os\nos.system('x')\nos.popen('y')\nimport pty\n")
+    (package / "fine.py").write_text("import os\nos.environ.get('x')\nfrom os import path\n")
+    findings = check_import_boundary.check_package(package)
+    assert len([f for f in findings if "spawn.py" in f]) == 4
+    assert not any("fine.py" in f for f in findings)
+
+
+@pytest.mark.parametrize("bad", ["Fix\n\nco-authored-by: Claude <noreply@anthropic.com>", "Fix\n\nSIGNED-OFF-BY: Codex"])
+def test_4329073579_trailers_are_matched_case_insensitively(bad: str) -> None:
+    assert text_findings(bad, "commit") != []
+
+
+def test_4329073613_a_review_round_is_not_a_reconciliation_label() -> None:
+    labels = tree_labels_from_texts(MATRIX_DOC, SPEC_DOC)
+    assert label_findings("Address review round 2", labels, "msg") == []
+    assert label_findings("Apply Codex review, round 2 of fixes", labels, "msg") == []
+    assert label_findings("Reconciliation round 49: apply findings", labels, "msg") != []
+    assert label_findings("Round 49 of reconciliation: matrix v51", labels, "msg") != []
+    assert label_findings("round 49 and matrix v50", labels, "msg") != []
