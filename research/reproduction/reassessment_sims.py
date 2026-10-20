@@ -40,7 +40,12 @@ below backs one numbered claim of `18`:
   certificate alone gives, exactly and by an end-to-end simulation;
 - S16 (reassessment R6, RC-306): for a class of several laws, where the cutoff is the maximum of the law-wise cutoffs,
   (j + 1)/(n + 1) is an upper bound on the procedure's size, not its value; an end-to-end simulation of the whole
-  multi-law calibration and test shows the size of each law against that bound.
+  multi-law calibration and test shows the size of each law against that bound;
+- S16 (reassessment R7, RC-310): that multi-law simulation repeated on three further seeds, so the seed check R6
+  quoted is committed output, pooled with and without the seed that prompted it, and the normal law alone on seeds
+  that played no part in that choice;
+- S17 (reassessment R7, RC-309): an operator who anchors m calibration records and runs only the one with the
+  smallest cutoff, exactly and by an end-to-end simulation, and one who reports whichever of m cohorts rejects.
 Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
     python research/reproduction/reassessment_sims.py
 Deterministic: every section uses its own fixed seed. The output is one JSON object; a table row is one line of it
@@ -50,7 +55,7 @@ import itertools
 import json
 
 import numpy as np
-from scipy import optimize, stats
+from scipy import integrate, optimize, stats
 
 ALPHA = 0.05
 
@@ -708,6 +713,7 @@ def s16_unconditional_size():
             if j is not None and marginal_size(j, int(n)) > worst['unconditional_size_bound']:
                 worst = {'n': int(n), 'budget_per_law': round(0.01 / k, 6),
                          'unconditional_size_bound': round(marginal_size(j, int(n)), 6)}
+    committed = multi_law_counts(59)
     rng = np.random.default_rng(53)
     simulated, reps, batch = [], 200000, 10000
     for n, budget in [(131, 0.01 / 8), (1000, 0.01 / 8), (1000, 0.01)]:
@@ -726,16 +732,17 @@ def s16_unconditional_size():
                           'certificate_failure_rate': round(failures / reps, 5)})
     return {'certifications_used': rows, 'grid_worst': {'n_range': [131, 1000000], 'points': int(grid.size),
                                                          'budgets': '0.01/k, k in 1, 2, 3, 8, 24, 100, 1000', **worst},
-            'end_to_end': simulated, 'end_to_end_three_laws': multi_law_size()}
+            'end_to_end': simulated, 'end_to_end_three_laws': multi_law_size(committed),
+            'end_to_end_three_laws_seed_check': seed_check(committed, [60, 61, 62])}
 
 
-def multi_law_size():
+def multi_law_counts(seed):
     """RC-306. The whole procedure on a class of three laws of the statistic: each law is calibrated on its own n draws,
     the cutoff is the largest of the three certified cutoffs, and a fresh draw of each law is tested against it. Per law
-    the rejection rate against the class cutoff is compared with the bound (j + 1)/(n + 1) and with the rejection rate
-    against that law's own cutoff, where the bound is exact. The laws differ in their upper tails, so the maximum binds
-    for some and not for others."""
-    rng = np.random.default_rng(59)
+    it counts rejections against the class cutoff, to compare with the bound (j + 1)/(n + 1), and against that law's own
+    cutoff, where the bound is exact. The laws differ in their upper tails, so the maximum binds for some and not for
+    others."""
+    rng = np.random.default_rng(seed)
     laws = {'normal': lambda size: rng.standard_normal(size), 'student t3': lambda size: rng.standard_t(3, size),
             'normal x 0.7': lambda size: 0.7 * rng.standard_normal(size)}
     n, reps, batch = 1000, 200000, 5000
@@ -750,11 +757,111 @@ def multi_law_size():
             fresh = draw(batch)
             at_class[name] += int((fresh > cutoff).sum())
             at_own[name] += int((fresh > own[name]).sum())
+    return {'n': n, 'budget': budget, 'index_j': j, 'reps': reps, 'at_class': at_class, 'at_own': at_own}
+
+
+def multi_law_size(counts):
+    """The rows of one run of multi_law_counts: per law the rejection rate against the class cutoff, with its 99 %
+    upper bound, and against the law's own cutoff."""
+    reps, at_class, at_own = counts['reps'], counts['at_class'], counts['at_own']
     rows = [{'law': name, 'rejection_at_class_cutoff': round(at_class[name] / reps, 5),
              'upper_99': round(float(stats.beta.ppf(0.99, at_class[name] + 1, reps - at_class[name])), 5),
-             'rejection_at_own_cutoff': round(at_own[name] / reps, 5)} for name in laws]
-    return {'n': n, 'laws': len(laws), 'budget_per_law': round(budget, 6), 'index_j': j, 'reps': reps,
-            'bound': round(marginal_size(j, n), 5), 'rows': rows}
+             'rejection_at_own_cutoff': round(at_own[name] / reps, 5)} for name in at_class]
+    return {'n': counts['n'], 'laws': len(at_class), 'budget_per_law': round(counts['budget'], 6),
+            'index_j': counts['index_j'], 'reps': reps, 'bound': round(marginal_size(counts['index_j'], counts['n']), 5),
+            'rows': rows}
+
+
+def seed_check(committed, seeds):
+    """RC-310. The three-law simulation on further seeds, one row per seed and law. Seed 59 was looked at again because
+    its normal law came out 3.6 standard errors above the exact rate against its own cutoff, so a pool that includes
+    it is selected; the rates against each law's own cutoff are pooled over the further seeds alone and over all four,
+    each with a two-sided 99 % Clopper-Pearson interval, against the bound, which is exact there. A separate check
+    draws the normal law alone on 1,600,000 repetitions from seeds that played no part in that selection."""
+    runs = [multi_law_counts(seed) for seed in seeds]
+    rows = [{'seed': seed, 'law': name, 'rejection_at_class_cutoff': round(run['at_class'][name] / run['reps'], 5),
+             'rejection_at_own_cutoff': round(run['at_own'][name] / run['reps'], 5)}
+            for seed, run in zip(seeds, runs) for name in run['at_own']]
+    return {'bound': round(marginal_size(committed['index_j'], committed['n']), 5), 'rows': rows,
+            'pooled_at_own_cutoff': {'seeds 60 to 62': pooled_own(runs),
+                                     'seeds 59 to 62, selected': pooled_own([committed] + runs)},
+            'normal_alone': normal_alone([100, 101, 102, 103], committed['n'], committed['index_j'])}
+
+
+def pooled_own(runs):
+    """Per law, the rejections against the law's own cutoff summed over runs, with a two-sided 99 % interval."""
+    total = sum(run['reps'] for run in runs)
+    pooled = []
+    for name in runs[0]['at_own']:
+        own = sum(run['at_own'][name] for run in runs)
+        pooled.append({'law': name, 'reps': total, 'rejection_at_own_cutoff': round(own / total, 5),
+                       'lower_99': round(float(stats.beta.ppf(0.005, own, total - own + 1)), 5),
+                       'upper_99': round(float(stats.beta.ppf(0.995, own + 1, total - own)), 5)})
+    return pooled
+
+
+def normal_alone(seeds, n, j):
+    """The normal law alone, calibrated on n draws and tested against its own (j + 1)-th largest draw, 400,000
+    repetitions per seed, pooled, with a two-sided 99 % interval around the exact (j + 1)/(n + 1)."""
+    reps, batch, rejections = 400000, 5000, 0
+    for seed in seeds:
+        rng = np.random.default_rng(seed)
+        for _ in range(reps // batch):
+            cutoff = -np.partition(-rng.standard_normal((batch, n)), j, axis=1)[:, j]
+            rejections += int((rng.standard_normal(batch) > cutoff).sum())
+    total = reps * len(seeds)
+    return {'seeds': seeds, 'n': n, 'index_j': j, 'reps': total, 'exact': round(marginal_size(j, n), 5),
+            'simulated_rejection': round(rejections / total, 5),
+            'lower_99': round(float(stats.beta.ppf(0.005, rejections, total - rejections + 1)), 5),
+            'upper_99': round(float(stats.beta.ppf(0.995, rejections + 1, total - rejections)), 5)}
+
+
+def selected_size(n, j, m):
+    """Unconditional rejection probability when m calibration records of one law are drawn independently and the test
+    is run only against the smallest of their m cutoffs (RC-309). The exceedance probability of each record's cutoff is
+    Beta(j + 1, n - j), and the fresh statistic is independent of the records, so the rate is E[max of m such Betas] =
+    integral over [0, 1] of 1 - F(x)^m. For m = 1 it is (j + 1)/(n + 1). For a class of several laws each record's
+    cutoff is at least that law's own cutoff, so this is an upper bound there too."""
+    value, _ = integrate.quad(lambda x: 1 - stats.beta.cdf(x, j + 1, n - j) ** m, 0, 1,
+                              points=[(j + 1) / (n + 1)], limit=200)
+    return value
+
+
+def s17_record_selection():
+    """RC-309. R6 forbade a second calibration record for one cohort, but not records under different cohort
+    identifiers. An operator who anchors m records, reads their beacon rounds and runs only the cohort with the smallest
+    cutoff tests against the minimum of m exchangeable order statistics: its size exceeds the bound (j + 1)/(n + 1) for
+    every m >= 2. Reported exactly for the certifications of S16 and the three-law example, with the smallest m at
+    which it exceeds alpha; checked end to end on uniform draws; and, for an operator who runs m independent cohorts and
+    reports whichever rejects, 1 - (1 - b)^m with b the bound."""
+    used = [('S14 minimum n, K = 8', 131, 0.01 / 8), ('three-law example', 1000, 0.01 / 3),
+            ('S9, K = 8', 200000, 0.01 / 8)]
+    rows = []
+    for name, n, budget in used:
+        j = certified_index(n, budget)
+        m_star = 1
+        while selected_size(n, j, m_star) <= ALPHA:
+            m_star *= 2
+        lo, hi = m_star // 2, m_star
+        while hi - lo > 1:
+            mid = (lo + hi) // 2
+            lo, hi = (lo, mid) if selected_size(n, j, mid) > ALPHA else (mid, hi)
+        rows.append({'certification': name, 'n': n, 'index_j': j, 'bound': round(marginal_size(j, n), 5),
+                     'min_of_m_cutoffs': {str(m): round(selected_size(n, j, m), 5) for m in [1, 2, 3, 5, 10, 100]},
+                     'smallest_m_above_alpha': hi,
+                     'report_any_of_m': {str(m): round(1 - (1 - marginal_size(j, n)) ** m, 5) for m in [2, 3, 5]}})
+    rng = np.random.default_rng(67)
+    n, budget, m, reps, batch = 1000, 0.01 / 3, 5, 200000, 2000
+    j = certified_index(n, budget)
+    rejections = 0
+    for _ in range(reps // batch):
+        cutoffs = -np.partition(-rng.random((batch, m, n)), j, axis=2)[:, :, j]
+        rejections += int((rng.random(batch) > cutoffs.min(axis=1)).sum())
+    simulated = {'n': n, 'index_j': j, 'm': m, 'reps': reps, 'exact': round(selected_size(n, j, m), 5),
+                 'simulated_rejection': round(rejections / reps, 5),
+                 'lower_99': round(float(stats.beta.ppf(0.005, rejections, reps - rejections + 1)), 5),
+                 'upper_99': round(float(stats.beta.ppf(0.995, rejections + 1, reps - rejections)), 5)}
+    return {'rows': rows, 'end_to_end': simulated}
 
 
 def dumps(value, depth=0):
@@ -779,7 +886,8 @@ def main():
                 ('S12 composite null', s12_composite_null), ('S13 family budget', s13_family_budget),
                 ('S14 unattainable certification', s14_unattainable_certification),
                 ('S15 within-period covariance', s15_within_period_covariance),
-                ('S16 unconditional size', s16_unconditional_size)]
+                ('S16 unconditional size', s16_unconditional_size),
+                ('S17 record selection', s17_record_selection)]
     print(dumps({name: section() for name, section in sections}))
 
 

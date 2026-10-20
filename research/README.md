@@ -85,8 +85,8 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 11. `18-method-reassessment.md`: the reassessment of the Phase 1 confirmatory method requested by the owner on
     2026-10-20 (identifiability, feasibility, alternatives, a recommendation for owner decision OD11); revision R2
     applies Codex's review of R1 (`16` §3az), revision R3 Codex's review of R2 (`16` §3ba), revision R4 Codex's
-    review of R3 (`16` §3bb), revision R5 Codex's review of R4 (`16` §3bc) and revision R6 Codex's review of R5
-    (`16` §3bd); `PROPOSED`.
+    review of R3 (`16` §3bb), revision R5 Codex's review of R4 (`16` §3bc), revision R6 Codex's review of R5
+    (`16` §3bd) and revision R7 Codex's review of R6 (`16` §3be); `PROPOSED`.
 12. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
     and `check_appendix_scripts.py`, which verifies each file byte for byte against its appendix block; evidence
     scripts, not project code.
