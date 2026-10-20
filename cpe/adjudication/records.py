@@ -95,6 +95,14 @@ class ResolutionRecord:
     lateness_evidence: bool = False
     definitive: bool = False
 
+    def __post_init__(self) -> None:
+        if self.claim == "not-occurred" and (self.occurrence_time is not None or self.lateness_evidence):
+            raise Refusal("inconsistent_record", f"{self.record_id}: a record of non-occurrence carries no occurrence "
+                          "time and no evidence of lateness")
+        if self.claim == "occurred" and self.definitive:
+            raise Refusal("inconsistent_record", f"{self.record_id}: a record of occurrence is not definitive "
+                          "non-occurrence")
+
     @classmethod
     def from_payload(cls, payload: object) -> ResolutionRecord:
         mapping = require_mapping(payload, "ResolutionRecord")

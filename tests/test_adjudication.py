@@ -72,29 +72,29 @@ def observation(at: float, event_id: str = "E") -> AbsenceObservation:
 
 
 def test_t03_timely_yes_observed_inside_the_window_and_the_public_act_route() -> None:
-    yes = adjudicate(spec(), rule(), [record("r", occurrence=95, published=105)], [], None, day(106))
+    yes = adjudicate(spec(), rule(), [record("r", occurrence=95, published=105)], [], [], day(106))
     assert yes.disposition == "RESOLVED_YES" and yes.knowable_at == day(105)
     assert yes.timestamps is not None and yes.timestamps.occurrence == day(95) and yes.timestamps.publication == day(105)
-    public = adjudicate(spec(), rule(public_act=True), [record("r", occurrence=95, published=105)], [], None, day(106))
+    public = adjudicate(spec(), rule(public_act=True), [record("r", occurrence=95, published=105)], [], [], day(106))
     assert public.knowable_at == day(95)
 
 
 def test_f02b_timestamp_less_late_yes_is_void_never_expired_no() -> None:
-    out = adjudicate(spec(), rule(), [record("r", published=105)], [], None, day(106))
+    out = adjudicate(spec(), rule(), [record("r", published=105)], [], [], day(106))
     assert out.disposition == "VOID" and "RC-71" in out.basis and out.knowable_at == day(105)
-    late_evidenced = adjudicate(spec(), rule(), [record("r", published=105, lateness=True)], [], None, day(106))
+    late_evidenced = adjudicate(spec(), rule(), [record("r", published=105, lateness=True)], [], [], day(106))
     assert late_evidenced.disposition == "EXPIRED_NO"
 
 
 def test_f02a_occurrence_after_the_deadline_is_expired_no() -> None:
-    out = adjudicate(spec(), rule(), [record("r", occurrence=110, published=108)], [], None, day(109))
+    out = adjudicate(spec(), rule(), [record("r", occurrence=105, published=108)], [], [], day(109))
     assert out.disposition == "EXPIRED_NO" and out.knowable_at == day(108)
 
 
 def test_f03_no_before_the_deadline_is_not_final(tmp_path: Path) -> None:
     early_no = record("r", claim="not-occurred", published=2)
     with pytest.raises(Refusal) as refusal:
-        adjudicate(spec(), rule(), [early_no], [], None, day(3))
+        adjudicate(spec(), rule(), [early_no], [], [], day(3))
     assert refusal.value.reason == "not_final"
     registry = AdjudicationRegistry(Ledger(tmp_path / "l.sqlite", ManualClock(day(3)), HarnessAnchorStore()))
     registry.register_rule(rule())
@@ -102,52 +102,52 @@ def test_f03_no_before_the_deadline_is_not_final(tmp_path: Path) -> None:
     with pytest.raises(Refusal) as refused:
         registry.submit_record(early_no.record)
     assert refused.value.reason == "not_final"
-    definitive = adjudicate(spec(), rule(), [record("r", claim="not-occurred", published=101, definitive=True)], [], None, day(102))
+    definitive = adjudicate(spec(), rule(), [record("r", claim="not-occurred", published=101, definitive=True)], [], [], day(102))
     assert definitive.disposition == "EXPIRED_NO"
 
 
 def test_t04_terminal_falsifier_is_no_when_published_and_yes_by_absence_at_finality() -> None:
     falsified = adjudicate(spec("terminal-falsifier"), rule(public_act=True), [record("r", occurrence=60, published=61)],
-                           [], None, day(62))
+                           [], [], day(62))
     assert falsified.disposition == "RESOLVED_NO" and falsified.knowable_at == day(60)
-    survived = adjudicate(spec("terminal-falsifier"), rule(), [], [observation(110)], None, day(111))
+    survived = adjudicate(spec("terminal-falsifier"), rule(), [], [observation(110)], [], day(111))
     assert survived.disposition == "RESOLVED_YES" and survived.knowable_at == day(110)
 
 
 def test_t04_no_by_expiry_needs_an_observation_of_absence_and_is_immutable() -> None:
-    before = adjudicate(spec(), rule(), [], [], None, day(115))
+    before = adjudicate(spec(), rule(), [], [], [], day(115))
     assert before.disposition == "OPEN"
-    at_finality = adjudicate(spec(), rule(), [], [observation(110)], None, day(115))
+    at_finality = adjudicate(spec(), rule(), [], [observation(110)], [], day(115))
     assert (at_finality.disposition, at_finality.knowable_at) == ("RESOLVED_NO", day(110))
     assert at_finality.incidents == ()
-    late_read = adjudicate(spec(), rule(), [], [observation(120)], None, day(121))
+    late_read = adjudicate(spec(), rule(), [], [observation(120)], [], day(121))
     assert late_read.disposition == "RESOLVED_NO" and late_read.knowable_at == day(110)
     assert [i.kind for i in late_read.incidents] == ["observer_outage"]
     # F-02c: a report of timely occurrence published after finality is a defect, never YES and never VOID
-    with_late = adjudicate(spec(), rule(), [record("late", occurrence=95, published=112)], [observation(110)], None, day(113))
+    with_late = adjudicate(spec(), rule(), [record("late", occurrence=95, published=112)], [observation(110)], [], day(113))
     assert with_late.disposition == "RESOLVED_NO" and [d.record_id for d in with_late.defects] == ["late"]
 
 
 def test_f02e_monotone_publication_makes_the_late_record_the_observation_of_absence() -> None:
     late = record("late", occurrence=95, published=115, observed=130)
-    out = adjudicate(spec(), rule(monotone=True), [late], [], None, day(131))
+    out = adjudicate(spec(), rule(monotone=True), [late], [], [], day(131))
     assert (out.disposition, out.knowable_at) == ("RESOLVED_NO", day(110))
     assert [d.record_id for d in out.defects] == ["late"] and [i.kind for i in out.incidents] == ["observer_outage"]
-    without_condition = adjudicate(spec(), rule(monotone=False), [late], [], None, day(131))
+    without_condition = adjudicate(spec(), rule(monotone=False), [late], [], [], day(131))
     assert without_condition.disposition == "OPEN"
-    cannot_evidence = adjudicate(spec(), rule(evidenced=False), [], [], None, day(131))
+    cannot_evidence = adjudicate(spec(), rule(evidenced=False), [], [], [], day(131))
     assert cannot_evidence.disposition == "VOID" and "RC-113" in cannot_evidence.basis
 
 
 def test_f02d_record_published_inside_the_window_and_received_late_resolves_by_content() -> None:
-    out = adjudicate(spec(), rule(), [record("r", occurrence=95, published=105, observed=118, received=118)], [], None, day(118))
+    out = adjudicate(spec(), rule(), [record("r", occurrence=95, published=105, observed=118, received=118)], [], [], day(118))
     assert out.disposition == "RESOLVED_YES" and out.knowable_at == day(105)
     assert [i.kind for i in out.incidents] == ["receipt_lag"]
 
 
 def test_source_failure_condition_gives_void_at_finality() -> None:
     failed = SourceStatus("src", failed=True, declared_at=day(100))
-    out = adjudicate(spec(), rule(), [], [observation(110)], failed, day(111))
+    out = adjudicate(spec(), rule(), [], [observation(110)], [failed], day(111))
     assert out.disposition == "VOID" and out.knowable_at == day(110)
 
 
@@ -155,7 +155,7 @@ def test_rc146_knowable_at_is_the_earliest_of_the_three_times() -> None:
     # occurrence public at 90 (inside the predicate window opening at 80), deadline + window 110 (deadline 101,
     # window 9), publication 118: knowable_at is 90
     late_spec = spec(deadline=101, window_days=9, not_before=80, issuance=(20, 80))
-    out = adjudicate(late_spec, rule(public_act=True), [record("r", occurrence=90, published=118)], [], None, day(119))
+    out = adjudicate(late_spec, rule(public_act=True), [record("r", occurrence=90, published=118)], [], [], day(119))
     assert (out.disposition, out.knowable_at) == ("RESOLVED_YES", day(90))
     t_star = cluster_knowable_time([out])
     assert t_star == day(90)
@@ -170,7 +170,7 @@ def test_f21_publication_gap_and_f21b_expiry_gap() -> None:
     ten = day(100) + timedelta(hours=10)
     gap_spec = spec(deadline=101, not_before=100.9, issuance=(20, 100.9))
     published_at_ten = record("r", published=100 + 10 / 24, received=100 + 10.5 / 24, lateness=True)
-    out = adjudicate(gap_spec, rule(), [published_at_ten], [], None, day(101))
+    out = adjudicate(gap_spec, rule(), [published_at_ten], [], [], day(101))
     assert (out.disposition, out.knowable_at) == ("EXPIRED_NO", ten)
     t_star = cluster_knowable_time([out])
     assert t_star == ten
@@ -178,7 +178,7 @@ def test_f21_publication_gap_and_f21b_expiry_gap() -> None:
     assert classify_forecast(ten - timedelta(minutes=5), gap_spec, day(10), t_star) == "eligible"
     # F-21b: deadline 100, window 10, formal NO record at 118; knowable_at is 110 by logical finality, so a forecast
     # received at 113 is excluded (it is also outside any issuance window, which closes by e_i <= the deadline)
-    expired = adjudicate(spec(), rule(), [], [observation(118)], None, day(118))
+    expired = adjudicate(spec(), rule(), [], [observation(118)], [], day(118))
     t_star_b = cluster_knowable_time([expired])
     assert t_star_b == day(110)
     assert day(113) >= t_star_b
@@ -187,9 +187,9 @@ def test_f21_publication_gap_and_f21b_expiry_gap() -> None:
 
 
 def test_f24_cluster_f_void_sibling_sets_t_star_for_the_whole_cluster() -> None:
-    void_member = adjudicate(spec(event_id="m1", deadline=100), rule(), [record("r1", published=10, event_id="m1")], [], None, day(10))
+    void_member = adjudicate(spec(event_id="m1", deadline=100), rule(), [record("r1", published=10, event_id="m1")], [], [], day(10))
     assert void_member.disposition == "VOID" and void_member.adjudicated_at == day(10)
-    open_member = adjudicate(spec(event_id="m2"), rule(), [], [], None, day(15))
+    open_member = adjudicate(spec(event_id="m2"), rule(), [], [], [], day(15))
     assert cluster_knowable_time([void_member, open_member]) == day(10)
     assert classify_forecast(day(15), spec(event_id="m2", issuance=(1, 50)), day(0), day(10)) == "late"
     assert classify_forecast(day(5), spec(event_id="m2", issuance=(1, 50)), day(6), None) == "before_registration"
@@ -211,20 +211,21 @@ def test_f27_breach_classes_rc139_rc163_rc156() -> None:
 
 
 def test_registry_writes_the_disposition_once_and_replays_it(tmp_path: Path) -> None:
-    clock = ManualClock(day(105))
+    clock = ManualClock(day(1))
     ledger = Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore())
     registry = AdjudicationRegistry(ledger)
     with pytest.raises(Refusal) as unknown:
         registry.submit_observation(observation(110))
     assert unknown.value.reason == "unknown_event"
-    registry.register_event(spec())
     with pytest.raises(Refusal) as no_rule:
-        registry.adjudicate("E")
+        registry.register_event(spec())
     assert no_rule.value.reason == "unknown_source"
     registry.register_rule(rule())
     registry.register_rule(rule())
     with pytest.raises(Refusal):
         registry.register_rule(rule(public_act=True))
+    registry.register_event(spec())
+    clock.set(day(105))
     with pytest.raises(Refusal):
         registry.submit_record(record("missing-time").record)
     assert registry.adjudicate("E").disposition == "OPEN"
@@ -249,9 +250,9 @@ def test_registry_writes_the_disposition_once_and_replays_it(tmp_path: Path) -> 
 def test_registry_refuses_the_wrong_source_and_event() -> None:
     other = EventSpec.from_payload({**spec().to_payload(), "predicate": {**spec().predicate.to_payload(), "source": "other"}})
     with pytest.raises(Refusal) as refusal:
-        adjudicate(other, rule(), [], [], None, day(1))
+        adjudicate(other, rule(), [], [], [], day(1))
     assert refusal.value.reason == "wrong_source"
     with pytest.raises(Refusal) as from_other:
         adjudicate(spec(), rule(), [ReceivedRecord(ResolutionRecord("x", "E", "other", "occurred", day(1)), day(1))], [],
-                   None, day(1))
+                   [], day(1))
     assert from_other.value.reason == "wrong_source"

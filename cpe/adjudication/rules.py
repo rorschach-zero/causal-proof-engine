@@ -164,6 +164,8 @@ def check_record_chronology(received: ReceivedRecord) -> None:
         raise Refusal("evidence_after_receipt", f"{record.record_id}: observed after its receipt")
     if record.evidenced_publication_time is not None and record.evidenced_publication_time > received.receipt:
         raise Refusal("evidence_after_receipt", f"{record.record_id}: published after its receipt")
+    if record.occurrence_time is not None and record.occurrence_time > received.receipt:
+        raise Refusal("evidence_after_receipt", f"{record.record_id}: occurred after its receipt")
 
 
 def _decide(received: ReceivedRecord, spec: EventSpec, rule: SourceRule) -> tuple[Disposition, datetime, str] | None:
@@ -182,14 +184,20 @@ def _decide(received: ReceivedRecord, spec: EventSpec, rule: SourceRule) -> tupl
             if occurrence is not None:
                 if occurrence <= spec.deadline:
                     return "RESOLVED_YES", knowable, "timely occurrence evidenced"
-                return "EXPIRED_NO", published, "occurrence after the deadline"
+                return "EXPIRED_NO", knowable, "occurrence after the deadline"
             if record.lateness_evidence:
                 return "EXPIRED_NO", published, "lateness evidenced without an occurrence time"
             return "VOID", published, "occurrence reported with no occurrence time and no evidence of lateness (RC-71)"
         if record.definitive:
             return "EXPIRED_NO", published, "definitive non-occurrence evidenced"
         return None
-    if record.claim == "occurred" and (occurrence is None or occurrence <= spec.deadline):
+    if record.claim != "occurred":
+        return None
+    if occurrence is None:
+        if record.lateness_evidence:
+            return None  # a falsifier evidenced as after the deadline falsifies nothing
+        return "VOID", published, "falsifier reported with no occurrence time and no evidence of lateness (RC-71)"
+    if occurrence <= spec.deadline:
         return "RESOLVED_NO", knowable, "terminal falsifier published"
     return None
 
@@ -200,15 +208,21 @@ def _contradicts(record: ResolutionRecord, spec: EventSpec, disposition: Disposi
     if record.claim != "occurred":
         return False
     occurrence = record.occurrence_time
-    timely = occurrence is None or spec.predicate.not_before <= occurrence <= spec.deadline
+    if occurrence is None:
+        timely = not record.lateness_evidence
+    else:
+        timely = spec.predicate.not_before <= occurrence <= spec.deadline
     if spec.predicate_kind == "milestone-deadline":
         return timely and disposition != "RESOLVED_YES"
     return timely and disposition == "RESOLVED_YES"
 
 
 def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedRecord],
-               observations: Sequence[AbsenceObservation], status: SourceStatus | None, now: datetime) -> Adjudication:
-    """Adjudicate one event at ``now`` from what the registry holds. Deterministic in its inputs."""
+               observations: Sequence[AbsenceObservation], statuses: Sequence[SourceStatus], now: datetime) -> Adjudication:
+    """Adjudicate one event at ``now`` from what the registry holds. Deterministic in its inputs.
+
+    ``statuses`` is the declared status history of the source; the declaration in force at logical finality
+    decides whether the failure condition holds (RC-88: a later declaration changes nothing)."""
     if rule.source_id != spec.predicate.source:
         raise Refusal("wrong_source", "the rule does not belong to the event's resolution source")
     finality = spec.logical_finality
@@ -217,9 +231,16 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
             raise Refusal("wrong_event", f"{received.record.record_id} concerns {received.record.event_id}")
         check_record_is_final_enough(received.record, spec, rule)
         check_record_chronology(received)
+        if received.receipt > now:
+            raise Refusal("receipt_after_now", f"{received.record.record_id} is received after the adjudication time")
     for observation in observations:
         if observation.event_id != spec.event_id or observation.source_id != rule.source_id:
             raise Refusal("wrong_source", f"observation {observation.observation_id} is not of this event's source")
+    for status in statuses:
+        if status.source_id != rule.source_id:
+            raise Refusal("wrong_source", f"the status of {status.source_id} is not of this event's source")
+    in_force = [s for s in statuses if s.declared_at <= finality]
+    status_at_finality = max(in_force, key=lambda s: s.declared_at) if in_force else None
     ordered = sorted(records, key=lambda r: (r.knowable(rule), r.record.record_id))
     timely = [r for r in ordered if r.knowable(rule) <= finality]
     late = [r for r in ordered if r.knowable(rule) > finality]
@@ -251,7 +272,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
             absence_at = first_late.record.first_observed_at
             absence_basis = (f"earliest matching record {first_late.record.record_id} published after finality "
                              "under the monotone-publication condition (RC-113)")
-        if status is not None and status.failed and status.declared_at <= finality:
+        if status_at_finality is not None and status_at_finality.failed:
             disposition, knowable, basis = "VOID", finality, "source rule failure condition met"
         elif absence_at is not None:
             disposition = "RESOLVED_NO" if spec.predicate_kind == "milestone-deadline" else "RESOLVED_YES"
