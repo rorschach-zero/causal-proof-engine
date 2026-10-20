@@ -139,6 +139,11 @@ class EventSpec:
             raise Refusal("invalid_window", "issuance_open <= evidence_cutoff <= issuance_close is required (RC-76)")
         if self.issuance_close > self.earliest_knowable_bound:
             raise Refusal("invalid_window", "issuance closes at or before the earliest-knowable bound (RC-163)")
+        try:
+            self.deadline + timedelta(seconds=self.latency_window_seconds)
+        except (OverflowError, ValueError):
+            raise Refusal("invalid_window", "the latency window puts logical finality beyond any representable "
+                          "time") from None
 
     @property
     def deadline(self) -> datetime:
