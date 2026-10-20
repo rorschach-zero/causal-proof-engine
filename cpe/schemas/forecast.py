@@ -157,21 +157,25 @@ def effective_cutoff(arm_version_id: str, versions: Mapping[str, ArmVersion]) ->
     """The latest declared cutoff over the arm version and every arm version it consumes, recursively (RC-156).
 
     A version that is not registered, or a cycle in the consumption graph, is refused: the cutoff of such an arm is
-    undefined and no comparison may use it.
+    undefined and no comparison may use it. Each version is resolved once (shared inputs are not re-walked).
     """
-    latest: date | None = None
-    stack: list[tuple[str, tuple[str, ...]]] = [(arm_version_id, ())]
-    while stack:
-        current, path = stack.pop()
+    resolved: dict[str, date] = {}
+
+    def resolve(current: str, path: tuple[str, ...]) -> date:
+        if current in resolved:
+            return resolved[current]
         if current in path:
             raise Refusal("invalid_arm_graph", f"{current} consumes itself through {' -> '.join(path)}")
         version = versions.get(current)
         if version is None:
             raise Refusal("unknown_arm_version", f"{current} is not registered")
-        latest = version.declared_cutoff if latest is None else max(latest, version.declared_cutoff)
-        stack.extend((consumed, path + (current,)) for consumed in version.consumes)
-    assert latest is not None
-    return latest
+        latest = version.declared_cutoff
+        for consumed in version.consumes:
+            latest = max(latest, resolve(consumed, path + (current,)))
+        resolved[current] = latest
+        return latest
+
+    return resolve(arm_version_id, ())
 
 
 _JEV_KEYS = frozenset({
