@@ -197,6 +197,8 @@ class ClaimPreregistration:
             raise Refusal("invalid_window", "period_start must precede period_end")
         if self.question_set_fixed_at >= self.period_start:
             raise Refusal("invalid_window", "the question set is fixed before the evaluation period starts")
+        if not self.family_order:
+            raise Refusal("invalid_family", "a claim names at least one fixed-sequence component (18 M-5)")
         if len(self.validity_class_ids) != len(self.family_order):
             raise Refusal("invalid_family", "one validity class per fixed-sequence component (RC-295)")
 

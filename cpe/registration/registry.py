@@ -95,6 +95,26 @@ class _State:
     seeds: dict[str, str] = field(default_factory=dict)
 
 
+def _consumption_closure(version_id: str, versions: dict[str, ArmVersion]) -> set[str]:
+    """The version and every version it consumes, transitively: the set whose declared cutoffs compose its
+    effective cutoff (RC-156)."""
+    closure: set[str] = set()
+    pending = [version_id]
+    while pending:
+        current = pending.pop()
+        if current in closure:
+            continue
+        closure.add(current)
+        pending.extend(versions[current].consumes)
+    return closure
+
+
+def _consumers(version_id: str, versions: dict[str, ArmVersion]) -> set[str]:
+    """The version and every version that consumes it, transitively: every version whose effective cutoff a
+    correction to it would change."""
+    return {other for other in versions if version_id in _consumption_closure(other, versions)}
+
+
 def replay_state(records: tuple[Record, ...]) -> _State:
     state = _State()
     for record in records:
@@ -106,7 +126,9 @@ def replay_state(records: tuple[Record, ...]) -> _State:
         elif record.kind == KIND_CUTOFF_CORRECTION:
             correction = CutoffCorrection.from_payload(payload)
             if state.registrations_under.get(correction.arm_version_id, 0) > 0:
-                state.withdrawn.add(correction.arm_version_id)  # RC-150: withdrawn from further registrations
+                # RC-150: withdrawn from further registrations, with every version whose effective cutoff is
+                # composed from the corrected one (RC-156); a replacement version with evidence follows
+                state.withdrawn |= _consumers(correction.arm_version_id, state.arm_versions)
             else:  # before any registration the correction amends the declared cutoff and its evidence
                 version = state.arm_versions[correction.arm_version_id]
                 state.arm_versions[correction.arm_version_id] = replace(
@@ -122,8 +144,9 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             for spec in registration.events:
                 state.events[spec.event_id] = spec
                 state.event_cluster[spec.event_id] = registration.cluster.cluster_id
-            for version_id in registration.arm_versions.values():
-                state.registrations_under[version_id] = state.registrations_under.get(version_id, 0) + 1
+            for version_id in registration.arm_versions.values():  # a registration counts under every input too
+                for consumed in _consumption_closure(version_id, state.arm_versions):
+                    state.registrations_under[consumed] = state.registrations_under.get(consumed, 0) + 1
         elif record.kind == KIND_BASE_RATE:
             rate = BaseRate.from_payload(payload)
             state.base_rates[rate.reference_class_id] = rate.rate
@@ -192,6 +215,9 @@ class RegistrationRegistry:
             for consumed in version.consumes:
                 if consumed not in state.arm_versions:
                     raise Refusal("unknown_arm_version", f"{version.arm_version_id} consumes unregistered {consumed}")
+                if consumed in state.withdrawn:
+                    raise Refusal("arm_version_withdrawn", f"{version.arm_version_id} consumes withdrawn {consumed}, "
+                                  "whose declared cutoff was corrected (RC-150, RC-156)")
             return KIND_ARM_VERSION, _ledger_id("arm-version", version.arm_version_id), version.to_payload()
 
         return self._write(decide)
@@ -205,9 +231,10 @@ class RegistrationRegistry:
 
     def correct_cutoff(self, correction: CutoffCorrection) -> tuple[Record, bool]:
         """Record a cutoff correction. Returns the record and whether registrations already existed under the
-        version: before the first registration the correction amends the version's declared cutoff and evidence
-        in place; after it, the version is withdrawn from further registrations and the claim consequence
-        (RC-150) is item 3's."""
+        version, directly or through a version that consumes it (RC-156): before the first registration the
+        correction amends the version's declared cutoff and evidence in place; after it, the version and every
+        version that consumes it are withdrawn from further registrations and the claim consequence (RC-150)
+        is item 3's."""
         registered_under = False
 
         def decide(state: _State, now: datetime) -> Write:
@@ -232,6 +259,9 @@ class RegistrationRegistry:
                 raise Refusal("candidate_after_forecast", f"a forecast on {entry.event_id} already exists (RC-78)")
             if entry.event_id in state.candidate_by_event:
                 raise Refusal("candidate_exists", f"{entry.event_id} is already in the candidate log")
+            if entry.listed_at > now:
+                raise Refusal("future_listing", f"{entry.candidate_id} is listed after the ledger clock; a listing "
+                              "time is at or before the entry's receipt (RC-78)")
             return KIND_CANDIDATE, _ledger_id("candidate", entry.candidate_id), entry.to_payload()
 
         return self._write(decide)
@@ -385,12 +415,19 @@ class RegistrationRegistry:
 
     def register_claim(self, claim: ClaimPreregistration) -> Record:
         """A claim is recorded after its question set is fixed and before its evaluation period begins; its
-        fields are then fixed (``18`` M-8)."""
+        fields are then fixed (``18`` M-8). Validated in full as its payload will be replayed; its calibration
+        record identifier is reserved for it alone (``18`` M-1 (i))."""
+        claim = ClaimPreregistration.from_payload(claim.to_payload())
+
         def decide(state: _State, now: datetime) -> Write:
             if claim.population_kind != "fixed_question_set":
                 raise Refusal("non_confirmatory_population", "a population that is a source listing is not Q (18 M-8)")
             if claim.claim_id in state.claims:
                 raise Refusal("claim_immutable", f"{claim.claim_id} is already registered")
+            for other in state.claims.values():
+                if other.calibration_record_id == claim.calibration_record_id:
+                    raise Refusal("calibration_record_reserved", f"{claim.calibration_record_id} is the calibration "
+                                  f"record of {other.claim_id}; one record binds one claim (18 M-1 (i))")
             if now >= claim.period_start:
                 raise Refusal("late_claim", f"{claim.claim_id}: the claim must be recorded before its period starts")
             if claim.question_set_fixed_at > now:
