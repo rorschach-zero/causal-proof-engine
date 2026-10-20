@@ -13,15 +13,25 @@ below backs one numbered claim of `18`:
 - S3c: the block t under a pre-registered persistence bound rho_max (variance-inflated critical value);
 - S4: non-identifiability of outcome-independent selection from listing metadata, and the identified set of the
   population mean under an omitted share m;
-- S5: power of the six-comparator intersection-union conjunction against a fixed-sequence (gatekeeping) order.
+- S5: power of the six-comparator intersection-union conjunction against a fixed-sequence (gatekeeping) order;
+- S6 (reassessment R2, RC-282 and RC-286): the block t calibrated over a complete, pre-registered validity class of
+  joint laws of the period means, its size inside the class, and laws outside the class that a scalar persistence
+  bound admits (equicorrelation, odd/even common shocks);
+- S7 (RC-290): familywise error of the fixed-sequence family under the complete joint generator of acceptance test
+  M-6;
+- S8 (RC-281, RC-284, RC-289): exact examples: the sharp bound d(2 - d) on a paired Brier increment under a divergence
+  bound d, an event-weighted and a period-balanced mean of opposite sign, and two outcome laws with the same forecasts
+  and different increment standard deviations.
 Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
     python research/reproduction/reassessment_sims.py
-Deterministic: every section uses its own fixed seed. The output is one JSON value per line, a table row per line.
+Deterministic: every section uses its own fixed seed. The output is one JSON object; a table row is one line of it
+(RC-288: section headers printed as `"name":` lines were not JSON).
 """
+import itertools
 import json
 
 import numpy as np
-from scipy import stats
+from scipy import optimize, stats
 
 ALPHA = 0.05
 
@@ -61,9 +71,15 @@ def s1_forecast_law():
 
 
 def mde(g, tau, sigma, n, power=0.8):
-    """Smallest mean detected with the given power by the one-sided t test on G block means (normal block means)."""
+    """Smallest mean detected with the given power by the one-sided t test on G independent normal block means.
+
+    Exact: the Studentized mean is noncentral t on G - 1 df with noncentrality mean / se, so the MDE is se times the
+    noncentrality whose upper tail beyond the critical value equals the power (RC-287: the sum of two central t
+    quantiles is an approximation, poorest at small G)."""
     se = np.sqrt((tau ** 2 + sigma ** 2 / n) / g)
-    return float((stats.t.ppf(1 - ALPHA, g - 1) + stats.t.ppf(power, g - 1)) * se)
+    crit = stats.t.ppf(1 - ALPHA, g - 1)
+    noncentrality = optimize.brentq(lambda nc: stats.nct.sf(crit, g - 1, nc) - power, 0.0, 50.0, xtol=1e-12)
+    return float(noncentrality * se)
 
 
 def s2_power_table():
@@ -113,8 +129,9 @@ def sign_flip_reject(rng, means, flips=999):
 def betting_reject(means, lam_cap):
     """Predictable plug-in betting e-process on block means, rejecting when wealth reaches 1/alpha at any block.
 
-    Anytime-valid when 1 + lam * x > 0 for every possible block mean x: lam_cap = 0.5 needs |x| <= 1, the range of a
-    Brier difference; lam_cap = 2.5 needs |x| <= 0.2, which holds only if |p_FULL - p_baseline| <= 0.2 by design."""
+    Anytime-valid when 1 + lam * x > 0 for every possible block mean x: lam_cap = 0.5 needs x > -2, which every Brier
+    difference (range [-1, 1]) meets; lam_cap = 2.5 needs x > -0.4, which holds only if |p_FULL - p_baseline| <= 0.2 by
+    design, because a divergence bound d bounds the increment by d(2 - d) = 0.36 (RC-281, S8)."""
     reps, g = means.shape
     log_w = np.zeros(reps)
     crossed = np.zeros(reps, dtype=bool)
@@ -151,6 +168,14 @@ def period_shocks(rng, kind, reps, g, tau):
         p = 0.05
         hi, lo = tau * np.sqrt(p / (1 - p)), -tau * np.sqrt((1 - p) / p)
         return np.where(rng.random((reps, g)) < p, lo, hi)
+    if kind.startswith('equicorrelated'):
+        # every pair of periods correlated rho: one common shock for all periods
+        rho = float(kind.split('=')[1])
+        return tau * (np.sqrt(rho) * rng.normal(0, 1, (reps, 1)) + np.sqrt(1 - rho) * rng.normal(0, 1, (reps, g)))
+    if kind == 'odd/even common shocks':
+        # one shock shared by the odd periods, another by the even ones: lag-one correlation zero, two effective draws
+        shared = rng.normal(0, tau, (reps, 2))
+        return np.where(np.arange(g) % 2 == 0, shared[:, [0]], shared[:, [1]])
     raise ValueError(kind)
 
 
@@ -193,7 +218,9 @@ def s3b_betting_horizon():
                          'betting_cap_0.5': round(float(betting_reject(means, 0.5).mean()), 4),
                          'betting_cap_2.5': round(float(betting_reject(means, 2.5).mean()), 4),
                          'block_t_fixed_horizon': round(float(block_t_reject(means).mean()), 4)})
-    return {'block_sd': round(sigma_b, 4), 'reps': reps, 'rows': rows}
+    # a zero count is not zero power: its one-sided 99 % Clopper-Pearson upper bound is 1 - 0.01^(1/reps) (RC-285)
+    return {'block_sd': round(sigma_b, 4), 'reps': reps, 'rows': rows,
+            'clopper_pearson_99_upper_for_zero_crossings': round(1 - 0.01 ** (1 / reps), 6)}
 
 
 def s3c_bounded_persistence():
@@ -240,10 +267,13 @@ def s4_selection():
                       'block_t_rejection': round(reject / reps, 4)}
     bounds = []
     for d in [0.2, 0.5, 1.0]:
+        bound = d * (2 - d)  # sharp bound of a paired Brier increment when |p_F - p_C| <= d (RC-281, S8)
         for theta in [0.005, 0.01, 0.02]:
-            # identified set of the population mean: (1 - m) theta_obs + m [-d, d]; sign identified iff (1-m) theta > m d
-            m_max = theta / (theta + d)
-            bounds.append({'divergence_bound_d': d, 'theta_observed': theta, 'max_omitted_share_for_sign': round(m_max, 4)})
+            # identified set of the population mean: (1 - m) theta_obs + m [-D, D] with D = d(2 - d);
+            # sign identified iff (1 - m) theta > m D
+            m_max = theta / (theta + bound)
+            bounds.append({'divergence_bound_d': d, 'increment_bound_d_2_minus_d': round(bound, 4),
+                           'theta_observed': theta, 'max_omitted_share_for_sign': round(m_max, 4)})
     return {'non_identifiability': res, 'omission_bounds': bounds}
 
 
@@ -263,27 +293,125 @@ def s5_conjunction():
     return rows
 
 
-def emit(name, value, depth=0):
-    """One JSON line per table row, so that the committed output reads as tables."""
-    pad = ' ' * depth
+def t_statistic(means):
+    g = means.shape[1]
+    return means.mean(1) / (means.std(1, ddof=1) / np.sqrt(g))
+
+
+def null_period_means(rng, law, reps, g, share):
+    """Period means under theta = 0 with unit variance: a period component of variance `share` drawn from `law` (its
+    marginal shape and its covariance across periods) plus independent normal cluster noise of variance 1 - share.
+    The t statistic is scale-free, so (law, share) is a complete joint law of the statistic under the null."""
+    return np.sqrt(share) * period_shocks(rng, law, reps, g, 1.0) + np.sqrt(1 - share) * rng.normal(0, 1, (reps, g))
+
+
+def s6_validity_class():
+    """The block t calibrated over an example validity class L: the critical value c_L is the largest simulated 0.95
+    quantile of t over the laws of L, then checked on fresh draws, inside L and outside it. The share 0.2 is the
+    S3 point (tau = 0.01, sigma = 0.1, n = 25); share 0.8 is a period-dominated law. L is an example, not a proposal:
+    the class is an owner input (OD11)."""
+    rng = np.random.default_rng(21)
+    g, cal_reps, reps = 24, 200000, 20000
+    in_class = [(law, share) for law in ['iid normal', 'AR(1) rho=0.25', 'AR(1) rho=0.5', 'skewed two-point']
+                for share in [0.2, 0.8]]
+    outside = [('equicorrelated rho=0.5', 0.8), ('odd/even common shocks', 0.8)]
+    nominal = stats.t.ppf(1 - ALPHA, g - 1)
+    ar_inflated = nominal * np.sqrt((1 + 0.5) / (1 - 0.5))  # the S3c critical value at rho_max = 0.5
+    quantiles = {(law, share): float(np.quantile(t_statistic(null_period_means(rng, law, cal_reps, g, share)), 1 - ALPHA))
+                 for law, share in in_class}
+    c_class = max(quantiles.values())
+    level = 1 - 0.01 / len(in_class)  # 99 % simultaneous over the laws of L (Bonferroni)
+    rows = []
+    for law, share in in_class + outside:
+        t = t_statistic(null_period_means(rng, law, reps, g, share))
+        hits = int((t > c_class).sum())
+        rows.append({'law': law, 'period_share': share, 'in_class': (law, share) in quantiles,
+                     'q95': round(quantiles[(law, share)], 3) if (law, share) in quantiles else None,
+                     'size_nominal_t': round(float((t > nominal).mean()), 4),
+                     'size_ar1_inflated_rho_max_0.5': round(float((t > ar_inflated).mean()), 4),
+                     'size_c_class': round(hits / reps, 4),
+                     'upper_c_class': round(float(stats.beta.ppf(level, hits + 1, reps - hits)), 4)})
+    sd = (0.01 ** 2 + 0.10 ** 2 / 25) ** 0.5  # period-mean sd at the S3 point
+    power = []
+    for delta in [0.01, 0.02]:
+        means = delta + sd * null_period_means(rng, 'iid normal', reps, g, 0.2)
+        t = t_statistic(means)
+        power.append({'delta': delta, 'law': 'iid normal', 'period_share': 0.2,
+                      'power_nominal_t': round(float((t > nominal).mean()), 4),
+                      'power_c_class': round(float((t > c_class).mean()), 4)})
+    return {'G': g, 'calibration_reps': cal_reps, 'reps': reps, 'nominal_critical_value': round(float(nominal), 3),
+            'ar1_inflated_critical_value': round(float(ar_inflated), 3), 'c_class': round(c_class, 3),
+            'simultaneous_confidence': round(level, 5), 'rows': rows, 'power_at_s3_point': power}
+
+
+def s7_fixed_sequence():
+    """Acceptance test M-6: J = 3 hypotheses tested in a fixed order, each at alpha and only after every earlier one
+    rejected. Statistics jointly normal with unit variances and equal pairwise correlation r; mean 0 for a true null
+    (the boundary of H0), z_(1-alpha) + z_power for a false null; every pattern of true and false nulls with at least
+    one true null, all false nulls of one pattern at the same marginal power. The familywise error of each
+    configuration is checked with a one-sided Clopper-Pearson bound simultaneous over all configurations."""
+    rng = np.random.default_rng(19)
+    reps, j = 100000, 3
+    crit = stats.norm.ppf(1 - ALPHA)
+    rows = []
+    for r in [-0.4, 0.0, 0.5, 0.9]:
+        cov = np.full((j, j), r) + np.eye(j) * (1 - r)
+        for false_nulls in itertools.product([False, True], repeat=j):
+            if all(false_nulls):
+                continue
+            for power in ([0.5, 0.8, 0.99] if any(false_nulls) else [None]):
+                shift = 0.0 if power is None else crit + stats.norm.ppf(power)
+                z = rng.multivariate_normal(np.where(false_nulls, shift, 0.0), cov, size=reps)
+                rejected = np.cumprod(z > crit, axis=1).astype(bool)  # tested only after every predecessor rejected
+                errors = int((rejected & ~np.array(false_nulls)).any(1).sum())
+                rows.append({'r': r, 'nulls': ''.join('F' if f else 'T' for f in false_nulls), 'power': power,
+                             'fwer': round(errors / reps, 4), 'errors': errors})
+    level = 1 - 0.01 / len(rows)
+    for row in rows:
+        row['upper'] = round(float(stats.beta.ppf(level, row['errors'] + 1, reps - row['errors'])), 4)
+    return {'J': j, 'reps': reps, 'configurations': len(rows), 'simultaneous_confidence': round(level, 6),
+            'max_upper': max(row['upper'] for row in rows), 'rows': rows}
+
+
+def s8_exact_examples():
+    grid = np.linspace(0.0, 1.0, 1001)
+    p, b = np.meshgrid(grid, grid)
+    increment = np.maximum(np.abs((b - 1) ** 2 - (p - 1) ** 2), np.abs(b ** 2 - p ** 2))  # Y = 1 and Y = 0
+    bound = [{'d': d, 'grid_sup_increment': round(float(increment[np.abs(p - b) <= d + 1e-12].max()), 6),
+              'd_2_minus_d': round(d * (2 - d), 6)} for d in [0.2, 0.5, 1.0]]
+    counts, means = np.array([100, 1]), np.array([-0.01, 0.10])
+    estimand = {'events_per_period': counts.tolist(), 'period_means': means.tolist(),
+                'event_weighted': round(float((counts * means).sum() / counts.sum()), 6),
+                'period_balanced': round(float(means.mean()), 6)}
+    # one forecast pair, two outcome probabilities: X = 0.13 if Y = 1 and -0.07 if Y = 0, so sd = 0.2 sqrt(q(1 - q))
+    p_full, p_base = 0.4, 0.3
+    hi, lo = (p_base - 1) ** 2 - (p_full - 1) ** 2, p_base ** 2 - p_full ** 2
+    sigma = [{'p_full': p_full, 'p_base': p_base, 'q': q, 'mean': round(q * hi + (1 - q) * lo, 6),
+              'sd': round(abs(hi - lo) * np.sqrt(q * (1 - q)), 6),
+              'forecast_only_bound': round(abs(p_full - p_base) * max(p_full + p_base, 2 - p_full - p_base), 6)}
+             for q in [0.3, 0.5]]
+    return {'increment_bound': bound, 'estimand_weighting': estimand, 'sigma_needs_outcomes': sigma}
+
+
+def dumps(value, depth=0):
+    """JSON text of value: a container holding containers spans lines, anything else stays on one line, so the
+    committed output is one JSON object whose table rows are single lines (RC-288)."""
+    pad, inner = ' ' * depth, ' ' * (depth + 1)
     if isinstance(value, dict) and any(isinstance(v, (list, dict)) for v in value.values()):
-        print(f'{pad}{json.dumps(name)}:')
-        for key, item in value.items():
-            emit(key, item, depth + 1)
-    elif isinstance(value, list):
-        print(f'{pad}{json.dumps(name)}:')
-        for item in value:
-            print(f'{pad} {json.dumps(item)}')
-    else:
-        print(f'{pad}{json.dumps(name)}: {json.dumps(value)}')
+        items = [f'{inner}{json.dumps(key)}: {dumps(item, depth + 1)}' for key, item in value.items()]
+        return '{\n' + ',\n'.join(items) + '\n' + pad + '}'
+    if isinstance(value, list) and any(isinstance(v, (list, dict)) for v in value):
+        return '[\n' + ',\n'.join(f'{inner}{dumps(item, depth + 1)}' for item in value) + '\n' + pad + ']'
+    return json.dumps(value)
 
 
 def main():
-    for name, section in [('S1 forecast law', s1_forecast_law), ('S2 power', s2_power_table), ('S3 tests', s3_tests),
-                          ('S3b betting horizon', s3b_betting_horizon),
-                          ('S3c bounded persistence', s3c_bounded_persistence), ('S4 selection', s4_selection),
-                          ('S5 conjunction', s5_conjunction)]:
-        emit(name, section())
+    sections = [('S1 forecast law', s1_forecast_law), ('S2 power', s2_power_table), ('S3 tests', s3_tests),
+                ('S3b betting horizon', s3b_betting_horizon), ('S3c bounded persistence', s3c_bounded_persistence),
+                ('S4 selection', s4_selection), ('S5 conjunction', s5_conjunction),
+                ('S6 validity class', s6_validity_class), ('S7 fixed sequence', s7_fixed_sequence),
+                ('S8 exact examples', s8_exact_examples)]
+    print(dumps({name: section() for name, section in sections}))
 
 
 if __name__ == '__main__':

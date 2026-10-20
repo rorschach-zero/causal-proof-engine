@@ -13,6 +13,20 @@ reassesses `17` version 49 and `16` v53 as they stand there. Codex's automatic r
 as failed (summary comment `6216072575`, 2026-10-19 06:10 UTC), with no findings posted, so nothing in this
 document rests on a Codex review of that commit.
 
+**Revision R2 (2026-10-20).** Codex reviewed R1 at `f7aba62` (review `5581408643` and PR comment `6284764514`). R2
+applies the ten findings that reproduce, RC-281, RC-282 and RC-284 to RC-291 (`16` §3az):
+- the sharp Brier-increment bound d(2 − d) in F6, F8 and M-7;
+- a complete validity class 𝓛 in place of the scalar bound ρ_max, covering shape as well as dependence (F3);
+- the estimand weighting (F10);
+- the zero-crossing bound (F8);
+- exact noncentral-t power (§3);
+- valid JSON output;
+- what Phase 2 can measure without outcomes (§3);
+- the M-6 generator (§7);
+- the experiments inventory of `16` §7.
+
+The commit-identity finding (RC-283) does not reproduce and is recorded for OD9b.
+
 **Evidence.** Every number below marked `REPRODUCED` comes from `research/reproduction/reassessment_sims.py`.
 Its output is committed in `16` Appendix AW and checked by `check_appendix_scripts.py`. Derivations are paper
 arguments, not Lean proofs. External literature is cited for orientation only: it was not re-read in this
@@ -24,19 +38,20 @@ execution and is `UNVERIFIED` as to exact statements.
 |---|---|---|
 | F1 | Once a period-level component exists, the information in the primary is set by the number G of independent calendar periods, not by the number of events. As n → ∞ the minimum detectable effect tends to (t_α + t_β)·τ/√G. | derivation; REPRODUCED |
 | F2 | An outcome-rate shock reaches the paired Brier difference only through FULL's mean lean away from the baseline: τ ≈ 2·s·\|E(p − b)\|. That quantity is observable before any outcome. | derivation; REPRODUCED on a toy law |
-| F3 | No test of the average null over a finite G is valid under unrestricted serial dependence of the period means. Validity needs a pre-registered bound ρ_max that 24 periods cannot verify. | ESTABLISHED in kind; REPRODUCED for AR(1) |
+| F3 | No test of the average null over a finite G is valid under an unrestricted joint law of the period means. Validity needs a pre-registered, complete validity class 𝓛 of joint laws (shape and covariance), which 24 periods cannot verify. Neither a scalar bound on serial correlation nor independence alone is such a class. | ESTABLISHED in kind; REPRODUCED for AR(1), equicorrelation, odd/even shocks and a skewed law |
 | F4 | Outcome-independent inclusion is not identifiable from listing data. It can be established only by design, and the reference-universe holder's own selection is unprovable from the data. | constructive counterexample; REPRODUCED |
 | F5 | If the population is the reference universe itself and every one of its events is forecast, abstentions scored at baseline, the omission audit, draw and box rule add no identifying power. The universe already carries the whole selection assumption. | derivation |
-| F6 | With omitted share m and divergence bound d, the sign of θ is identified only if m < θ/(θ + d). At θ = 0.01 and d = 0.5 that means m < 1.96 %. | derivation; REPRODUCED |
+| F6 | With omitted share m and divergence bound d, a paired Brier increment is bounded by d(2 − d), and the sign of θ is identified only if m < θ/(θ + d(2 − d)). At θ = 0.01 and d = 0.5 that means m < 1.32 %. | derivation; REPRODUCED |
 | F7 | The six-comparator intersection-union conjunction loses power steeply. With 80 % marginals it rejects in 26 % (uncorrelated) to 68 % (r = 0.9). A fixed-sequence order keeps 80 % for the first claim at the same familywise α. | ESTABLISHED; REPRODUCED |
-| F8 | The anytime-valid betting e-process has zero power at G = 24 for δ ≤ 0.02 under every cap tested. It needs about 104–260 independent periods and a divergence bound. "Anytime-valid versus fixed-horizon" is not the binding choice; G is. | REPRODUCED |
+| F8 | The anytime-valid betting e-process crossed in none of 20,000 replications at G = 24 for δ ≤ 0.02 under every cap tested (99 % upper bound 0.023 %). It needs about 104–260 independent periods and a divergence bound. "Anytime-valid versus fixed-horizon" is not the binding choice; G is. | REPRODUCED |
 | F9 | The record shows the signature of overfitting to review: 280 RC items in 52 rounds and a specification grown from 16.7 KB to 405.5 KB. Rounds 43–52 mostly repair consequences of the round-43 late-link rule or process metadata. | measured on the repository; the interpretation is a HYPOTHESIS |
+| F10 | A period-level test fixes the weighting of its estimand. The unweighted block t estimates the period-balanced mean, not the mean over the questions of Q, and the two can differ in sign. | exact example; REPRODUCED |
 
 **Recommendation (§6): narrow the claim and simplify the method.**
 
 - **Keep** the infrastructure: ledger, timestamps, pre-registration, paired Brier, worst-case VOID bounds, and the e-process as monitor only.
 - **Replace** source-selected events audited against a reference universe with an externally fixed question set forecast exhaustively.
-- **Replace** the calibrated c* over an enumerated null class with linked variance blocks and every-subset late partitions, using instead a period-level test with one stated dependence assumption.
+- **Replace** the calibrated c* over an enumerated null class with linked variance blocks and every-subset late partitions, using instead a period-level test calibrated over one pre-registered validity class.
 - **Replace** the six-way conjunction with a fixed-sequence family whose first claim is FULL against Design C.
 - **State the claim** as forecast skill on that question set over that period, never as investment value.
 
@@ -69,7 +84,8 @@ the anchored ledger; base rates; forecast divergence |p_F − p_C|; FULL's mean 
 - whether a source's listing depends on relative skill (only screened);
 - the serial dependence of period-level shocks beyond what G periods reveal;
 - the dependence of clusters through links never archived;
-- whether the null class N contains the true law.
+- whether the null class N contains the true law;
+- the increment standard deviation σ: it depends on the outcome law, and forecasts give only an upper bound (§3).
 
 ## 2. Identifiability and impossibility
 
@@ -95,14 +111,14 @@ Under the toy forecast law of S1 (base rate 0.3, 4,000 periods of 50 events):
 - with a lean of 0.05 and 0.1, the simulated τ is 0.0037, 0.0068, 0.0064 and 0.0117, against first-order values of 0.003, 0.006, 0.006 and 0.012 (REPRODUCED).
 
 Two consequences follow:
-- **The period-level variance of the primary is governed by a quantity observable before outcomes,** FULL's mean lean per period, read at issuance. The outcome-rate shock s can be estimated from reference-class history. Neither needs a registered outcome. At pre-registration, which precedes the forecasts, the bound must come from a blinded burn-in's forecasts or from a pre-registered cap on the mean lean. This holds for the outcome-rate channel only; other channels, such as skill that varies by period, are not covered.
+- **The outcome-rate channel of the period-level variance is governed by FULL's mean lean per period, which is observable before outcomes.** It is read at issuance. The outcome-rate shock s is estimated from the outcome history of the reference class, not from registered outcomes. At pre-registration, which precedes the forecasts, the bound must come from a blinded burn-in's forecasts or from a pre-registered cap on the mean lean. This covers the outcome-rate channel only. Other channels, such as skill that varies by period, need matured blinded outcomes or a pre-registered conservative bound.
 - A system with no skill that only adds noise is worse than the baseline (δ = −noise², −0.0099 at noise 0.1, S1). The one-sided null θ ≤ 0 correctly includes it.
 
 Whether the ± 0.3 increment shocks of `17` §6 are realistic under this channel is **EXPERIMENT_REQUIRED**. Settling
 it needs the forecast lean and the reference-class outcome-rate variation, both measurable without outcomes of
 registered events.
 
-**F3. Serial dependence is an assumption, not a result.** If the period means may be arbitrarily persistent, no
+**F3. The joint law of the period means is an assumption, not a result.** If the period means may be arbitrarily persistent, no
 finite G separates θ > 0 from a slowly drifting zero-mean shock. The distribution-free limit α(1 + δ)^G of `16`
 Appendix H is one expression of this.
 
@@ -117,8 +133,7 @@ Under AR(1) period shocks (τ = 0.01, n = 25, σ = 0.1, G = 24, 20,000 replicati
 
 The block sign-flip test fails the same way: 4.6 %, 7.58 % and 19.0 % (S3, REPRODUCED).
 
-Validity therefore needs a pre-registered bound ρ_max. With the critical value inflated by
-√((1 + ρ_max)/(1 − ρ_max)), size holds:
+Under Gaussian AR(1) with ρ ≤ ρ_max, inflating the critical value by √((1 + ρ_max)/(1 − ρ_max)) restores size:
 - 0.36–0.96 % at ρ_max = 0.5;
 - 0–0.04 % at ρ_max = 0.9.
 
@@ -126,9 +141,36 @@ Power falls with it (S3c, REPRODUCED):
 - at δ = 0.01, from 68 % to 25–28 % at ρ_max = 0.5;
 - at δ = 0.02, to 1.9–10.7 % at ρ_max = 0.9.
 
-ρ_max cannot be verified from 24 periods. A test of serial correlation on G = 24 period means has little power;
-that power was **not simulated here**. The assumption is a design input justified from reference-class history,
-exactly like the block length in `17`.
+**A scalar bound on serial correlation is not a validity condition.** It fixes neither the covariance at other
+lags nor the marginal shape. The following laws satisfy a lag-one bound of 0.5, yet at period share 0.8 the
+AR(1)-inflated cutoff rejects them at θ = 0 in (S6, REPRODUCED):
+- equicorrelation 0.5: 24.1 %; the variance of the mean of the period component is inflated by 1 + 23·0.5 = 12.5, not 3;
+- odd/even common shocks, with lag-one correlation 0 and two effective draws: 25.7 %.
+
+**Independence alone is not one either.** A skewed law with a rare large negative period has nominal-cutoff size:
+- 6.16 % in S3 (99 % upper bound 6.57 %);
+- 20.8 % at period share 0.8 (S6).
+
+**The defensible form is a pre-registered validity class 𝓛.** It is a finite set of complete joint laws of the
+period means under θ = 0, each fixing:
+- the marginal shape;
+- the covariance across periods;
+- the share of period-level variance.
+
+The critical value c_𝓛 is the largest simulated 0.95 quantile of the block t over 𝓛. The claim holds over 𝓛 only,
+up to the Monte Carlo error of c_𝓛. The S6 example class (REPRODUCED) holds Gaussian AR(1) at ρ ∈ {0, 0.25, 0.5}
+and the skewed two-point law, each at period shares 0.2 and 0.8. On it:
+- c_𝓛 = 3.35, set by the skewed law at share 0.8; the nominal value is 1.714;
+- size at c_𝓛 inside 𝓛 is 0.11–5.12 %, with the largest upper bound at 99 % simultaneous confidence 5.61 %;
+- outside 𝓛 it still fails: 21.5 % (equicorrelation) and 23.2 % (odd/even shocks);
+- at the S3 point, power falls from 68.0 % to 15.8 % at δ = 0.01 and from 99.5 % to 83.0 % at δ = 0.02.
+
+The example is not a proposal. It shows that the class sets the power, and that one extreme law in it can set c_𝓛
+alone.
+
+𝓛 cannot be verified from 24 periods. A test of serial correlation on G = 24 period means has little power; that
+power was **not simulated here**. 𝓛 is a design input justified from reference-class history, exactly like the
+block length in `17`, and choosing it is part of OD11.
 
 **F4. Outcome-independent inclusion is not identifiable from listing data.** Build two worlds with the same
 listing metadata: a fixed count of 10 events per period out of 30, at the same times.
@@ -165,15 +207,19 @@ What remains is the holder's selection (F4) and the period dependence (F1–F3).
 the omission draw or the box rule. Those mechanisms protect against a source that drops events, a threat that an
 exhaustive forecast of the universe removes by construction.
 
-**F6. Omissions are tolerable only far below the effect.** If a share m of the population is unobserved and every
-paired increment lies in [−d, d], with d the bound on |p_F − p_C|, the identified set of θ is
-(1 − m)·θ_obs + m·[−d, d]. The sign is identified only if m < θ/(θ + d) (S4, REPRODUCED):
+**F6. Omissions are tolerable only far below the effect.** Suppose a share m of the population is unobserved and
+d bounds |p_F − p_C|. The paired increment (b − Y)² − (p − Y)² = (p − b)(p + b − 2Y) then lies in [−D, D] with
+D = d(2 − d). This bound is sharp: it is attained at min(p, b) = 0 with Y = 1. On a 1001-point grid the supremum is
+0.36, 0.75 and 1 at d = 0.2, 0.5 and 1 (S8, REPRODUCED). R1 used D = d, which is too narrow for every d < 1. For
+example, b = 0.2, p = 0 and Y = 1 give an increment of −0.36 at d = 0.2 (RC-281).
 
-| θ | d = 0.2 | d = 0.5 | d = 1.0 |
+The identified set of θ is (1 − m)·θ_obs + m·[−D, D]. The sign is identified only if m < θ/(θ + D) (S4, REPRODUCED):
+
+| θ | d = 0.2 (D = 0.36) | d = 0.5 (D = 0.75) | d = 1.0 (D = 1) |
 |---|---|---|---|
-| 0.005 | 2.44 % | 0.99 % | 0.50 % |
-| 0.010 | 4.76 % | 1.96 % | 0.99 % |
-| 0.020 | 9.09 % | 3.85 % | 1.96 % |
+| 0.005 | 1.37 % | 0.66 % | 0.50 % |
+| 0.010 | 2.70 % | 1.32 % | 0.99 % |
+| 0.020 | 5.26 % | 2.60 % | 1.96 % |
 
 This explains the power collapse that `17` reports at 1 % and 3 % omissions, and it holds for every estimator: it
 is an identification limit, not a property of the box rule. A pre-registered divergence bound d widens the
@@ -201,14 +247,19 @@ require the confirmatory claim to be the conjunction. H1 of `02` is a hypothesis
 stopping time under the record-order conditional null. Its power over G independent periods is still limited by G.
 Setup (S3b, 20,000 replications):
 - period-mean standard deviation 0.0224 (τ = 0.01, σ = 0.1, n = 25);
-- predictable plug-in bets, capped at λ = 0.5 (valid for increments in [−1, 1]) or λ = 2.5 (valid only if |p_F − p_C| ≤ 0.2 by design).
+- predictable plug-in bets, capped at λ = 0.5 or at λ = 2.5;
+- λ = 0.5 is valid for every increment in [−1, 1];
+- λ = 2.5 needs every increment to exceed −0.4. A design bound |p_F − p_C| ≤ 0.2 ensures that, because it bounds the increment by d(2 − d) = 0.36 (F6).
 
 | Periods G | δ = 0.01, λ ≤ 0.5 | δ = 0.01, λ ≤ 2.5 | δ = 0.02, λ ≤ 2.5 |
 |---|---|---|---|
-| 24 | 0.0 % | 0.0 % | 0.0 % |
-| 104 | 0.0 % | 13.1 % | 99.98 % |
-| 260 | 0.0 % | 99.96 % | 100 % |
+| 24 | 0 of 20,000 | 0 of 20,000 | 0 of 20,000 |
+| 104 | 0 of 20,000 | 13.1 % | 99.98 % |
+| 260 | 0 of 20,000 | 99.96 % | 100 % |
 | 520 | 4.0 % | 100 % | 100 % |
+
+A cell with no crossing in 20,000 replications is not zero power. Its one-sided 99 % Clopper–Pearson upper bound
+is 0.023 % (S3b, RC-285).
 
 The fixed-horizon block t on the same means detects δ = 0.01 at G = 24 in 68.7 %. An anytime-valid primary is
 feasible only with:
@@ -219,22 +270,37 @@ The confidence-sequence literature makes the same point: betting confidence sequ
 and e-values for comparing forecasters (Henzi and Ziegel; Choe and Ramdas) are valid under weak assumptions and
 pay for it in sample size. These are UNVERIFIED citations, not re-read here.
 
+**F10. A period-level test fixes the weighting of its estimand.** Write n_b for the number of events of Q in
+period b and θ_b for their mean improvement. The unweighted block t estimates the period-balanced mean
+θ_P = (1/G)·Σ_b θ_b. That is not the event-level mean over Q, θ_E = Σ_b n_b·θ_b / Σ_b n_b. The two differ whenever
+period means vary with period counts, and they can differ in sign. A period of 100 events at −0.01 and one of a
+single event at +0.10 give θ_E = −0.0089 and θ_P = +0.045 (S8, REPRODUCED; RC-284).
+
+Each estimand has its consistent test:
+- θ_P with the unweighted block t;
+- θ_E with the weighted mean θ̂_E = Σ_b w_b·M_b, w_b = n_b / Σ n, and the variance estimate Σ_b w_b²·(M_b − θ̂_E)²·G/(G − 1) on G − 1 df.
+
+Q is fixed before forecasting, so the weights are known constants. 𝓛 must then include the weight vector, because
+c_𝓛 depends on it. Which estimand is confirmatory is the open OD4 field of RC-69 (per cluster or period-balanced).
+This document does not choose; the claim must name the one tested.
+
 ## 3. Feasibility
 
-**Minimum detectable effect at 80 % power, one-sided α = 0.05** (block t on G period means, σ = 0.1 per cluster,
-n clusters per period; S2, REPRODUCED):
+**Minimum detectable effect at 80 % power, one-sided α = 0.05** (block t on G independent normal period means,
+σ = 0.1 per cluster, n clusters per period). Power is the exact noncentral-t power. R1 summed two central t
+quantiles, which overstates the MDE by up to 1 % at G = 4 (RC-287). S2, REPRODUCED:
 
 | τ | G | n = 25 | n = 100 | n → ∞ |
 |---|---|---|---|---|
 | 0 | 24 | 0.0105 | 0.0052 | 0 |
-| 0.005 | 24 | 0.0108 | 0.0059 | 0.0026 |
+| 0.005 | 24 | 0.0108 | 0.0058 | 0.0026 |
 | 0.01 | 24 | 0.0117 | 0.0074 | 0.0052 |
 | 0.02 | 24 | 0.0148 | 0.0117 | 0.0105 |
-| 0.01 | 48 | 0.0082 | 0.0052 | 0.0036 |
+| 0.01 | 48 | 0.0081 | 0.0052 | 0.0036 |
 | 0.01 | 104 | 0.0055 | 0.0035 | 0.0025 |
 | 0.02 | 104 | 0.0069 | 0.0055 | 0.0049 |
 
-**Independent periods needed for 80 % power at n = 100:**
+**Independent periods needed for 80 % power at n = 100** (unchanged under the exact power):
 
 | Target δ | τ = 0.005 | τ = 0.01 | τ = 0.02 |
 |---|---|---|---|
@@ -245,11 +311,16 @@ n clusters per period; S2, REPRODUCED):
 **Reading:**
 - With monthly periods, a 24-month horizon and 100 resolvable clusters per month (2,400 clusters), δ = 0.01 is detectable if τ ≤ 0.01. δ = 0.005 needs more than four years of monthly periods at τ = 0.01.
 - Supply of 25 clusters per month (600 clusters) moves the δ = 0.01 boundary to about τ = 0.005.
-- Supply, the forecast divergence (σ), the lean (τ, F2) and the effect size are all unknown before Phase 2. Measuring the first three needs no registered outcome: **EXPERIMENT_REQUIRED**, the Phase 2 supply measurement of `17` §6, extended to lean and divergence.
+- Supply, σ, τ and the effect size are all unknown before Phase 2 (RC-289):
+  - supply needs no outcome;
+  - σ is the increment's standard deviation, so it depends on the outcome law. Forecasts give only an upper bound: |X| ≤ |p − b|·max(p + b, 2 − p − b). The same forecasts p = 0.4 and b = 0.3 give σ = 0.092 at outcome probability 0.3 and 0.100 at 0.5, under the forecast-only bound 0.13 (S8);
+  - τ's outcome-rate channel needs the lean (forecasts) and s (outcome history of the reference class). Every other channel needs matured blinded outcomes or a pre-registered conservative bound.
+
+  **EXPERIMENT_REQUIRED**: the Phase 2 supply measurement of `17` §6, extended to the lean, the divergence and the σ bound, plus a reference-class history of outcome rates and their dependence. These are the entries of `16` §7 `experiments_required` (RC-291).
 
 **What these numbers do not cover:**
 - the IUT, which divides the power as in F7;
-- persistence, which multiplies the variance by up to (1 + ρ)/(1 − ρ) (F3);
+- dependence or shape beyond independent normal means, which raises the critical value to c_𝓛 (F3: 15.8 % power at δ = 0.01 on the S6 example class);
 - omissions, which must stay below F6's limit;
 - the calibrated c* of `17`, which is larger than t_α and lowers power further (`17` §6 reports 28–60 % at δ = 0.01 and 600 clusters where the nominal value gives 78 %).
 
@@ -257,7 +328,7 @@ These bounds are optimistic for the current method and roughly attainable for th
 
 **Late evidence and correlated forecasts.**
 - In the current method, late links change the variance blocks after the outcomes. That is the source of rounds 43–52 (RC-250 to RC-274).
-- If the period is the unit of inference, cross-cluster links within a period need no rule at all, because the block sum already absorbs any within-period dependence. Links that cross periods are serial dependence and fall under the ρ_max assumption of F3, with a pre-registered sensitivity analysis that merges adjacent periods (G/2 blocks of two months).
+- If the period is the unit of inference, cross-cluster links within a period need no rule at all, because the block sum already absorbs any within-period dependence. Links that cross periods are serial dependence and fall under the validity class 𝓛 of F3, with a pre-registered sensitivity analysis that merges adjacent periods (G/2 blocks of two months).
 - Correlated comparator forecasts matter only to the conjunction (F7); the first claim of a fixed sequence does not depend on them.
 
 ## 4. Alternatives compared
@@ -266,11 +337,11 @@ These bounds are optimistic for the current method and roughly attainable for th
 |---|---|---|---|---|---|
 | Population | source listings audited against a reference universe; omissions drawn and boxed | every question of a set fixed by an independent party before forecasting (or a beacon-seeded subsample) | as B | questions supplied by a third-party benchmark or tournament stream, or sampled at random from a large external pool | any of the above |
 | Selection assumption | universe holder independent of relative skill (unprovable), plus supply exogeneity screened on a burn-in | universe holder independent of relative skill (unprovable; same residual as A) | as B | the benchmark's question writer independent of the arms (unprovable) | none for the bound itself; the width carries it |
-| Dependence assumption | the true law lies in the enumerated null class N; links archived by T_D | period means independent, or AR with ρ ≤ ρ_max pre-registered | the record-order conditional null (stronger than the average null, `17` §3 item 3) | as B | stated per bound |
-| Finite-sample guarantee | calibration on N_0 only (A3 says so) | t on G − 1 df: exact for independent normal period means; conservative at conventional α for a small number of independent, heterogeneous group estimates (Ibragimov and Müller; UNVERIFIED citation, conditions not re-read) | exact (Ville) under its null, for bounded increments | as B | the identified set is exact under the stated bounds |
-| Power at G = 24, δ = 0.01, τ = 0.01, n = 25 | below B's 68.7 % (calibrated c* and the IUT) | 68.7 % (one comparison) | 0.0 % | as B | the sign is decided only if m < θ/(θ + d) |
-| Complexity | 405 KB specification, 280 RC items, every-subset partitions, K_max budget | one test, one assumption (ρ_max), one sensitivity analysis | small kernel; already archived (GRAPA) | depends on the external provider; little CPE machinery | arithmetic |
-| What it cannot do | confirm under persistence or selection outside N | confirm under persistence beyond ρ_max; say anything about questions outside the set | detect useful effects within two years | guarantee that the questions match CPE's target domain | turn a bound into a point estimate |
+| Dependence assumption | the true law lies in the enumerated null class N; links archived by T_D | the joint law of the period means (shape and covariance) lies in a pre-registered validity class 𝓛 (F3) | the record-order conditional null (stronger than the average null, `17` §3 item 3) | as B | stated per bound |
+| Finite-sample guarantee | calibration on N_0 only (A3 says so) | size ≤ α over 𝓛 up to the Monte Carlo error of c_𝓛; nothing outside 𝓛 (S6) | exact (Ville) under its null, for bounded increments | as B | the identified set is exact under the stated bounds |
+| Power at G = 24, δ = 0.01, τ = 0.01, n = 25 | below B's (calibrated c* and the IUT) | 68.7 % at the nominal cutoff (𝓛 = independent normal means); 15.8 % at c_𝓛 of the S6 example class | no crossing in 20,000 (≤ 0.023 %) | as B | the sign is decided only if m < θ/(θ + d(2 − d)) |
+| Complexity | 405 KB specification, 280 RC items, every-subset partitions, K_max budget | one test, one assumption (𝓛), one sensitivity analysis | small kernel; already archived (GRAPA) | depends on the external provider; little CPE machinery | arithmetic |
+| What it cannot do | confirm under persistence or selection outside N | confirm under a law outside 𝓛; say anything about questions outside the set | detect useful effects within two years | guarantee that the questions match CPE's target domain | turn a bound into a point estimate |
 
 **Approach A.** Valid as a calibration on its families, but its validity grows with each rule, and its residual
 assumptions are the same as B's: the holder's selection and persistence.
@@ -329,15 +400,16 @@ falsified, and the difficulty lies in the problem, not in the method.
 1. *Population.* An externally fixed question set (the reference universe itself), forecast exhaustively by every arm, replaces source listings audited against that universe. This retires, for any source whose universe is the population, the omission audit and draw, the box rule for omissions, the supply-exogeneity screen and the fixed-count analysis (F5). A source family without such a universe is not confirmatory; `17` already says this.
 2. *Statistic and validity.* The block t on the G period means replaces the calibrated c* over an enumerated null class, with variance blocks joined by linked components, late partitions, every-subset decisions, M_late and K_max:
    - one pre-registered period length;
-   - one pre-registered persistence bound ρ_max with its inflated critical value;
+   - one pre-registered validity class 𝓛 with its simulated critical value c_𝓛 (F3);
+   - the estimand weighting, period-balanced or event-weighted, with its matching statistic (F10);
    - G_min;
    - a merge-adjacent-periods sensitivity analysis;
    - E's identified set reported beside the primary.
 
-   The calibration of A3 becomes an implementation check of this one test on its stated law (size and power fixtures), not a certification over a class (F1–F3).
+   The calibration of A3 becomes the calibration of this one test over the laws of 𝓛, with size and power fixtures (F1–F3). It is no longer a certification over a generator family of the whole pipeline.
 3. *Multiplicity.* A fixed-sequence family replaces the six-comparator IUT. Its first hypothesis is H0: θ(FULL − Design C) ≤ 0; the next is FULL against the best pre-registered single provider, then FULL against the equal-weight committee, each at α only after its predecessor rejects (F7). The order is an owner decision.
 
-**Narrow the claim.** Proposed wording: "On the pre-registered question set Q, fixed by [holder] before forecasting, over periods [T_0, T_A), the expected Brier score of CPE's issued forecasts is lower than that of the Design C base rate (one-sided α = 0.05), under the stated assumption that period-level means have serial correlation at most ρ_max and that Q's composition is independent of the arms' relative skill." It makes no claim outside Q, none about investment value, and none from the monitor.
+**Narrow the claim.** Proposed wording: "On the pre-registered question set Q, fixed by [holder] before forecasting, over periods [T_0, T_A), the [period-balanced | event-weighted] mean improvement in Brier score of CPE's issued forecasts over the Design C base rate is positive (one-sided α = 0.05). This holds under two stated assumptions: the joint law of the period means lies in the pre-registered class 𝓛, and Q's composition is independent of the arms' relative skill." The bracket is the OD4 weighting (F10). The claim makes no claim outside Q or 𝓛, none about investment value, and none from the monitor.
 
 **Decision matrix** (++ strong, + adequate, − weak, −− fails; evidence in §2–§4):
 
@@ -356,30 +428,31 @@ Each test is phrased so that a wrong implementation fails it. Thresholds follow 
 
 | ID | Test | Pass condition |
 |---|---|---|
-| M-1 | Size of the block t on G = 24 independent normal period means (20,000 replications) | 99 % upper bound ≤ 0.06; S3 gives 4.86 % (bound 5.23 %) |
+| M-1 | Size of the block t at c_𝓛 on every law of 𝓛 (20,000 replications each) | every one-sided 99 % upper bound, simultaneous over the laws of 𝓛, ≤ 0.06. The S6 example class gives at most 5.61 %. For 𝓛 = {independent normal means} at the nominal cutoff, S3 gives 4.86 % (bound 5.23 %) |
 | M-2 | Invalid control: the cluster-iid t on the same data | must exceed the M-1 bound at τ > 0; S3 gives 6.85 % (bound 7.28 %), so the control needs τ large enough to separate (OD4 sets the family) |
-| M-3 | Size under AR(1) at ρ = ρ_max with the inflated critical value | upper bound ≤ 0.06; S3c gives 0.96 % at ρ_max = 0.5 |
-| M-4 | Power at the pre-registered δ, τ, n and G | simulated power within ± 0.02 of the MDE formula (S2: 0.804, 0.803, 0.798 at the predicted 0.8) |
+| M-3 | Out-of-class control: a law outside 𝓛 that satisfies the same scalar persistence bound | its rejection rate at c_𝓛 must exceed the M-1 bound, so that the report cannot extend the claim beyond 𝓛. S6 gives 21.5 % (equicorrelation 0.5) and 23.2 % (odd/even shocks) |
+| M-4 | Power at the pre-registered δ, τ, n and G on independent normal means | simulated power within ± 0.02 of the exact noncentral-t power (S2: 0.802, 0.803, 0.795 at 0.8) |
 | M-5 | Exhaustive coverage: an event of Q with no FULL forecast by its issuance close | scored at the baseline forecast; an implementation that drops it fails |
-| M-6 | Fixed-sequence familywise error under every configuration of true and false nulls (20,000 replications each) | upper bound ≤ 0.06 for each configuration; a later hypothesis is never tested after an earlier non-rejection |
-| M-7 | Identified set: inject omitted share m with adversarial increments ±d | the reported interval contains the true θ in every replication; the sign is declared only when m < θ_obs/(θ_obs + d) |
+| M-6 | Fixed-sequence familywise error under the joint generator of S7. J = 3 hypotheses in the fixed order. Statistics are jointly normal with unit variances and equal pairwise correlation r ∈ {−0.4, 0, 0.5, 0.9}. A true null has mean 0, the boundary of H0. A false null has mean z_(1−α) + z_π, with π ∈ {0.5, 0.8, 0.99} shared by the false nulls of a configuration. Every pattern with at least one true null is run: 76 configurations, 100,000 replications each (RC-290) | every one-sided Clopper–Pearson upper bound at confidence 1 − 0.01/76 ≤ 0.06; S7 gives at most 5.39 %. A later hypothesis is never tested after an earlier non-rejection |
+| M-7 | Identified set: inject omitted share m with adversarial increments ±d(2 − d) | the reported interval contains the true θ in every replication; the sign is declared only when m < θ_obs/(θ_obs + d(2 − d)) |
 | M-8 | Selection fixture of F4 (world B) presented as a source-listed population | refused as non-confirmatory, because the population is not Q; an implementation that accepts it fails |
 | M-9 | Monitor never confirms | a crossing of the e-process produces no confirmatory record (the anytime-valid monitor row of `17` §6) |
 
-Not yet written as code: M-6 to M-9 are specifications here. M-1 to M-4 are backed by S2, S3 and S3c.
+M-1 to M-4 and M-6 are backed by S2, S3, S6 and S7. M-5 and M-7 to M-9 are specifications here, not yet code.
 
 ## 8. Proof and assumption boundary
 
 | Claim | Status |
 |---|---|
-| F1 information bound, F6 identified set, F7 IUT ≤ min marginal and fixed-sequence FWER | derivation (paper); the F7 FWER part is a textbook result, ESTABLISHED |
+| F1 information bound, F6 identified set with the sharp increment bound d(2 − d), F7 IUT ≤ min marginal and fixed-sequence FWER | derivation (paper); the bound is checked on a grid (S8); the F7 FWER part is a textbook result, ESTABLISHED, and checked on the M-6 generator (S7) |
 | F2 τ ≈ 2·s·\|E(p − b)\| | first-order derivation; REPRODUCED on one toy law only; other channels of period dependence not covered |
-| F3 no uniform test under unrestricted persistence | ESTABLISHED in kind (`16` Appendix H); REPRODUCED for AR(1); ρ_max itself is UNPROVED and must be assumed |
+| F3 no uniform test under an unrestricted joint law; neither a scalar persistence bound nor independence is a validity class | ESTABLISHED in kind (`16` Appendix H); REPRODUCED for AR(1), equicorrelation, odd/even shocks and a skewed law (S3, S3c, S6); 𝓛 itself is UNPROVED and must be assumed |
 | F4 non-identifiability of selection from listings | constructive counterexample, REPRODUCED; general for any test that reads listings only |
 | F5 audit adds no identification once Q is the universe | derivation; relies on abstention = forecast b under a proper score |
-| F8 betting power vs G | REPRODUCED for the plug-in rule; another betting rule could do somewhat better, but not escape the G bound of F1 |
+| F8 betting power vs G | REPRODUCED for the plug-in rule; a zero count is reported with its upper bound; another betting rule could do somewhat better, but not escape the G bound of F1 |
+| F10 period-balanced and event-weighted estimands differ, in sign too | exact example (S8); the choice is the OD4 field of RC-69 |
 | Holder's selection independent of relative skill | UNPROVED; untestable from the data under any design here |
-| Realistic δ, τ, σ, supply | EXPERIMENT_REQUIRED (Phase 2 measurement; lean and divergence need no outcomes) |
+| Realistic δ, τ, σ, supply | EXPERIMENT_REQUIRED (Phase 2 measurement): supply and lean need no outcomes; σ has only a forecast-only upper bound; τ beyond the outcome-rate channel needs matured blinded outcomes |
 | F9 overfitting | HYPOTHESIS with the discriminator of §5 |
 
 ## 9. Owner decision OD11 (new; options and consequences, not chosen)
@@ -389,25 +462,27 @@ Not yet written as code: M-6 to M-9 are specifications here. M-1 to M-4 are back
 | (a) Retain `17` v49 as the confirmatory method and continue rounds | keeps the audited-source design and the calibration on N; review cost per round stays as in rounds 43–52; power below B's |
 | (b) Simplify to B as in §6, keeping `17`'s infrastructure | needs a dated amendment of `17` replacing the §3 item 3 primary and the §6 rows named in §6 above; the retired machinery stays in the record; Codex reviews the amendment at its exact SHA |
 | (c) Narrow to D first (external benchmark) and run B later in the CPE domain | earliest falsifiable skill evidence; answers a different question; benchmark terms belong with OD8 |
-| (d) Pause confirmatory design until the Phase 2 measurements (supply, lean, divergence, reference-class ρ) exist | no rounds wasted on parameters that are unknown; calendar cost only |
+| (d) Pause confirmatory design until the Phase 2 measurements (supply, lean, the σ bound, reference-class outcome rates and their dependence) exist | no rounds wasted on parameters that are unknown; calendar cost only |
 
-Options (b) to (d) leave OD1–OD10 in place. Under (b), several OD4 fields lapse with the machinery they parametrise: M_late, K_max and S_max, the null-class box and γ_cal. ρ_max and the period length replace them. That change is itself part of the decision.
+Options (b) to (d) leave OD1–OD10 in place. Under (b), several OD4 fields lapse with the machinery they parametrise: M_late, K_max and S_max, the null-class box and γ_cal. The validity class 𝓛 and the period length replace them, and the weighting stays the OD4 field of RC-69. That change is itself part of the decision. 𝓛 sets the power (F3), so choosing it is a trade between validity and power that the owner makes, not this document.
 
 ## 10. What was run and what was not
 
-**Run:**
-- `python -I research/reproduction/reassessment_sims.py`, twice, byte-identical, about 13 s each, under Python 3.11.17 in a venv built with `pip install --require-hashes --no-deps -r research/reproduction/requirements.txt` (numpy 2.4.6, scipy 1.17.1). The output is committed in `16` Appendix AW.
+**Run (R2):**
+- `python -I research/reproduction/reassessment_sims.py`, twice, byte-identical, about 21 s each, under Python 3.11.17 in a venv built with `pip install --require-hashes --no-deps -r research/reproduction/requirements.txt` (numpy 2.4.6, scipy 1.17.1). The output is committed in `16` Appendix AW and parses as one JSON object.
 - `check_appendix_scripts.py` without `--reference-code`, on the committed tree. The result is reported in the commit and the handoff.
 
 **Not run:**
 - a power simulation of the serial-correlation test at G = 24;
-- M-6 to M-9;
-- B's power at the calibrated levels of an OD4 class;
+- M-5 and M-7 to M-9;
+- B's power at c_𝓛 for any class other than the S6 example, among them the example without its binding skewed law;
+- the size of the event-weighted statistic of F10;
 - any real data, provider or network.
 
 **Next responsible agent.** Codex: an independent adversarial review of this document and Appendix AW at the exact
 commit that carries them. The checks to make:
-- reproduce S1–S5;
+- reproduce S1–S8;
+- look for a law inside a declared 𝓛 that the c_𝓛 calibration misses, and check whether the weighted statistic of F10 needs more than 𝓛 to be valid;
 - look for a counterexample to F5 (a selection path that survives an exhaustive forecast of Q);
 - look for a counterexample to F2's use as a pre-registration bound;
 - check whether the fixed-sequence order loses a claim the owner needs.
