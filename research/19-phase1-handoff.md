@@ -95,7 +95,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Variance blocks from linked components, late links, every-subset partitions, M_late, K_max count (RC-250 to RC-274) | retired | `18` §6 "Replace" 2 and §3 "Late evidence"; OD11 (b): M_late and K_max lapse |
 | Batch of a cluster (RC-214), post-registration members (RC-215), point-in-time cluster assignment (RC-216), close replay (RC-193), registration schedule and batch calendar (RC-200), beacon deadline (RC-208) | retired | listing-window machinery of the audited-source design (`18` §6 "Replace" 1) |
 | Cluster membership fixed at registration; a later relationship never changes a registered cluster's members, record or key, and merges nothing (RC-66, RC-216, T-17, T-19) | retained | `18` §6 retains paired increments per outcome cluster; the immutability is a registry invariant |
-| Beacon-seeded draw 1{SHA-256(s_b ‖ id_k) < π·2^256} with s_b from a round published after the anchor, no draw before the round, one declaration per cluster (RC-187) | retained where a subsample is drawn; open whether Q is subsampled | `18` §4 states approach B over "every question of a set fixed by an independent party before forecasting (or a beacon-seeded subsample)" and §6 retains "beacon-seeded sampling where a subsample is needed", while §6 "Replace" 1 and M-5 forecast every event of Q; the same seed rule serves the calibration record (`18` M-1 (i), RC-304) |
+| Beacon-seeded draw 1{SHA-256(s_b ‖ id_k) < π·2^256} with s_b from a round published after the anchor, no draw before the round, one declaration per cluster (RC-187) | retained for the calibration seed only; no draw over Q | issue #3 comment `6298303061` (clarification of OD11 (b), 2026-10-20): Q is forecast exhaustively, no event draw over Q is built in any phase, and beacon-seeded sampling serves the calibration record only (`18` M-1 (i), RC-304) |
 | Anchor trust boundary (RC-34): `AnchorStore` interface, harness-owned double in Phase 1, "self-attested" never reported as verified | retained | OD1: anchoring; the production holder is OD6 (§5) |
 | Clock (RC-37, RC-65, RC-73, RC-100): every check persisted before its verdict, high-water mark, discontinuity against the epoch baseline | retained | OD1: capability model and ledger |
 | Epoch rotation at start and at demotion (RC-74, RC-103); demotion without the anchor store, demoted-unanchored state, start at the floor (RC-123) | retained | OD1: offline capability model |
@@ -141,7 +141,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | T-33 | A5 | retained as the denial check | `SHADOW_LIVE_QUOTES` alone denies SIM execution; the halt-time cancellation clause is SIM-phase behaviour (`17` §3 out of scope) | — |
 | T-34 | A4 / A5 | gated: OD10 | secret canary over the reachable exception graph | — |
 | T-36 | A3 / A6 | with item 3 | kernel positive controls and oracles | M-4 |
-| T-37 | A1 / A6 | retained in part | registration without a candidate entry refused; entry after a forecast refused; byte-for-byte replay of the log; report counts equal the log's; the beacon-draw refusals (other seed, early draw, double declaration, best-of-n control) where Q is subsampled; every audit, omission, close, schedule, beacon-deadline, universe and supply clause is retired | M-8 (a source-listed population is not Q) |
+| T-37 | A1 / A6 | retained in part | registration without a candidate entry refused; entry after a forecast refused; byte-for-byte replay of the log; report counts equal the log's; every audit, omission, draw, close, schedule, beacon-deadline, universe and supply clause is retired (no draw over Q, issue #3 comment `6298303061`); the beacon-seed refusals of RC-187 apply to the calibration record under M-1 (i) (§4.3) | M-8 (a source-listed population is not Q) |
 | T-39 | A3 / A6 | with item 3 | monitor order | M-9 |
 | T-40 | A7 | retained | false lemma fails; cache failure is "not verified" | — |
 | T-41 | A7 | retained | manifest 71 OK; tree `122a1619…` | — |
@@ -171,7 +171,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 
 | M | Phase 1 part | Not Phase 1 |
 |---|---|---|
-| M-1 | the record invariants of (i): a calibration record names exactly one claim, the claim's anchored pre-registration names the record, both anchors precede the record's beacon round, a second record for a cohort is refused, every bound claim is reported; Phase 1's one confirmatory register, anchored with S_max before the beacon round of any calibration record bound to any Phase 1 claim, listing the confirmatory claims by identifier, a claim's status never changing (RC-304, RC-309, RC-311, RC-315). With OD11 (b) S_max counts families and a family binds its order, every 𝓛_j and cutoff and one report | the cutoff c_𝓛, its certification, refusal and fresh-size checks ((i) second half, (ii) to (v)) |
+| M-1 | the record invariants of (i): a calibration record names exactly one claim, the claim's anchored pre-registration names the record, both anchors precede the record's beacon round, a second record for a cohort is refused, a seed other than SHA-256(anchored record ‖ v) or one computed before the round is published is refused (the RC-187 refusals of T-37, carried to the calibration record; selection among records is the S17 invalid control), every bound claim is reported; Phase 1's one confirmatory register, anchored with S_max before the beacon round of any calibration record bound to any Phase 1 claim, listing the confirmatory claims by identifier, a claim's status never changing (RC-304, RC-309, RC-311, RC-315). With OD11 (b) S_max counts families and a family binds its order, every 𝓛_j and cutoff and one report | the cutoff c_𝓛, its certification, refusal and fresh-size checks ((i) second half, (ii) to (v)) |
 | M-2, M-3, M-4, M-6, M-7 | none | kernel size, power, familywise error and identified set |
 | M-5 | the slot state: an event of Q with no FULL forecast by its issuance close is recorded as an abstention (RC-109) | scoring the abstention at the baseline forecast |
 | M-8 | the pre-registration registry refuses, as non-confirmatory, a cohort whose population is a source listing rather than Q | — |
@@ -192,22 +192,22 @@ Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
   with its generative rationale, out-of-class sensitivity analysis and refusal policy; the estimand weighting
   (RC-69, `18` F10); the family order; S_max; the calibration size, budget and beacon; the deterministic selection
   rule with tie-breakers and feasibility thresholds, anchored before the design cohort; the design-cohort and
-  burn-in dates.
+  burn-in dates. Closed on 2026-10-20 by issue #3 comment `6298303061` (clarification of OD11 (b), same delegation):
+  Q is never subsampled, no event draw over Q is built in any phase, and beacon-seeded sampling serves the
+  calibration record only.
 - **OD3:** α_total for promotions (T-14, with item 3).
 - **OD4 fields the retained schemas carry as values:** the VOID cap and the abstention cap per arm, H_max, d_max,
   the timestamp that assigns a cluster to a calendar block (RC-129); M_late, K_max, the null-class box and γ_cal
   lapse under (b) (`18` §9).
 - **OD5, per source:** occurrence-time rule, latency window, failure condition, monotone-publication condition,
   observation duty at finality, `falsifier_observable_from`, defect-closure horizon D_s; the named beacon and
-  whether a fallback beacon is pre-registered (RC-208); π if Q is subsampled.
+  whether a fallback beacon is pre-registered (RC-208).
 - **OD6:** the production holder of the `AnchorStore` (Phase 1 uses the harness-owned double, RC-34).
 - **OD8:** the model knowledge cutoff each provider declares per model version (RC-98).
 - **OD9b:** the designated author and committer identities for T-09 (RC-81); the `AGENTS.md` §2 item 3 wording
   (RC-84); the reading of §7 on reviewer names (RC-28).
 - **Not assigned by OD1 (§3.1 to §4.1):** the fusion pool and n_eff (T-23, T-24, F-14, F-17, F-18); the
-  nested-chain identity (T-21); the source withdrawal rule of RC-169; whether Q is subsampled (the beacon-draw code;
-  Codex's review of this document, comment `4328717748`, asks that Q never be subsampled); the SIM-phase clause of
-  T-33.
+  nested-chain identity (T-21); the source withdrawal rule of RC-169; the SIM-phase clause of T-33.
 - **Branch base:** this document is written on `8d5dbb9` (R9), while the decision comment reads `62d4c2a` (R8);
   `17` is identical at both and the R9 change is carried (§1); `main` at `b2e6cbf` contains `8d5dbb9`.
 
