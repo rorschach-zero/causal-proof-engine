@@ -28,7 +28,7 @@ DESIGNATED_IDENTITIES: frozenset[str] = frozenset({"Salah Aouaj <salah@hydeout.c
 # Provider-neutral: trailers, session links and promotional lines of any assistant.
 PROHIBITED_PATTERNS: tuple[tuple[str, str], ...] = (
     ("attribution trailer", r"(?i)^\s*(Co-Authored-By|Signed-off-by: (Claude|Codex|Copilot|ChatGPT|GPT))\b"),
-    ("session link", r"(claude\.ai/code/session|chatgpt\.com/codex/tasks|Claude-Session:)"),
+    ("session link", r"(?i)(claude\.ai/code/session|chatgpt\.com/codex/tasks|Claude-Session:)"),
     ("promotional footer", r"(?i)generated (with|by)\b.*\b(claude|codex|copilot|chatgpt|openai|anthropic|gemini)\b"),
     ("tool identity", r"(noreply@anthropic\.com|noreply@openai\.com|users\.noreply\.github\.com.*\b(claude|codex|copilot)\b)"),
     ("assistant emoji badge", "🤖"),
@@ -39,8 +39,8 @@ PROHIBITED_PATTERNS: tuple[tuple[str, str], ...] = (
 # "Address review round 2" names no document version.
 ROUND_PATTERN = re.compile(r"\b[Rr]ounds? (?:\d+\s*(?:–|-|to)\s*)?(\d+)\b")
 RECONCILIATION_LINE = re.compile(r"(?i)\breconciliation\b.*\brounds? ")
-MATRIX_PATTERN = re.compile(r"\bmatrix v(\d+)\b")
-SPEC_PATTERN = re.compile(r"\bspecification (?:v|version )(\d+)\b")
+MATRIX_PATTERN = re.compile(r"\bmatrix v(\d+)\b", re.IGNORECASE)
+SPEC_PATTERN = re.compile(r"\bspecification (?:v|version )(\d+)\b", re.IGNORECASE)
 
 # The label positions of the research documents, as research/reproduction/check_appendix_scripts.py reads them.
 MATRIX_LABEL = re.compile(r"^\*\*Version:\*\* v(\d+), [-\d]+\. \*\*Round:\*\* (\d+) ", re.MULTILINE)

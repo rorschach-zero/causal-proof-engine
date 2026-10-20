@@ -179,3 +179,29 @@ def test_4329073613_a_review_round_is_not_a_reconciliation_label() -> None:
     assert label_findings("Reconciliation round 49: apply findings", labels, "msg") != []
     assert label_findings("Round 49 of reconciliation: matrix v51", labels, "msg") != []
     assert label_findings("round 49 and matrix v50", labels, "msg") != []
+
+
+# Regression tests for the second review of PR #17 (review 5590426833 at 9c777be); each fails at 9c777be.
+
+
+def test_4329260549_standard_library_mail_and_server_modules_are_inside_the_boundary(tmp_path: Path) -> None:
+    package = tmp_path / "cpe"
+    package.mkdir()
+    (package / "__init__.py").write_text("")
+    (package / "mail.py").write_text("import poplib\nfrom imaplib import IMAP4\nimport nntplib\nimport socketserver\n"
+                                     "import wsgiref.simple_server\nimport webbrowser\n")
+    findings = check_import_boundary.check_package(package)
+    assert len([f for f in findings if "mail.py" in f]) == 6
+
+
+def test_4329260540_version_labels_are_matched_case_insensitively() -> None:
+    labels = tree_labels_from_texts(MATRIX_DOC, SPEC_DOC)
+    findings = label_findings("Reconciliation round 50: Matrix v50 and Specification v46", labels, "msg")
+    assert len(findings) == 2
+    assert label_findings("Reconciliation round 50: Matrix v51 and Specification V47", labels, "msg") == []
+
+
+@pytest.mark.parametrize("bad", ["Fix\n\nCLAUDE-SESSION: abc", "Fix\n\nsee HTTPS://CLAUDE.AI/CODE/SESSION_x",
+                                 "Fix\n\nChatGPT.com/Codex/Tasks/1"])
+def test_4329260532_session_markers_are_matched_case_insensitively(bad: str) -> None:
+    assert text_findings(bad, "commit") != []

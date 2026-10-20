@@ -19,9 +19,11 @@ import ast
 import sys
 from pathlib import Path
 
+# Every standard-library network client and server, the common third-party clients, and the process facilities.
 FORBIDDEN_MODULES: frozenset[str] = frozenset({
     "socket", "ssl", "http", "urllib", "urllib3", "requests", "httpx", "aiohttp", "websocket", "websockets",
-    "smtplib", "ftplib", "telnetlib", "xmlrpc", "asyncio", "subprocess", "multiprocessing", "ctypes", "pty",
+    "smtplib", "smtpd", "ftplib", "poplib", "imaplib", "nntplib", "telnetlib", "xmlrpc", "socketserver", "wsgiref",
+    "asyncio", "asyncore", "asynchat", "webbrowser", "subprocess", "multiprocessing", "ctypes", "pty",
 })
 # Process-spawning names of os (os.system, os.popen, os.exec*, os.spawn*, os.fork*, os.posix_spawn*).
 FORBIDDEN_OS_NAMES: frozenset[str] = frozenset({
