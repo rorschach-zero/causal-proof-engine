@@ -29,9 +29,26 @@ CREATE TABLE IF NOT EXISTS records (
 CREATE TABLE IF NOT EXISTS anchors (
     prefix_length INTEGER PRIMARY KEY,
     digest TEXT NOT NULL,
-    published_at TEXT NOT NULL
+    published_at TEXT NOT NULL,
+    published INTEGER NOT NULL DEFAULT 1
 );
 """
+
+
+class _DuplicateKey(ValueError):
+    def __init__(self, key: str) -> None:
+        super().__init__(key)
+        self.key = key
+
+
+def _pairs_without_duplicates(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
+    """``json.loads`` keeps the last of duplicate keys silently; an archive line has one reading or none."""
+    mapping: dict[str, JsonValue] = {}
+    for key, value in pairs:
+        if key in mapping:
+            raise _DuplicateKey(key)
+        mapping[key] = value
+    return mapping
 
 
 class FaultInjector:
@@ -64,16 +81,21 @@ class Ledger:
         self._lock = threading.Lock()
         self._conn = sqlite3.connect(str(path), isolation_level=None, check_same_thread=False)
         self._conn.executescript(_SCHEMA)
+        columns = {row[1] for row in self._conn.execute("PRAGMA table_info(anchors)").fetchall()}
+        if "published" not in columns:  # a table created before the pending column existed
+            self._conn.execute("ALTER TABLE anchors ADD COLUMN published INTEGER NOT NULL DEFAULT 1")
         self._state: LedgerState = replay(self.records())
         self._anchor_high_water = self._load_anchor_high_water()
+        self._reconcile_pending_anchors()
 
     def close(self) -> None:
         self._conn.close()
 
     @property
     def state(self) -> LedgerState:
-        """A snapshot of the writer's state; changing it changes nothing in the ledger."""
-        return replace(self._state, kinds=dict(self._state.kinds))
+        """A snapshot of the writer's state, taken under the lock; changing it changes nothing in the ledger."""
+        with self._lock:
+            return replace(self._state, kinds=dict(self._state.kinds))
 
     def state_digest(self) -> str:
         return self._state.digest()
@@ -89,8 +111,27 @@ class Ledger:
             return self._records_locked()
 
     def _load_anchor_high_water(self) -> str:
+        """Over every local anchor row, pending ones included: a publication time recorded before the external
+        publish bounds the clock even when the process died before the row was confirmed."""
         row = self._conn.execute("SELECT MAX(published_at) FROM anchors").fetchone()
         return row[0] if row is not None and row[0] is not None else ""
+
+    def _reconcile_pending_anchors(self) -> None:
+        """Confirm every pending local row that the external store holds; without a reachable store the rows
+        stay pending, still bounding the clock, and never count as local anchors."""
+        if self._anchor_store is None:
+            return
+        pending = self._conn.execute(
+            "SELECT prefix_length, digest FROM anchors WHERE published = 0").fetchall()
+        if not pending:
+            return
+        try:
+            external = {(anchor.prefix_length, anchor.digest) for anchor in self._anchor_store.anchors()}
+        except Refusal:
+            return
+        for prefix_length, digest in pending:
+            if (prefix_length, digest) in external:
+                self._conn.execute("UPDATE anchors SET published = 1 WHERE prefix_length = ?", (prefix_length,))
 
     def _server_time(self) -> str:
         """The server clock as a canonical timestamp, refused when it is below the persisted high-water mark of
@@ -136,7 +177,8 @@ class Ledger:
         return "".join(canonical_bytes(record.to_payload()).decode("ascii") + "\n" for record in self.records())
 
     def write_export(self, path: str | Path) -> None:
-        Path(path).write_text(self.export_jsonl(), encoding="ascii")
+        """The canonical bytes, written as bytes: no platform newline translation touches the archive."""
+        Path(path).write_bytes(self.export_jsonl().encode("ascii"))
 
     def anchor(self) -> Anchor:
         """Anchor the whole committed prefix: publish externally first, then keep the local copy.
@@ -144,7 +186,9 @@ class Ledger:
         Before publishing, the chain is verified against every anchor the external store already holds, so that a
         local history rewritten or truncated below an existing anchor can never pollute the store with a conflicting
         later anchor; and the clock is checked against the high-water mark, so that an anchor never carries a time
-        before the records it covers.
+        before the records it covers. The local row is written as pending before the external publish and confirmed
+        after it, so that a process dying between the two leaves the publication time on disk; a publish the store
+        refuses removes the pending row again.
         """
         if self._anchor_store is None:
             raise Refusal("no_anchor_store", "this ledger has no anchor store")
@@ -158,17 +202,24 @@ class Ledger:
                 if not report.intact:
                     raise Refusal("anchor_conflict", f"the ledger does not verify against the external store: {report.detail}")
             anchor = Anchor(self._state.count, self._state.head, published_at)
-            self._anchor_store.publish(anchor)
             self._conn.execute(
-                "INSERT OR REPLACE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                "INSERT OR REPLACE INTO anchors (prefix_length, digest, published_at, published) VALUES (?, ?, ?, 0)",
                 (anchor.prefix_length, anchor.digest, anchor.published_at),
             )
             self._anchor_high_water = max(self._anchor_high_water, anchor.published_at)
+            try:
+                self._anchor_store.publish(anchor)
+            except Refusal:
+                self._conn.execute("DELETE FROM anchors WHERE prefix_length = ? AND published = 0",
+                                   (anchor.prefix_length,))
+                raise
+            self._conn.execute("UPDATE anchors SET published = 1 WHERE prefix_length = ?", (anchor.prefix_length,))
             return anchor
 
     def _local_anchors_locked(self) -> tuple[Anchor, ...]:
         rows = self._conn.execute(
-            "SELECT prefix_length, digest, published_at FROM anchors ORDER BY prefix_length").fetchall()
+            "SELECT prefix_length, digest, published_at FROM anchors WHERE published = 1 ORDER BY prefix_length"
+        ).fetchall()
         return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
 
     def local_anchors(self) -> tuple[Anchor, ...]:
@@ -229,8 +280,10 @@ def records_from_jsonl(text: str) -> tuple[Record, ...]:
         if not line.strip():
             continue
         try:
-            payload = json.loads(line)
+            payload = json.loads(line, object_pairs_hook=_pairs_without_duplicates)
         except json.JSONDecodeError as error:
             raise Refusal("invalid_export", f"line {number}: {error}") from None
+        except _DuplicateKey as error:
+            raise Refusal("invalid_export", f"line {number}: duplicate key {error.key!r}") from None
         records.append(Record.from_payload(payload))
     return tuple(records)

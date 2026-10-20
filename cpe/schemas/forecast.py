@@ -158,25 +158,37 @@ def effective_cutoff(arm_version_id: str, versions: Mapping[str, ArmVersion]) ->
     """The latest declared cutoff over the arm version and every arm version it consumes, recursively (RC-156).
 
     A version that is not registered, or a cycle in the consumption graph, is refused: the cutoff of such an arm is
-    undefined and no comparison may use it. Each version is resolved once (shared inputs are not re-walked).
+    undefined and no comparison may use it. Each version is resolved once (shared inputs are not re-walked), by an
+    explicit stack, so a consumption chain of any registered depth resolves.
     """
     resolved: dict[str, date] = {}
-
-    def resolve(current: str, path: tuple[str, ...]) -> date:
+    path: list[str] = []
+    on_path: set[str] = set()
+    stack: list[tuple[str, ArmVersion | None]] = [(arm_version_id, None)]  # (version id, the version once looked up)
+    while stack:
+        current, looked_up = stack.pop()
+        if looked_up is not None:  # every input resolved: fold them in
+            latest = looked_up.declared_cutoff
+            for consumed in looked_up.consumes:
+                latest = max(latest, resolved[consumed])
+            resolved[current] = latest
+            path.pop()
+            on_path.discard(current)
+            continue
         if current in resolved:
-            return resolved[current]
-        if current in path:
+            continue
+        if current in on_path:
             raise Refusal("invalid_arm_graph", f"{current} consumes itself through {' -> '.join(path)}")
         version = versions.get(current)
         if version is None:
             raise Refusal("unknown_arm_version", f"{current} is not registered")
-        latest = version.declared_cutoff
-        for consumed in version.consumes:
-            latest = max(latest, resolve(consumed, path + (current,)))
-        resolved[current] = latest
-        return latest
-
-    return resolve(arm_version_id, ())
+        on_path.add(current)
+        path.append(current)
+        stack.append((current, version))
+        for consumed in reversed(version.consumes):
+            if consumed not in resolved:
+                stack.append((consumed, None))
+    return resolved[arm_version_id]
 
 
 _JEV_KEYS = frozenset({
