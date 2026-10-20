@@ -96,7 +96,7 @@ def registry(ledger: Ledger, clock: ManualClock) -> RegistrationRegistry:
     for event_id in ("E-1", "E-2"):
         r.log_candidate(CandidateEntry(f"cand-{event_id}", event_id, "src", day(1), "registered", "predicate match"))
     clock.set(day(10))
-    r.register_cluster(registration([spec("E-1"), spec("E-2")]), clock.now())
+    r.register_cluster(registration([spec("E-1"), spec("E-2")]))
     return r
 
 
@@ -113,11 +113,11 @@ def test_t37_registration_needs_a_prior_candidate_entry_and_an_entry_after_a_for
     registry: RegistrationRegistry, clock: ManualClock
 ) -> None:
     with pytest.raises(Refusal) as refusal:
-        registry.register_cluster(registration([spec("E-9", cluster_id="C-9")], cluster_id="C-9"), clock.now())
+        registry.register_cluster(registration([spec("E-9", cluster_id="C-9")], cluster_id="C-9"))
     assert refusal.value.reason == "no_candidate_entry"
     registry.log_candidate(CandidateEntry("cand-E-9", "E-9", "src", day(2), "sampled-out", "draw"))
     with pytest.raises(Refusal) as refusal:
-        registry.register_cluster(registration([spec("E-9", cluster_id="C-9")], cluster_id="C-9"), clock.now())
+        registry.register_cluster(registration([spec("E-9", cluster_id="C-9")], cluster_id="C-9"))
     assert refusal.value.reason == "candidate_not_registered"
     clock.set(day(21))
     registry.submit_forecast(forecast("E-1"))
@@ -129,11 +129,11 @@ def test_t37_registration_needs_a_prior_candidate_entry_and_an_entry_after_a_for
 
 def test_t17_t19_membership_and_void_set_are_fixed_at_registration(registry: RegistrationRegistry, clock: ManualClock) -> None:
     with pytest.raises(Refusal) as refusal:
-        registry.register_cluster(registration([spec("E-1"), spec("E-2"), spec("E-3")]), clock.now())
+        registry.register_cluster(registration([spec("E-1"), spec("E-2"), spec("E-3")]))
     assert refusal.value.reason == "cluster_immutable"
-    before = registry.slot_states("E-1", clock.now())
+    before = registry.slot_states("E-1")
     registry.request_void(VoidRequest("vr-1", "E-1", "please"))
-    assert registry.slot_states("E-1", clock.now()) == before and registry.event("E-1").event_id == "E-1"
+    assert registry.slot_states("E-1") == before and registry.event("E-1").event_id == "E-1"
     with pytest.raises(Refusal):
         registry.request_void(VoidRequest("vr-2", "E-9", "unknown"))
     kinds = [r.kind for r in registry._ledger.records()]
@@ -146,26 +146,26 @@ def test_rc138_registration_refusals_against_e_i_cutoff_window_and_base_rate(reg
     early_falsifier = spec("F-1", "C-F", not_before=20, kind="terminal-falsifier", falsifier_from=15, issuance=(12, 14))
     clock.set(day(16))
     with pytest.raises(Refusal) as refusal:
-        registry.register_cluster(registration([early_falsifier], "C-F"), clock.now())
+        registry.register_cluster(registration([early_falsifier], "C-F"))
     assert refusal.value.reason == "registration_after_e_i"
     clock.set(day(10))
     with pytest.raises(Refusal) as refusal:  # F-27: a cutoff at or after e_i
         registry.register_cluster(registration([spec("F-1", "C-F")], "C-F",
-                                               arms={"FULL": "FULL-1", "LATE": "LATE-1", "DESIGN_C": "DESIGN_C-1"}), clock.now())
+                                               arms={"FULL": "FULL-1", "LATE": "LATE-1", "DESIGN_C": "DESIGN_C-1"}))
     assert refusal.value.reason == "unknown_arm_version"
     registry.register_arm_version(arm("LATE-1", "2026-02-28"))
     with pytest.raises(Refusal) as refusal:
         registry.register_cluster(registration([spec("F-1", "C-F", not_before=50)], "C-F",
-                                               arms={"FULL": "FULL-1", "LATE": "LATE-1", "DESIGN_C": "DESIGN_C-1"}), clock.now())
+                                               arms={"FULL": "FULL-1", "LATE": "LATE-1", "DESIGN_C": "DESIGN_C-1"}))
     assert refusal.value.reason == "cutoff_after_e_i"
     clock.set(day(25))
     with pytest.raises(Refusal) as refusal:  # RC-87: the issuance window must open at or after the record
-        registry.register_cluster(registration([spec("F-1", "C-F")], "C-F"), clock.now())
+        registry.register_cluster(registration([spec("F-1", "C-F")], "C-F"))
     assert refusal.value.reason == "issuance_before_registration"
     clock.set(day(10))
     other = EventSpec.from_payload({**spec("F-1", "C-F").to_payload(), "reference_class_id": "RC-none"})
     with pytest.raises(Refusal) as refusal:  # F-24 G member 2
-        registry.register_cluster(registration([other], "C-F"), clock.now())
+        registry.register_cluster(registration([other], "C-F"))
     assert refusal.value.reason == "no_base_rate"
 
 
@@ -179,7 +179,7 @@ def test_rc150_cutoff_correction_before_and_after_the_first_registration(registr
         registry.correct_cutoff(CutoffCorrection("FULL-1", date(2026, 1, 5), "ev-4"))
     registry.log_candidate(CandidateEntry("cand-G", "G-1", "src", day(2), "registered", "ok"))
     with pytest.raises(Refusal) as refusal:
-        registry.register_cluster(registration([spec("G-1", "C-G")], "C-G"), clock.now())
+        registry.register_cluster(registration([spec("G-1", "C-G")], "C-G"))
     assert refusal.value.reason == "arm_version_withdrawn"
 
 
@@ -206,17 +206,17 @@ def test_forecast_submission_refusals_rc87_rc96_rc109_rc75(registry: Registratio
 def test_f24_g_slot_states_abstention_at_close_and_baseline_from_base_rate(registry: RegistrationRegistry, clock: ManualClock) -> None:
     clock.set(day(21))
     registry.submit_forecast(forecast("E-1", arm_id="A", version="A-1", point=0.4))
-    open_states = {(s.arm_id, s.status) for s in registry.slot_states("E-1", clock.now())}
+    open_states = {(s.arm_id, s.status) for s in registry.slot_states("E-1")}
     assert open_states == {("A", "filled"), ("FULL", "open"), ("DESIGN_C", "baseline")}
     with pytest.raises(Refusal) as refusal:
-        registry.forecasts_for_baseline("E-1", clock.now())
+        registry.forecasts_for_baseline("E-1")
     assert refusal.value.reason == "read_before_close"
     clock.set(day(41))
     registry.submit_forecast(forecast("E-1", point=0.9))  # the late FULL submission is kept, labelled, never fills the slot
-    states = {s.arm_id: s for s in registry.slot_states("E-1", clock.now())}
+    states = {s.arm_id: s for s in registry.slot_states("E-1")}
     assert states["FULL"].status == "abstention" and states["A"].status == "filled"
     assert states["DESIGN_C"].status == "baseline" and states["DESIGN_C"].value == 0.2
-    assert len(registry.forecasts_for_baseline("E-1", clock.now())) == 2
+    assert len(registry.forecasts_for_baseline("E-1")) == 2
 
 
 def test_m8_a_source_listing_population_is_refused_and_claims_are_immutable(registry: RegistrationRegistry) -> None:
@@ -239,15 +239,15 @@ def test_m1_binding_register_and_beacon_seed(registry: RegistrationRegistry, led
                                  "period-balanced", ("DESIGN_C",), ("L-1",), "cal-1")
     registry.register_claim(claim)
     with pytest.raises(Refusal) as refusal:
-        registry.record_calibration(CalibrationRecord("cal-X", "claim-1", "block-t", 1000, 0.01, "beacon"))
+        registry.record_calibration(CalibrationRecord("cal-X", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
     assert refusal.value.reason == "binding_mismatch"
-    registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon"))
+    registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
     with pytest.raises(Refusal) as refusal:
-        registry.record_calibration(CalibrationRecord("cal-1b", "claim-1", "block-t", 1000, 0.01, "beacon"))
+        registry.record_calibration(CalibrationRecord("cal-1b", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
     assert refusal.value.reason in ("second_calibration_record", "binding_mismatch")
     output = BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(12))
     with pytest.raises(Refusal) as refusal:  # no anchor yet: the round cannot be after the record's anchor
-        registry.supply_beacon_output(output)
+        registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(9)))
     assert refusal.value.reason == "round_before_anchor"
     with pytest.raises(Refusal):
         registry.seed_of("cal-1")  # no draw before the round
@@ -259,16 +259,19 @@ def test_m1_binding_register_and_beacon_seed(registry: RegistrationRegistry, led
     assert refusal.value.reason == "register_immutable"
     clock.set(day(11))
     ledger.anchor()
-    with pytest.raises(Refusal):  # a round published before the anchor
-        registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-6", "ab" * 32, day(10.5)))
+    with pytest.raises(Refusal) as early:  # the named round published before the anchor
+        registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(10.5)))
+    assert early.value.reason == "round_before_anchor"
+    clock.set(day(12))
     with pytest.raises(Refusal) as refusal:
         registry.supply_beacon_output(BeaconOutput("cal-1", "other", "round-7", "ab" * 32, day(12)))
     assert refusal.value.reason == "wrong_beacon"
     _, seed = registry.supply_beacon_output(output)
-    assert seed == derive_seed(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon").to_payload(), "ab" * 32)
+    assert seed == derive_seed(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7").to_payload(), "ab" * 32)
     assert registry.seed_of("cal-1") == seed
+    clock.set(day(13))
     with pytest.raises(Refusal) as refusal:
-        registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-8", "cd" * 32, day(13)))
+        registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "cd" * 32, day(13)))
     assert refusal.value.reason == "second_seed"
     registry.register_claim(ClaimPreregistration("claim-late", "fixed_question_set", "Q-1", "holder", day(1), day(60),
                                                  day(400), "period-balanced", ("DESIGN_C",), ("L-1",), "cal-late"))
@@ -278,9 +281,10 @@ def test_m1_binding_register_and_beacon_seed(registry: RegistrationRegistry, led
 def test_register_after_a_beacon_round_confers_nothing(registry: RegistrationRegistry, ledger: Ledger, clock: ManualClock) -> None:
     registry.register_claim(ClaimPreregistration("claim-1", "fixed_question_set", "Q-1", "holder", day(1), day(60), day(400),
                                                  "period-balanced", ("DESIGN_C",), ("L-1",), "cal-1"))
-    registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon"))
+    registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
     clock.set(day(11))
     ledger.anchor()
+    clock.set(day(12))
     registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(12)))
     with pytest.raises(Refusal) as refusal:
         registry.anchor_confirmatory_register(ConfirmatoryRegister("reg-1", 1, ("claim-1",)))
@@ -291,26 +295,30 @@ def test_register_after_a_beacon_round_confers_nothing(registry: RegistrationReg
 def test_a_register_anchored_after_the_round_is_refused_at_the_round(registry: RegistrationRegistry, ledger: Ledger, clock: ManualClock) -> None:
     registry.register_claim(ClaimPreregistration("claim-1", "fixed_question_set", "Q-1", "holder", day(1), day(60), day(400),
                                                  "period-balanced", ("DESIGN_C",), ("L-1",), "cal-1"))
-    registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon"))
+    registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
     clock.set(day(11))
     ledger.anchor()
     registry.anchor_confirmatory_register(ConfirmatoryRegister("reg-1", 1, ("claim-1",)))
+    clock.set(day(12))
     with pytest.raises(Refusal) as refusal:  # the register is written but not yet anchored before the round
         registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(12)))
     assert refusal.value.reason == "register_not_anchored"
     clock.set(day(13))
     ledger.anchor()
-    with pytest.raises(Refusal):
+    clock.set(day(14))
+    with pytest.raises(Refusal):  # the named round was published before the register's anchor
         registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(12)))
-    registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-9", "ab" * 32, day(14)))
+    with pytest.raises(Refusal) as other_round:  # another round is not the one the record names
+        registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-9", "ab" * 32, day(14)))
+    assert other_round.value.reason == "wrong_round"
 
 
 def test_state_is_replayed_byte_for_byte_from_the_ledger(tmp_path: Path, registry: RegistrationRegistry, ledger: Ledger, clock: ManualClock) -> None:
     clock.set(day(21))
     registry.submit_forecast(forecast("E-2", point=0.6))
     digest = ledger.state_digest()
-    states = registry.slot_states("E-2", clock.now())
+    states = registry.slot_states("E-2")
     ledger.close()
     reopened = Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore())
     assert reopened.state_digest() == digest
-    assert RegistrationRegistry(reopened).slot_states("E-2", clock.now()) == states
+    assert RegistrationRegistry(reopened).slot_states("E-2") == states

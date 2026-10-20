@@ -5,6 +5,7 @@ import json
 import sqlite3
 import threading
 from collections.abc import Iterable
+from datetime import datetime
 from pathlib import Path
 
 from cpe.canonical import JsonValue, canonical_bytes
@@ -72,6 +73,10 @@ class Ledger:
     def state(self) -> LedgerState:
         return self._state
 
+    def now(self) -> datetime:
+        """The server clock, the only time a registry may persist as its own (RC-02)."""
+        return self._clock.now()
+
     def state_digest(self) -> str:
         return self._state.digest()
 
@@ -93,10 +98,14 @@ class Ledger:
                           f"{self._state.high_water}")
         return receipt_time
 
-    def append(self, kind: str, record_id: str, payload: JsonValue) -> Record:
+    def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None) -> Record:
+        """Append one record. With ``expected_head``, the append is refused unless the chain head is still that
+        digest, so a decision computed from a snapshot cannot land after a record the snapshot did not hold."""
         require_identifier(kind, "kind")
         require_identifier(record_id, "record_id")
         with self._lock:
+            if expected_head is not None and self._state.head != expected_head:
+                raise Refusal("stale_head", "the ledger advanced since the snapshot this record was decided on")
             receipt_time = self._server_time()
             seq = self._state.count + 1
             payload_text = canonical_bytes(payload).decode("ascii")

@@ -124,6 +124,10 @@ class BaseRate:
     reference_class_id: str
     rate: float
 
+    def __post_init__(self) -> None:
+        require_identifier(self.reference_class_id, "reference_class_id")
+        require_probability(self.rate, "rate")
+
     @classmethod
     def from_payload(cls, payload: object) -> BaseRate:
         m = require_mapping(payload, "BaseRate")
@@ -248,12 +252,15 @@ class ConfirmatoryRegister:
                 "confirmatory_claim_ids": list(self.confirmatory_claim_ids)}
 
 
-_CALIBRATION_KEYS = frozenset({"calibration_record_id", "claim_id", "algorithm_id", "calibration_size", "budget", "beacon_id"})
+_CALIBRATION_KEYS = frozenset({
+    "calibration_record_id", "claim_id", "algorithm_id", "calibration_size", "budget", "beacon_id", "round_id",
+})
 
 
 @dataclass(frozen=True)
 class CalibrationRecord:
-    """The calibration record of one claim: algorithm, size, budget and the beacon it will read (RC-304, RC-309)."""
+    """The calibration record of one claim: algorithm, size, budget, and the beacon round it will read, named
+    before the round is published so that no round can be chosen for its value (RC-304, RC-309)."""
 
     calibration_record_id: str
     claim_id: str
@@ -261,6 +268,7 @@ class CalibrationRecord:
     calibration_size: int
     budget: float
     beacon_id: str
+    round_id: str
 
     def __post_init__(self) -> None:
         if self.calibration_size < 1:
@@ -278,12 +286,12 @@ class CalibrationRecord:
         return cls(require_identifier(m["calibration_record_id"], "calibration_record_id"),
                    require_identifier(m["claim_id"], "claim_id"), require_identifier(m["algorithm_id"], "algorithm_id"),
                    require_non_negative_int(m["calibration_size"], "calibration_size"), float(budget),
-                   require_identifier(m["beacon_id"], "beacon_id"))
+                   require_identifier(m["beacon_id"], "beacon_id"), require_identifier(m["round_id"], "round_id"))
 
     def to_payload(self) -> Payload:
         return {"calibration_record_id": self.calibration_record_id, "claim_id": self.claim_id,
                 "algorithm_id": self.algorithm_id, "calibration_size": self.calibration_size, "budget": self.budget,
-                "beacon_id": self.beacon_id}
+                "beacon_id": self.beacon_id, "round_id": self.round_id}
 
 
 _BEACON_KEYS = frozenset({"calibration_record_id", "beacon_id", "round_id", "value", "published_at"})
