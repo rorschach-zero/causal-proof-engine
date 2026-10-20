@@ -4,9 +4,9 @@ from __future__ import annotations
 import math
 from collections.abc import Mapping
 from datetime import date, datetime
-from typing import Any
+from typing import Any, cast
 
-from cpe.canonical import JsonValue, require_hex_digest
+from cpe.canonical import JsonValue, canonical_bytes, require_hex_digest
 from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 
@@ -54,7 +54,10 @@ def require_probability(value: object, field: str) -> float:
     """A finite number in [0, 1]; booleans are not numbers here (T-26: NaN and out-of-range inputs are refused)."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         raise Refusal("invalid_probability", f"{field} must be a number")
-    number = float(value)
+    try:
+        number = float(value)
+    except OverflowError:
+        raise Refusal("invalid_probability", f"{field} is outside the finite range") from None
     if not math.isfinite(number):
         raise Refusal("invalid_probability", f"{field} must be finite")
     if not 0.0 <= number <= 1.0:
@@ -63,9 +66,21 @@ def require_probability(value: object, field: str) -> float:
 
 
 def require_non_negative_number(value: object, field: str) -> float:
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)) or value < 0:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise Refusal("invalid_number", f"{field} must be a number")
+    try:
+        number = float(value)
+    except OverflowError:
+        raise Refusal("invalid_number", f"{field} is outside the finite range") from None
+    if not math.isfinite(number) or number < 0:
         raise Refusal("invalid_number", f"{field} must be a finite non-negative number")
-    return float(value)
+    return number
+
+
+def require_json(value: object, field: str) -> JsonValue:
+    """Accept only finite, plain JSON data (no tuples, objects or NaN), so that the value can be stored and digested."""
+    canonical_bytes(cast(JsonValue, value))
+    return cast(JsonValue, value)
 
 
 def require_non_negative_int(value: object, field: str) -> int:

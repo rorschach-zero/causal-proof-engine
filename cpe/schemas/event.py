@@ -23,6 +23,7 @@ from cpe.schemas.common import (
     optional_timestamp,
     require_identifier,
     require_identifier_tuple,
+    require_json,
     require_keys,
     require_mapping,
     require_non_negative_int,
@@ -75,7 +76,7 @@ class ResolutionPredicate:
     def from_payload(cls, payload: object) -> ResolutionPredicate:
         mapping = require_mapping(payload, "ResolutionPredicate")
         require_keys(mapping, "ResolutionPredicate", _PREDICATE_KEYS, frozenset())
-        value = mapping["value"]
+        value = require_json(mapping["value"], "value")
         if isinstance(value, dict):
             raise Refusal("invalid_predicate_value", "value must be a scalar or a list")
         return cls(
