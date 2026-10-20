@@ -157,12 +157,26 @@ def check_record_is_final_enough(record: ResolutionRecord, spec: EventSpec, rule
             raise Refusal("not_final", f"{record.record_id}: a NO before the deadline is not logically final")
 
 
+def check_record_chronology(received: ReceivedRecord) -> None:
+    """Evidence cannot postdate the trusted receipt of the record that carries it."""
+    record = received.record
+    if record.first_observed_at > received.receipt:
+        raise Refusal("evidence_after_receipt", f"{record.record_id}: observed after its receipt")
+    if record.evidenced_publication_time is not None and record.evidenced_publication_time > received.receipt:
+        raise Refusal("evidence_after_receipt", f"{record.record_id}: published after its receipt")
+
+
 def _decide(received: ReceivedRecord, spec: EventSpec, rule: SourceRule) -> tuple[Disposition, datetime, str] | None:
-    """What a timely record decides, with the knowable time it gives and the basis; None if it decides nothing."""
+    """What a timely record decides, with the knowable time it gives and the basis; None if it decides nothing.
+
+    An occurrence before the predicate window (``not_before``) is outside the registered predicate and decides
+    nothing, on either predicate kind."""
     record = received.record
     published = received.publication(rule)
     occurrence = record.occurrence_time
     knowable = received.knowable(rule)
+    if occurrence is not None and occurrence < spec.predicate.not_before:
+        return None
     if spec.predicate_kind == "milestone-deadline":
         if record.claim == "occurred":
             if occurrence is not None:
@@ -180,6 +194,18 @@ def _decide(received: ReceivedRecord, spec: EventSpec, rule: SourceRule) -> tupl
     return None
 
 
+def _contradicts(record: ResolutionRecord, spec: EventSpec, disposition: Disposition) -> bool:
+    """A late report of a timely occurrence contradicts a final NO, EXPIRED_NO or VOID on a milestone predicate,
+    and a late timely falsifier contradicts a final YES on a terminal-falsifier predicate."""
+    if record.claim != "occurred":
+        return False
+    occurrence = record.occurrence_time
+    timely = occurrence is None or spec.predicate.not_before <= occurrence <= spec.deadline
+    if spec.predicate_kind == "milestone-deadline":
+        return timely and disposition != "RESOLVED_YES"
+    return timely and disposition == "RESOLVED_YES"
+
+
 def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedRecord],
                observations: Sequence[AbsenceObservation], status: SourceStatus | None, now: datetime) -> Adjudication:
     """Adjudicate one event at ``now`` from what the registry holds. Deterministic in its inputs."""
@@ -187,7 +213,13 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
         raise Refusal("wrong_source", "the rule does not belong to the event's resolution source")
     finality = spec.logical_finality
     for received in records:
+        if received.record.event_id != spec.event_id:
+            raise Refusal("wrong_event", f"{received.record.record_id} concerns {received.record.event_id}")
         check_record_is_final_enough(received.record, spec, rule)
+        check_record_chronology(received)
+    for observation in observations:
+        if observation.event_id != spec.event_id or observation.source_id != rule.source_id:
+            raise Refusal("wrong_source", f"observation {observation.observation_id} is not of this event's source")
     ordered = sorted(records, key=lambda r: (r.knowable(rule), r.record.record_id))
     timely = [r for r in ordered if r.knowable(rule) <= finality]
     late = [r for r in ordered if r.knowable(rule) > finality]
@@ -211,7 +243,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     elif now >= finality:
         absence_at: datetime | None = None
         absence_basis = ""
-        reads = sorted(o.observed_at for o in observations if o.observed_at >= finality)
+        reads = sorted(o.observed_at for o in observations if finality <= o.observed_at <= now)
         if reads:
             absence_at, absence_basis = reads[0], "archived observation of absence at or after finality"
         elif rule.monotone_publication and late:
@@ -219,7 +251,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
             absence_at = first_late.record.first_observed_at
             absence_basis = (f"earliest matching record {first_late.record.record_id} published after finality "
                              "under the monotone-publication condition (RC-113)")
-        if status is not None and status.failed and status.declared_at <= now:
+        if status is not None and status.failed and status.declared_at <= finality:
             disposition, knowable, basis = "VOID", finality, "source rule failure condition met"
         elif absence_at is not None:
             disposition = "RESOLVED_NO" if spec.predicate_kind == "milestone-deadline" else "RESOLVED_YES"
@@ -232,12 +264,11 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
                 "the source cannot evidence absence at finality and no observation exists (RC-113)")
 
     defects: list[Defect] = []
-    if disposition in FINAL and disposition != "RESOLVED_YES":
+    if disposition in FINAL:
         for received in late:
-            record = received.record
-            if record.claim == "occurred" and (record.occurrence_time is None or record.occurrence_time <= spec.deadline):
-                defects.append(Defect(record.record_id, "report of timely occurrence published after finality; "
-                                                        "the disposition stands (RC-88)"))
+            if _contradicts(received.record, spec, disposition):
+                defects.append(Defect(received.record.record_id, "report of timely occurrence published after "
+                                                                 "finality; the disposition stands (RC-88)"))
 
     if disposition not in FINAL:
         return Adjudication(spec.event_id, "OPEN", None, None, basis, None)

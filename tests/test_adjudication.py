@@ -2,6 +2,7 @@
 RC-146, RC-88 immutability, RC-105, RC-113, RC-139, RC-156, RC-163."""
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -97,8 +98,10 @@ def test_f03_no_before_the_deadline_is_not_final(tmp_path: Path) -> None:
     assert refusal.value.reason == "not_final"
     registry = AdjudicationRegistry(Ledger(tmp_path / "l.sqlite", ManualClock(day(3)), HarnessAnchorStore()))
     registry.register_rule(rule())
-    with pytest.raises(Refusal):
-        registry.submit_record(early_no.record, spec())
+    registry.register_event(spec())
+    with pytest.raises(Refusal) as refused:
+        registry.submit_record(early_no.record)
+    assert refused.value.reason == "not_final"
     definitive = adjudicate(spec(), rule(), [record("r", claim="not-occurred", published=101, definitive=True)], [], None, day(102))
     assert definitive.disposition == "EXPIRED_NO"
 
@@ -149,22 +152,26 @@ def test_source_failure_condition_gives_void_at_finality() -> None:
 
 
 def test_rc146_knowable_at_is_the_earliest_of_the_three_times() -> None:
-    # occurrence public at 90, deadline + window 110 (deadline 101, window 9), publication 118: knowable_at is 90
-    late_spec = spec(deadline=101, window_days=9, not_before=100.5, issuance=(20, 100.5))
+    # occurrence public at 90 (inside the predicate window opening at 80), deadline + window 110 (deadline 101,
+    # window 9), publication 118: knowable_at is 90
+    late_spec = spec(deadline=101, window_days=9, not_before=80, issuance=(20, 80))
     out = adjudicate(late_spec, rule(public_act=True), [record("r", occurrence=90, published=118)], [], None, day(119))
     assert (out.disposition, out.knowable_at) == ("RESOLVED_YES", day(90))
     t_star = cluster_knowable_time([out])
     assert t_star == day(90)
-    assert classify_forecast(day(100), late_spec, day(10), t_star) == "late"
-    assert classify_forecast(day(89), late_spec, day(10), t_star) == "eligible"
+    assert classify_forecast(day(79), late_spec, day(10), t_star) == "eligible"
+    # the issuance window closes at e_i = 80 (RC-163), so no forecast received at or after 90 is inside it
+    assert classify_forecast(day(95), late_spec, day(10), t_star) == "out_of_window"
 
 
 def test_f21_publication_gap_and_f21b_expiry_gap() -> None:
-    # F-21: outcome published 10:00, forecast received 10:05, registry receives the outcome 10:30
+    # F-21: outcome (lateness evidenced, no occurrence time) published 10:00, forecast received 10:05, registry
+    # receives the outcome 10:30
     ten = day(100) + timedelta(hours=10)
     gap_spec = spec(deadline=101, not_before=100.9, issuance=(20, 100.9))
-    published_at_ten = record("r", occurrence=99, published=100 + 10 / 24, received=100 + 10.5 / 24)
+    published_at_ten = record("r", published=100 + 10 / 24, received=100 + 10.5 / 24, lateness=True)
     out = adjudicate(gap_spec, rule(), [published_at_ten], [], None, day(101))
+    assert (out.disposition, out.knowable_at) == ("EXPIRED_NO", ten)
     t_star = cluster_knowable_time([out])
     assert t_star == ten
     assert classify_forecast(ten + timedelta(minutes=5), gap_spec, day(10), t_star) == "late"
@@ -207,30 +214,36 @@ def test_registry_writes_the_disposition_once_and_replays_it(tmp_path: Path) -> 
     clock = ManualClock(day(105))
     ledger = Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore())
     registry = AdjudicationRegistry(ledger)
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as unknown:
         registry.submit_observation(observation(110))
+    assert unknown.value.reason == "unknown_event"
+    registry.register_event(spec())
+    with pytest.raises(Refusal) as no_rule:
+        registry.adjudicate("E")
+    assert no_rule.value.reason == "unknown_source"
     registry.register_rule(rule())
     registry.register_rule(rule())
     with pytest.raises(Refusal):
         registry.register_rule(rule(public_act=True))
     with pytest.raises(Refusal):
-        registry.submit_record(record("missing-time").record, spec())
-    assert registry.adjudicate(spec(), clock.now()).disposition == "OPEN"
+        registry.submit_record(record("missing-time").record)
+    assert registry.adjudicate("E").disposition == "OPEN"
     clock.set(day(111))
     registry.submit_observation(observation(110))
-    first = registry.adjudicate(spec(), clock.now())
-    assert first.disposition == "RESOLVED_NO" and first.adjudicated_at == day(111)
+    first = registry.adjudicate("E")
+    assert first.disposition == "RESOLVED_NO" and first.adjudicated_at == day(111) and first.defects == ()
     clock.set(day(113))
-    registry.submit_record(record("late", occurrence=95, published=112).record, spec())
-    again = registry.adjudicate(spec(), clock.now())
-    assert again == first
+    registry.submit_record(record("late", occurrence=95, published=112).record)
+    again = registry.adjudicate("E")
+    assert replace(again, defects=()) == first and [d.record_id for d in again.defects] == ["late"]
     kinds = [r.kind for r in ledger.records()]
     assert kinds.count("disposition") == 1 and kinds.count("source_latency_defect") == 1
-    registry.adjudicate(spec(), clock.now())
+    assert registry.adjudicate("E") == again
     assert [r.kind for r in ledger.records()].count("source_latency_defect") == 1
     ledger.close()
+    clock.set(day(200))
     reopened = AdjudicationRegistry(Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore()))
-    assert reopened.adjudicate(spec(), day(200)) == first
+    assert reopened.adjudicate("E") == again
 
 
 def test_registry_refuses_the_wrong_source_and_event() -> None:
@@ -238,6 +251,7 @@ def test_registry_refuses_the_wrong_source_and_event() -> None:
     with pytest.raises(Refusal) as refusal:
         adjudicate(other, rule(), [], [], None, day(1))
     assert refusal.value.reason == "wrong_source"
-    with pytest.raises(Refusal):
-        adjudicate(spec(), rule(), [record("r", published=105, event_id="E")], [], None, day(1))  # fine event
-        adjudicate(spec(), rule(), [ReceivedRecord(ResolutionRecord("x", "E", "other", "occurred", day(1)), day(1))], [], None, day(1))
+    with pytest.raises(Refusal) as from_other:
+        adjudicate(spec(), rule(), [ReceivedRecord(ResolutionRecord("x", "E", "other", "occurred", day(1)), day(1))], [],
+                   None, day(1))
+    assert from_other.value.reason == "wrong_source"
