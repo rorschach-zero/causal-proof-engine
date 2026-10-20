@@ -31,19 +31,22 @@ DESIGNATED_AUTHORS: frozenset[str] = frozenset({"Salah Aouaj <salah@hydeout.ch>"
 DESIGNATED_COMMITTERS: frozenset[str] = DESIGNATED_AUTHORS
 GITHUB_MERGE_COMMITTER = "GitHub <noreply@github.com>"
 
-# Provider-neutral: trailers, session links and promotional lines of any assistant.
+# Provider-neutral: every git-style trailer except the owner-requested human ``Reviewed-by:`` line (``AGENTS.md``
+# section 7), session links, promotional footers of any assistant (a line that opens with "Generated with/by",
+# or one naming a known assistant anywhere), tool identities and badges; all case-insensitive.
 PROHIBITED_PATTERNS: tuple[tuple[str, str], ...] = (
-    ("attribution trailer", r"(?i)^\s*(Co-Authored-By|Signed-off-by: (Claude|Codex|Copilot|ChatGPT|GPT))\b"),
+    ("attribution trailer", r"(?i)^\s*(?!reviewed-by:)[a-z][a-z0-9]*(?:-[a-z0-9]+)*-by:\s*\S"),
     ("session link", r"(?i)(claude\.ai/code/session|chatgpt\.com/codex/tasks|Claude-Session:)"),
-    ("promotional footer", r"(?i)generated (with|by)\b.*\b(claude|codex|copilot|chatgpt|openai|anthropic|gemini)\b"),
-    ("tool identity", r"(noreply@anthropic\.com|noreply@openai\.com|users\.noreply\.github\.com.*\b(claude|codex|copilot)\b)"),
+    ("promotional footer", r"(?i)^[\s_*]*generated (with|by)\b"),
+    ("promotional footer", r"(?i)generated (with|by)\b.*\b(claude|codex|copilot|chatgpt|openai|anthropic|gemini|cursor|devin|aider)\b"),
+    ("tool identity", r"(?i)(noreply@anthropic\.com|noreply@openai\.com|users\.noreply\.github\.com.*\b(claude|codex|copilot)\b)"),
     ("assistant emoji badge", "🤖"),
 )
 
 # "round 50" and "rounds 1–50" both name round 50 (the last of a range). A round is a reconciliation label only
 # in that context: the word "reconciliation" on the same line, or a matrix or specification label in the message;
 # "Address review round 2" names no document version.
-ROUND_PATTERN = re.compile(r"\b[Rr]ounds? (?:\d+\s*(?:–|-|to)\s*)?(\d+)\b")
+ROUND_PATTERN = re.compile(r"\brounds? (?:\d+\s*(?:–|-|to)\s*)?(\d+)\b", re.IGNORECASE)
 RECONCILIATION_LINE = re.compile(r"(?i)\breconciliation\b.*\brounds? ")
 MATRIX_PATTERN = re.compile(r"\bmatrix v(\d+)\b", re.IGNORECASE)
 SPEC_PATTERN = re.compile(r"\bspecification (?:v|version )(\d+)\b", re.IGNORECASE)

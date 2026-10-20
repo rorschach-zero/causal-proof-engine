@@ -75,13 +75,32 @@ def imported_names(tree: ast.AST, module: str, is_package: bool) -> list[tuple[s
     return names
 
 
+def os_aliases(tree: ast.AST) -> set[str]:
+    """Every local name bound to the ``os`` module: ``import os``, ``import os as safe``."""
+    names = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == "os":
+                    names.add(alias.asname or "os")
+    return names
+
+
+def star_imports(tree: ast.AST) -> list[tuple[str, int]]:
+    """``from x import *`` forms, which bind names the static check cannot resolve."""
+    return [(node.module or "", node.lineno) for node in ast.walk(tree)
+            if isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names)]
+
+
 def process_api_uses(tree: ast.AST) -> list[tuple[str, int]]:
-    """``os.system(...)`` style attribute uses of the process-spawning names of ``os``."""
+    """``os.system(...)`` style attribute uses of the process-spawning names of ``os``, through any local name
+    bound to the module."""
+    aliases = os_aliases(tree)
     uses: list[tuple[str, int]] = []
     for node in ast.walk(tree):
-        if (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id == "os"
+        if (isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name) and node.value.id in aliases
                 and node.attr in FORBIDDEN_OS_NAMES):
-            uses.append((f"os.{node.attr}", node.lineno))
+            uses.append((f"{node.value.id}.{node.attr}", node.lineno))
     return uses
 
 
@@ -106,6 +125,9 @@ def findings_for_module(path: Path, source: str, package_root: Path) -> list[str
             add(line, "evidence", f"imports the evidence scripts {name}")
     for name, line in process_api_uses(tree):
         add(line, "process-use", f"uses {name}, a process-spawning facility outside the offline boundary")
+    for module_name_, line in star_imports(tree):
+        if _root(module_name_) in FORBIDDEN_MODULES or _root(module_name_) == "os":
+            add(line, "star", f"imports * from {module_name_}, which binds process or network facilities unseen")
     return [findings[key] for key in sorted(findings)]
 
 
