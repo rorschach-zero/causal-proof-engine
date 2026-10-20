@@ -34,7 +34,10 @@ below backs one numbered claim of `18`:
 - S13 (RC-298): the calibration budget spent per component against spent across the union of all laws of all
   components, its joint certificate and its cost in cutoff and power;
 - S14 (RC-300): calibration sizes at which no cutoff is certifiable, and their refusal;
-- S15 (RC-301): the variance of a period mean when the period component and the cluster errors are correlated.
+- S15 (RC-301): the variance of a period mean when the period component and the cluster errors are correlated;
+- S16 (reassessment R5, RC-302): the unconditional size of the whole procedure, calibration and test together, which
+  is (j + 1)/(n + 1) at a certified index j by exchangeability, against the bound alpha + 0.01 that the 99 %
+  certificate alone gives, exactly and by an end-to-end simulation.
 Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
     python research/reproduction/reassessment_sims.py
 Deterministic: every section uses its own fixed seed. The output is one JSON object; a table row is one line of it
@@ -413,11 +416,24 @@ def certified_cutoff(t, budget):
     across every law of every component and statistic it certifies, budget = 0.01 / (total laws), so the union bound
     certifies size <= alpha on all of them at 99 % joint confidence over the calibration (RC-298). The empirical 0.95
     quantile has exceedance probability above alpha about half of the time. When even the sample maximum fails the
-    condition, (1 - alpha)^n > budget, no cutoff is certified and the calibration is refused (RC-300)."""
+    condition, (1 - alpha)^n > budget, no cutoff is certified and the calibration is refused (RC-300). The 99 %
+    certificate alone bounds the unconditional size only by alpha + 0.01 (RC-302); the procedure's unconditional
+    size on the calibrated law is (j + 1)/(n + 1) by exchangeability, and a cutoff for which that exceeds alpha is
+    refused."""
     n = t.size
-    if stats.beta.sf(ALPHA, 1, n) > budget:
+    j = certified_index(n, budget)
+    if j is None:
         raise ValueError(f'no certifiable cutoff: (1 - alpha)^{n} > {budget}; '
                          f'n >= {minimum_calibration_size(budget)} draws are needed')
+    if marginal_size(j, n) > ALPHA:
+        raise ValueError(f'unconditional size {marginal_size(j, n)} of index {j} exceeds alpha')
+    return float(np.sort(t)[::-1][j])
+
+
+def certified_index(n, budget):
+    """Index j of the order statistic that certified_cutoff returns for n draws, or None when it refuses (RC-300)."""
+    if stats.beta.sf(ALPHA, 1, n) > budget:
+        return None
     lo, hi = 0, n - 1
     while lo < hi:
         mid = (lo + hi + 1) // 2
@@ -425,7 +441,14 @@ def certified_cutoff(t, budget):
             lo = mid
         else:
             hi = mid - 1
-    return float(np.sort(t)[::-1][lo])
+    return lo
+
+
+def marginal_size(j, n):
+    """Unconditional probability, over calibration and test together, that a fresh draw of the calibrated law exceeds
+    the (j + 1)-th largest of n calibration draws: (j + 1)/(n + 1) for a continuous statistic, by exchangeability of
+    the n + 1 draws (RC-302)."""
+    return (j + 1) / (n + 1)
 
 
 def minimum_calibration_size(budget):
@@ -655,6 +678,51 @@ def s15_within_period_covariance():
     return {'n': n, 'tau': tau, 'sigma': sigma, 'reps': reps, 'rows': rows}
 
 
+def s16_unconditional_size():
+    """RC-302. The 99 % certificate is a statement about the random cutoff: with probability 0.99 over the calibration
+    its size is <= alpha. On its own that bounds the unconditional size of calibration and test together only by
+    0.99 alpha + 0.01. The procedure's unconditional size on the calibrated law is P(T_new > T_(j+1)) = (j + 1)/(n + 1),
+    exact for a continuous statistic whatever the law, because the n calibration draws and the fresh draw are
+    exchangeable. Reported exactly for the certifications of S9, S10, S13 and S14, over a grid of n and budgets, and
+    by an end-to-end simulation on uniform draws (the result does not depend on the law)."""
+    used = [('S9, K = 8', 200000, 0.01 / 8), ('S10, two laws', 200000, 0.01 / 2),
+            ('S13 per component', 200000, 0.01 / 8), ('S13 union, K = 24', 200000, 0.01 / 24),
+            ('S14 minimum n, K = 8', 131, 0.01 / 8), ('S14 minimum n, K = 24', 152, 0.01 / 24)]
+    rows = []
+    for name, n, budget in used:
+        j = certified_index(n, budget)
+        rows.append({'certification': name, 'n': n, 'budget_per_law': round(budget, 6), 'index_j': j,
+                     'unconditional_size': round(marginal_size(j, n), 6),
+                     'certificate_only_bound': round((1 - 0.01) * ALPHA + 0.01, 4)})
+    worst = {'n': None, 'budget_per_law': None, 'unconditional_size': 0.0}
+    grid = np.unique(np.round(np.logspace(np.log10(131), 6, 2000)).astype(int))
+    for k in [1, 2, 3, 8, 24, 100, 1000]:
+        for n in grid:
+            j = certified_index(int(n), 0.01 / k)
+            if j is not None and marginal_size(j, int(n)) > worst['unconditional_size']:
+                worst = {'n': int(n), 'budget_per_law': round(0.01 / k, 6),
+                         'unconditional_size': round(marginal_size(j, int(n)), 6)}
+    rng = np.random.default_rng(53)
+    simulated, reps, batch = [], 200000, 10000
+    for n, budget in [(131, 0.01 / 8), (1000, 0.01 / 8), (1000, 0.01)]:
+        j = certified_index(n, budget)
+        rejections = failures = 0
+        for _ in range(reps // batch):
+            cal = rng.random((batch, n))
+            cutoff = -np.partition(-cal, j, axis=1)[:, j]
+            rejections += int((rng.random(batch) > cutoff).sum())
+            failures += int((1 - cutoff > ALPHA).sum())
+        rate = rejections / reps
+        simulated.append({'n': n, 'budget_per_law': round(budget, 6), 'index_j': j, 'reps': reps,
+                          'exact_unconditional_size': round(marginal_size(j, n), 5),
+                          'simulated_rejection': round(rate, 5),
+                          'upper_99': round(float(stats.beta.ppf(0.99, rejections + 1, reps - rejections)), 5),
+                          'certificate_failure_rate': round(failures / reps, 5)})
+    return {'certifications_used': rows, 'grid_worst': {'n_range': [131, 1000000], 'points': int(grid.size),
+                                                         'budgets': '0.01/k, k in 1, 2, 3, 8, 24, 100, 1000', **worst},
+            'end_to_end': simulated}
+
+
 def dumps(value, depth=0):
     """JSON text of value: a container holding containers spans lines, anything else stays on one line, so the
     committed output is one JSON object whose table rows are single lines (RC-288)."""
@@ -676,7 +744,8 @@ def main():
                 ('S10 component cutoffs', s10_component_cutoffs), ('S11 weighted variance', s11_weighted_variance),
                 ('S12 composite null', s12_composite_null), ('S13 family budget', s13_family_budget),
                 ('S14 unattainable certification', s14_unattainable_certification),
-                ('S15 within-period covariance', s15_within_period_covariance)]
+                ('S15 within-period covariance', s15_within_period_covariance),
+                ('S16 unconditional size', s16_unconditional_size)]
     print(dumps({name: section() for name, section in sections}))
 
 
