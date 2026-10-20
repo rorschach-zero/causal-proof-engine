@@ -1,0 +1,26 @@
+# Phase 1 of the Causal Proof Engine: offline, synthetic-data invariant infrastructure (research/19-phase1-handoff.md).
+# The package has no runtime dependency. Development tools are hash-locked in requirements/dev.txt and installed in a
+# virtual environment outside the repository; the tests run from the repository root with `python -m pytest`.
+[project]
+name = "cpe"
+version = "0.1.0"
+description = "Causal Proof Engine, Phase 1 invariant infrastructure: schemas, ledger, registries (offline only)"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q --strict-markers"
+xfail_strict = true
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+disallow_any_unimported = true
+files = ["cpe", "tests"]
+
+[[tool.mypy.overrides]]
+module = ["tests.test_review_dispatch"]
+ignore_errors = true
