@@ -49,6 +49,21 @@ until a separately reviewed and expressly authorised release; an initial live pi
 at USD 1,000 after verified safeguards. Formal verification establishes correctness relative to stated
 assumptions, not profitable real-world forecasts. Simulated performance is never live performance.
 
+## Phase 1 code
+
+Phase 1 builds the offline invariant infrastructure selected in `research/19-phase1-handoff.md`: schemas, the
+anchored ledger with replay, the adjudication and pre-registration registries, the offline capability model and
+input validation. The package `cpe/` has no runtime dependency; the development tools are hash-locked in
+`requirements/dev.txt`. From the repository root, in a virtual environment outside the repository:
+
+```sh
+python -m venv /path/to/venv && /path/to/venv/bin/pip install --require-hashes --no-deps -r requirements/dev.txt
+/path/to/venv/bin/python -m pytest
+/path/to/venv/bin/mypy
+```
+
+Nothing under `cpe/` reads a network, a provider, a broker or a credential; every test is synthetic.
+
 ## Working in this repository
 
 All work goes through pull requests against `main` with independent review. Enable the versioned hooks once
