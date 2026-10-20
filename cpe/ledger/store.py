@@ -5,6 +5,7 @@ import json
 import sqlite3
 import threading
 from collections.abc import Iterable
+from dataclasses import replace
 from pathlib import Path
 
 from cpe.canonical import JsonValue, canonical_bytes
@@ -64,13 +65,15 @@ class Ledger:
         self._conn = sqlite3.connect(str(path), isolation_level=None, check_same_thread=False)
         self._conn.executescript(_SCHEMA)
         self._state: LedgerState = replay(self.records())
+        self._anchor_high_water = self._load_anchor_high_water()
 
     def close(self) -> None:
         self._conn.close()
 
     @property
     def state(self) -> LedgerState:
-        return self._state
+        """A snapshot of the writer's state; changing it changes nothing in the ledger."""
+        return replace(self._state, kinds=dict(self._state.kinds))
 
     def state_digest(self) -> str:
         return self._state.digest()
@@ -85,12 +88,17 @@ class Ledger:
         with self._lock:
             return self._records_locked()
 
+    def _load_anchor_high_water(self) -> str:
+        row = self._conn.execute("SELECT MAX(published_at) FROM anchors").fetchone()
+        return row[0] if row is not None and row[0] is not None else ""
+
     def _server_time(self) -> str:
-        """The server clock as a canonical timestamp, refused when it is below the persisted high-water mark."""
+        """The server clock as a canonical timestamp, refused when it is below the persisted high-water mark of
+        record receipts and anchor publications."""
         receipt_time = format_timestamp(self._clock.now())
-        if receipt_time < self._state.high_water:
-            raise Refusal("clock_rollback", f"server clock {receipt_time} is below the high-water mark "
-                          f"{self._state.high_water}")
+        high_water = max(self._state.high_water, self._anchor_high_water)
+        if receipt_time < high_water:
+            raise Refusal("clock_rollback", f"server clock {receipt_time} is below the high-water mark {high_water}")
         return receipt_time
 
     def append(self, kind: str, record_id: str, payload: JsonValue) -> Record:
@@ -155,20 +163,28 @@ class Ledger:
                 "INSERT OR REPLACE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
                 (anchor.prefix_length, anchor.digest, anchor.published_at),
             )
+            self._anchor_high_water = max(self._anchor_high_water, anchor.published_at)
             return anchor
+
+    def _local_anchors_locked(self) -> tuple[Anchor, ...]:
+        rows = self._conn.execute(
+            "SELECT prefix_length, digest, published_at FROM anchors ORDER BY prefix_length").fetchall()
+        return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
 
     def local_anchors(self) -> tuple[Anchor, ...]:
         with self._lock:
-            rows = self._conn.execute(
-                "SELECT prefix_length, digest, published_at FROM anchors ORDER BY prefix_length").fetchall()
-        return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
+            return self._local_anchors_locked()
 
     def verify(self, external: AnchorStore | None = None) -> VerificationReport:
-        """Verify against the external store when given; against the local copy, self-attested, otherwise."""
-        records = self.records()
-        if external is not None:
-            return verify(records, external.anchors(), external=True)
-        return verify(records, self.local_anchors(), external=False)
+        """Verify against the external store when given; against the local copy, self-attested, otherwise.
+
+        Records and anchors are read under the one lock, so the report describes one point in time: no append or
+        anchor can land between the two reads."""
+        with self._lock:
+            records = self._records_locked()
+            if external is not None:
+                return verify(records, external.anchors(), external=True)
+            return verify(records, self._local_anchors_locked(), external=False)
 
     @classmethod
     def restore(cls, path: str | Path, clock: Clock, records: Iterable[Record], external: AnchorStore,
@@ -203,6 +219,7 @@ class Ledger:
             ledger._conn.execute("ROLLBACK")
             raise
         ledger._state = replay(ledger.records())
+        ledger._anchor_high_water = ledger._load_anchor_high_water()
         return ledger, ledger.verify(external)
 
 

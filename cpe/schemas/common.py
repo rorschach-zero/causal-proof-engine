@@ -1,6 +1,7 @@
 """Field validators shared by the schemas."""
 from __future__ import annotations
 
+import json
 import math
 from collections.abc import Mapping
 from datetime import date, datetime
@@ -24,6 +25,8 @@ def require_mapping(value: object, schema: str) -> Mapping[str, Any]:
 def require_keys(payload: Mapping[str, Any], schema: str, required: frozenset[str], optional: frozenset[str]) -> None:
     """Refuse a missing required key and any key the schema does not define (RC-112, T-31 added field)."""
     keys = set(payload)
+    if any(not isinstance(key, str) for key in keys):
+        raise Refusal("invalid_field_name", f"{schema} has a field name that is not a string")
     missing = sorted(required - keys)
     if missing:
         raise Refusal("missing_field", f"{schema} lacks {', '.join(missing)}")
@@ -78,9 +81,11 @@ def require_non_negative_number(value: object, field: str) -> float:
 
 
 def require_json(value: object, field: str) -> JsonValue:
-    """Accept only finite, plain JSON data (no tuples, objects or NaN), so that the value can be stored and digested."""
-    canonical_bytes(cast(JsonValue, value))
-    return cast(JsonValue, value)
+    """Accept only finite, plain JSON data (no tuples, objects or NaN), so that the value can be stored and digested.
+
+    The accepted value is a fresh copy built from its canonical bytes, never the caller's object: a later change
+    to the caller's list or mapping does not reach the schema."""
+    return cast(JsonValue, json.loads(canonical_bytes(cast(JsonValue, value))))
 
 
 def require_non_negative_int(value: object, field: str) -> int:
