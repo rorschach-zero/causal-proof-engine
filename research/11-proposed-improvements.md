@@ -156,3 +156,19 @@ chapter reference in `09-open-questions-and-decisions.md`; the archive stays ver
 **Independent review of the reviewer.** Because the research and this review share a model family, the Codex
 review should explicitly try to falsify the agreements in `10-adversarial-review.md`, not only check the
 disagreements (`13-codex-review-checklist.md`).
+
+## I. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the items above are left as written.
+
+- **R4** replaced by the temporal grading semantics of N11 as amended (RC-11).
+- **R6** "outer hull" claim withdrawn; Design B deferred; conditional bounds in the LP; worst case over the whole
+  credal set (RC-10).
+- **R8 / N10** covariance replaced by the shrunk uncentred second-moment matrix on the simplex, equal weights as
+  the production default (RC-06).
+- **N7** Winkler score withdrawn; one scored point probability, interval as declared ambiguity set (RC-05).
+- **N9 / R19** IUT for the conjunction claim; lifetime α-spending for promotions; e-BH exploratory only (RC-08).
+- **R2 / N5** owner HMAC replaced by public-key capability records with epoch, nonce and expiry (RC-12).
+- **R3** ledger order is not the statistical filtration; one increment per pre-declared outcome cluster (RC-01).
+- **R20** starts at first authorised research ingest, not at the first SIM readback.
+- **R21** adds items never shortlisted and known sampling weights.

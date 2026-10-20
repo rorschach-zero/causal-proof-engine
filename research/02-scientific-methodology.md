@@ -99,3 +99,52 @@ budgets a negative result. That is more discipline than most published forecasti
 
 Items 1, 2 and 8 should be resolved before the first event is registered; they change what "success in year
 one" means.
+
+## 6. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+
+1. **§1 H0 and §4 primary read-out (RC-01).** The committed e-process tests the conditional null at every
+   update. Events whose outcomes depend on one underlying announcement violate it even when every forecast was
+   committed in advance (30 cloned outcomes reach e = 475 with probability 0.5; REPRODUCED). The betting unit
+   becomes the pre-declared outcome cluster; a fixed-horizon cluster-robust paired comparison is the secondary
+   analysis. The 300/600 *event* counts in §4 are replaced by independent-equivalent *cluster* counts to be set
+   after supply is measured (OD4, OD5).
+2. **§2 first bullet and §5 item 4 (RC-05).** The Winkler interval score was mis-specified: it elicits outcome
+   quantiles, not an epistemic interval for a Bernoulli parameter. Withdrawn. Each forecast carries one scored
+   point probability; the interval is a declared ambiguity set without a coverage claim.
+3. **§5 item 3 (RC-03).** Superseded: the base-rate floor is deleted rather than kept as a sensitivity.
+4. **§5 item 8 (RC-08).** "Family-wise control via e-BH" conflated error criteria. The pre-registered conjunction
+   "FULL beats every comparator" is an intersection-union test needing no correction; promotions use lifetime
+   α-spending; e-BH is for exploratory lists only.
+5. **§2 leakage controls (RC-09).** The time-shifted holdout control is withdrawn as ill-posed; replaced by
+   forbidden-future-information negative controls and fresh future cohorts.
+6. **§5 item 1 (RC-24).** Power at 600 independent observations under the archived rule is ≈ 27 % (b = 0.5)
+   to 31 % (b = 0.2) for a Brier gain of 0.01 and ≈ 81 % (b = 0.5) to 94 % (b = 0.2) for 0.02 (REPRODUCED,
+   `16` Appendix B; the b = 0.2, δ = 0.02 row was added to the probe in round 2, RC-45, because round 1 cited
+   it from Codex's D1 table without reproducing it). The year-one criterion is set only after supply and
+   cluster structure are measured.
+7. **§1 H0 row and §4 read-out, round 3 (RC-49, RC-50).** Item 1 made the fixed-horizon cluster-aware test the
+   secondary analysis. Codex's round-3 review exhibited two structures under which the cluster-level e-process
+   crosses while the population-average null holds: clusters open at the same time sharing a period shock, and
+   skill that varies over time (both REPRODUCED, `16` Appendix D: 28.9 % crossings under a persistent regime,
+   62.8 % under +0.12 then −0.12 skill with zero average). The e-process tests the sequential conditional null
+   E[X_k | F_(k−1)] ≤ 0, which is stronger than H0 as written. Roles are therefore reassigned: the **primary
+   confirmatory test of H0 is the fixed-horizon paired cluster test with a pre-registered calendar-block
+   dependence model**; the committed e-process is the anytime-valid monitor of the conditional null, reported
+   with that label, and its crossing is never alone a confirmatory result. "Primary e-value ≥ 20" in §4 is
+   superseded accordingly. Under a persistent macro regime neither test holds size at 120 clusters over 24
+   periods, so the dependence model is an input to OD4 and OD5 (`17` §6).
+8. **§4 read-out and item 6 above, round 4 (RC-56, RC-61).** The primary test has one cut-off, 24 months after
+   first cohort entry; the 12-month look is an interim for futility and integrity only, because two
+   confirmatory looks at nominal α inflate the type-I error (8.0 % in normal theory, 8.8 % for the block test;
+   REPRODUCED, `16` Appendix E). The power figures in item 6 are the monitor's; the primary test detects
+   δ = 0.01 at 600 independent clusters with 80 % (b = 0.5) to 93 % (b = 0.2) power and δ = 0.02 at 300
+   clusters with 80 % to 94 % (REPRODUCED, `16` Appendix E), but under independent period shocks of ± 0.3 its
+   power at δ = 0.02 and 600 clusters falls to 47 %, so the dependence model, not the cluster count alone,
+   determines the detectable effect (OD4). *Note, round 9 (RC-91, 2026-10-17):* the 47 % figure in this item is
+   **superseded**; it averaged over 120 periods where the design has 24 (RC-70, `16` Appendix F). Over the
+   design's 24 periods the power at δ = 0.02 under ± 0.3 independent period shocks is 18 % at 600 and at 1,200
+   clusters, so the detectable effect under that model is about δ = 0.065 at any supply; the figures OD4 uses
+   are those of `17` §6 and `16` §6, restated at the calibrated critical value of the pre-registered null class
+   (RC-94). The sentence above is left as the record of what round 4 stated.

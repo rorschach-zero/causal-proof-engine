@@ -112,3 +112,32 @@ Observations:
    token in an interactive session; not acceptable for the executor service, which must read from the OS
    credential store and never from the process environment (environment variables leak into crash dumps and
    child processes).
+
+## 6. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+Codex's primary-source reads of 2026-10-16 (Saxo SIM-linking article, environments page) are **UNVERIFIED**
+here; Codex reports them in `15-codex-review.md` §E2 with the read date. (Round 1 wrote "PACKAGE-VERIFIED by
+Codex", a misuse of a label defined for the delivered package; corrected in round 2, RC-36.)
+
+1. **§4 and §5 "fresh `x-request-id` per attempt" (RC-16).** Withdrawn, including from the execution-phase
+   checklist above. Saxo's duplicate protection is bypassed by a changed `x-request-id`; a fresh id on every
+   retry defeats it. After an ambiguous transport failure the executor reconciles by durable identifiers and
+   authoritative broker state and halts if duplication cannot be excluded; placement is never retried
+   automatically. `ExternalReference` is a correlation field, not idempotency.
+2. **§5 egress allow-list (RC-16).** SIM and LIVE share the host `gateway.saxobank.com` and differ by path and
+   credentials (consistent with §1 above), so a host-level allow-list cannot separate them. Policy is path- and
+   credential-based in the controlled adapter; the egress allow-list remains useful against everything else.
+3. **§2 Q7.** Codex reports that the SIM account-linking help article states that linking a funded live
+   account enables delayed data for available live instruments. This resolves Q7 at documentation level only,
+   not the owner's entitlement or a successful readback.
+4. **§3 gate (RC-12, RC-14).** The owner HMAC is replaced by owner public-key signatures over capability,
+   environment, release digest, evidence digest, monotone epoch, nonce and expiry, with consumed authorizations
+   stored durably; capabilities are modelled explicitly per environment instead of a linear enum, so
+   `SHADOW_LIVE_QUOTES` confers no SIM execution right, and a halt preserves reconciliation and authorised
+   cancellation.
+5. **§3 gate, every phase (RC-107, round 9, 2026-10-17).** Item 4 applies to every gate promotion in every
+   roadmap phase, not only to the Phase 1 table: the `12-roadmap.md` Phase 3 (`SIM_READ_ONLY`) and Phase 5
+   (`SIM_PRECHECK`) rows that still named an owner MAC are superseded by `12` amendment 13; the capability tuple,
+   the consumed-authorisation store, the epoch rotation at process start and at every demotion (RC-74, RC-103)
+   and the anchored acknowledgement (RC-74) of `17` §3 items 2 and 5 are the single authorisation contract.

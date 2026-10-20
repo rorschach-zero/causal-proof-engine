@@ -81,3 +81,25 @@ Owner questions left open by the package (`07/02` §E): daily Saxo login accepta
 From the owner: confirm D1–D13 or amend; answer N1 (source families) and N12 (runtime); confirm that a Codex
 review of this foundation is the gate for phase 1. From the reviewers jointly: N2, N3, N4, N5, N7, N8, N9,
 N10, N11 as amendments to the original documents, each recorded with date and reason.
+
+## 6. Amendments proposed by the reconciliation (REVISION, 2026-10-16; pending owner decision OD2)
+
+The dispositions in `16-reconciliation-matrix.md` §3 would, if the owner approves OD2, be recorded here as dated
+amendments. Nothing below is in force; the decisions in §3–§4 above stand until the owner decides.
+
+| Item | Proposed amendment | Matrix ID |
+|---|---|---|
+| D2 | Design C plus small exact Design A first; Design B deferred until out-of-sample value; selection at 150 resolutions is development, confirmed on fresh clusters | RC-10 |
+| D3 | thresholds are configuration fixtures until calibrated on development data and validated on fresh strata; equal weights default; n_eff never a criterion | RC-06, RC-07, RC-17 |
+| D4 | one increment per pre-declared outcome cluster; server receipt time; **primary confirmatory test = fixed-horizon paired cluster test at one 24-month cut-off with a pre-registered calendar-block dependence model; the cluster-level e-process is the anytime-valid monitor of the sequential conditional null, labelled as such, never alone confirmatory** (roles assigned in round 3, RC-49, RC-50; single cut-off in round 4, RC-56; this row said "secondary" until round 4, RC-59); valid-null, clustered-null, macro-shock and time-varying negative controls permanent; **round 7 (`17` v5, pending OD10):** point estimate = mean over clusters with the calendar-block variance in block-sum form (RC-69); the size bound is a calibration on pre-registered null families with a pre-registered skew bound, not finite-sample validity, and no finite-sample-valid bounded-mean test can replace it at 24 blocks (RC-72, RC-80); accrual cut-off 24 months − H_max (RC-68); one issuance window and evidence cutoff per event for both arms, primary cohort from Phase 4 (RC-76); the smallest useful effect is set for the IUT conjunction (RC-83) | RC-01, RC-02, RC-49, RC-50, RC-56, RC-68, RC-69, RC-72, RC-76, RC-80, RC-83 |
+| D6 | delete the base-rate floor; declared shrinkage toward a reference-class rate; rankings until cohorts exist; "never elicit below 0.05" kept as workflow rule | RC-03 |
+| D9 | terminal falsifier vs milestone deadline; precedence hard limits > falsifier > valuation review > throttle; counterfactual policy arms on all entries; compounder caps per OD7 | RC-19 |
+| D11 | milestones from cohort entry; necessity claims withdrawn | RC-21 |
+| N7 | one scored point probability; interval as declared ambiguity set; no coverage claim | RC-05 |
+| N9 | IUT for the conjunction claim; lifetime α-spending for promotions (level OD3); e-BH exploratory only | RC-08 |
+| N10 | shrunk uncentred second-moment pool on the simplex; equal weights until a prospective win | RC-06 |
+| N11 | YES iff occurrence met the deadline within a declared latency window; early NO only when logically final; four timestamps | RC-11 |
+| N12 | Phase 1 hosting-neutral; costed choice at the Phase 2 gate (OD6) | RC-20 |
+| N4 / N5 | committed-prefix anchor with explicit unanchored window; owner public-key capability records with epoch, nonce, expiry | RC-12, RC-13 |
+
+Owner decisions OD1–OD9 are listed in `16-reconciliation-matrix.md` §6.

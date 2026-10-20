@@ -92,3 +92,105 @@ risk review of the order path, and the owner's written approval.
 Trading execution outside SIM; broker credentials in any file; derivatives, margin, shorts "for testing";
 optimisation against live account data; a licensed point-in-time dataset (Q5 decision); any claim about returns
 before Phase 5 has data.
+
+## Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+
+1. **Phase 1 table is superseded** by `17-phase1-amended-specification.md`, which carries the amended scope,
+   acceptance criteria A0–A8 and the acceptance-test matrix. The differences are listed in `17` §2.
+2. **"Anchor detects any byte change" (RC-13)** is an overclaim: a rewritten and rehashed suffix after the last
+   anchor passes verification (REPRODUCED). The correct property is "any change inside the anchored prefix,
+   and truncation below it"; the restore test reports the unanchored window explicitly.
+3. **"`EXPIRED_NO` for late YES" (RC-11)** is replaced by the temporal semantics in `17` §3 item 1.
+4. **Phase 0 exit** additionally requires: Codex round 2 on the reconciliation commit, and owner decisions
+   OD1–OD2 (`16` §6). N12 (runtime and hosting) is answered at the Phase 2 gate, not in Phase 0 (RC-20).
+5. **Phase 2** starts point-in-time universe and candidate logging at the first authorised research ingest, not
+   at the first SIM readback (Codex R20 amendment), and adds the stratified Jev-reject audit (RC-17).
+6. **Phase 0 exit, round 2 (RC-33).** Implementation of the shrinkage estimator and the leak detector
+   additionally requires OD9a (`AGENTS.md` §2 items 7 and 10 wording), because both would otherwise contradict
+   binding product requirements; `17` A0 lists OD1, OD2 and OD9a as prerequisites. Phase 2 months 1–3 are a
+   blinded burn-in cohort excluded from the primary test (RC-39).
+7. **Phase 0 exit, round 3 (RC-49, RC-50).** "Primary e-process started against Design C" in Phase 2 is
+   superseded: the primary confirmatory test is the fixed-horizon paired cluster test with a pre-registered
+   dependence model, and the e-process runs as the anytime-valid monitor of the conditional null (`17` §6).
+   Codex round 3 on `43754cc` is processed in `16` §3b; the round budget of issue #3 is spent for RC-01 and
+   RC-15, so Phase 0 exit now waits on owner decisions OD1, OD2 and OD9a, not on a further review round.
+8. **Phase 0 exit, round 4 (RC-56 to RC-63).** Codex's review of `d46c204` is processed in `16` §3c: the
+   primary test has a single 24-month cut-off, power is stated for the primary test itself, every signed
+   capability field is mutated in T-31, and each kernel has a positive control (T-36). RC-60 (the redacting
+   holder still stores the secret) is reproduced but not applied because the RC-15 budget is spent (OD10).
+   Every item Codex has touched has now used its budget; later automatic reviews are recorded for the owner
+   without revision (`16` §4.6). Phase 0 exit waits on OD1, OD2, OD9a and, for T-34, OD10.
+9. **Phase 0 exit, round 5 (RC-64 to RC-71, recorded only).** Codex's review of `88abaa4` is recorded in `16`
+   §3d without revision. Three findings reproduce against Claude's own earlier remedies (`16` Appendix F): the
+   clock watermark must advance on rejected checks too (RC-65), the primary statistic must be cluster-weighted
+   with calendar blocks used only for the variance (RC-69), and the round-4 power figure under period shocks
+   was computed over 120 periods where the design has 24 (47 % is 18 %, RC-70). The others define partial-VOID
+   arithmetic, a maturation rule, membership tests from registration, the late-YES label and the A0/OD10
+   conflict. All nine recorded findings (RC-60, RC-64 to RC-71) wait on OD10; Phase 0 exit waits on OD1, OD2,
+   OD9a and OD10.
+10. **Phase 0 exit, round 6 (RC-72 to RC-79, recorded only; last automatic round).** Codex's review of `4de18e5`
+    is recorded in `16` §3e without revision. Five findings reproduce (`16` Appendix G): the primary test's A3
+    size bound is a calibration on the specified families, not finite-sample validity (exact size 7.3 % on a
+    zero-mean two-point null, up to 15 % on skewed ones; the distribution-free alternative has no power at 24
+    blocks, RC-72); neither the clock wording nor its round-5 repair detects an idle window before a rollback
+    (RC-73); a nonce consumed after the last anchor is replayable after a restore (RC-74); the scored forecast
+    revision is unspecified (RC-75); a NO by expiry is knowable before the source's record (RC-77). Three are
+    requirements of `02` §5 and `AGENTS.md` §8 that `17` never carried: a common issuance window and evidence
+    cutoff for both arms, which moves the start of the primary cohort to Phase 4 (RC-76); a pre-registered
+    inclusion predicate with an audited candidate log (RC-78); point-in-time leakage fixtures and an as-of read
+    interface for T-15 (RC-79). All seventeen recorded findings (RC-60, RC-64 to RC-79) wait on OD10. Because
+    each record-only push re-triggers a full automatic review of unchanged text, no further round is recorded
+    by the routine on its own; Phase 0 exit waits on OD1, OD2, OD9a and OD10.
+11. **Phase 0 exit, round 7 (RC-60, RC-64 to RC-83 applied in `17` version 5).** On the owner's instruction
+    (issue #3 comment `6222759237`: a round budget never closes an unresolved finding), the seventeen recorded
+    findings and the four of Codex's review of `10f8829` are applied in `17` as the OD10 decision diff
+    (`16` §3f, §4.6). Two amendments to this roadmap follow from them. **Phase 2** registers events for the
+    Design C track record and the candidate log only; it holds no primary cohort and no burn-in cohort for the
+    primary test, because FULL forecasts exist only once the Phase 4 adapters operate and the two arms must
+    share one pre-registered issuance window and evidence cutoff per event (RC-76). **Phase 4** starts the
+    blinded burn-in cohort (RC-39) and then the primary cohort, each registration at or after the date on which
+    every arm of the comparator set is operational and frozen. The allocation-certificate tests that `17` A7
+    named belong to this document's Phase 5 verifier and are specified in `17` §7 as T-38 (RC-82). Phase 0 exit
+    waits on OD1, OD2, OD9a and OD10, where OD10 is now the approval or reversion of the version-5 diff.
+12. **Phase 0 exit, round 8 (RC-85, RC-86 applied in `17` version 6).** Codex's review of `37ac018` found two
+    defects in round-7 remedies, both reproduced (`16` §3g, Appendix I). The version-5 VOID cutoff depended on a
+    resolved member and so did not exist for an all-VOID cluster, and a VOID cap bounds the share removed, not
+    the bias (removing the 5 % least favourable clusters under the null gives 23–95 % rejection where the bound
+    stays at 5 %); the VOID set is now frozen with the membership and a later VOID is an adjudication outcome
+    under the per-source rule, never a declaration (RC-85). T-15 gains positive as-of oracles because a reader
+    that refuses every read passed it as written (RC-86). No phase of this roadmap changes; the per-source
+    failure condition joins OD5. Phase 0 exit waits on OD1, OD2, OD9a and OD10, where OD10 now covers versions 5
+    and 6 of `17`.
+13. **Phase 0 exit, round 9 (RC-87 to RC-107 applied in `17` version 7; RC-106 and RC-107 amend this document).**
+    Codex's two reviews of `8af2ae9` and the owner's directive on PR #4 (comment `6236238443`) produced
+    twenty-one findings, all applied (`16` §3h, Appendix J). Three amendments to this roadmap follow. **Phase 2
+    issues no forecast of any arm** (RC-106): `AGENTS.md` §2 item 1 admits no forecast with fewer than three
+    model outputs plus Jev triage, so the "Design-C baseline forecasts committed" of the Phase 2 table and the
+    "Design C track record" of amendment 11 are withdrawn; Phase 2 collects candidates under the pre-registered
+    predicate (T-37), registers events, measures supply and commits Design C **base rates as reference data**;
+    the baseline arm's forecasts are issued from Phase 4 inside the same issuance window as every other arm,
+    where the blinded burn-in and the primary cohort start (RC-76, RC-99). The Phase 2 exit criterion "≥ 100
+    registered events with Design-C forecasts committed" reads "≥ 100 registered events with Design-C base
+    rates recorded". An exploratory single-arm record in Phase 2 would need the owner to amend §2 item 1 and is
+    an `OWNER_DECISION` (OD9b), not assumed here. **Every gate promotion in every phase uses the signed
+    capability tuple** (RC-107): the Phase 3 row "promoted RESEARCH_ONLY → SIM_READ_ONLY by owner MAC" and the
+    Phase 5 row "SIM_PRECHECK promoted by owner MAC" are superseded by the owner public-key capability of `08`
+    amendment 4 and `17` §3 items 2 and 5 (capability, environment, release digest, evidence digest, epoch,
+    nonce, expiry; consumed-authorisation store; epoch rotated and anchored at process start and at every
+    demotion; acknowledgement only after the consumed nonce is in an anchored prefix). **The monitor consumes
+    increments in pre-registered maturity order** (RC-95), which changes no phase but the Phase 1 kernel.
+    Phase 0 exit waits on OD1, OD2, OD9a and OD10, where OD10 now covers versions 5, 6 and 7 of `17`; the
+    owner-reserved fields added this round are listed in `16` §6 under OD4, OD5, OD8 and OD9b.
+14. **Phase 0 exit, round 10 (RC-108 to RC-115 applied in `17` version 8).** Codex's review of `922956b` found
+    eight defects in the version-7 text, five of them in round-9 remedies, all reproduced where checkable and
+    applied (`16` §3i, Appendix K). No phase of this roadmap changes. The null class over which the primary's
+    critical value is calibrated is now a committed generator family with a parameter box that includes the
+    serial dependence of the block shocks (RC-108: four scalar bounds admitted a persistent-regime law with
+    15–22 % size at every calibrated value); the baseline arm's primary slot is a registry computation from the
+    Design C base rate committed in Phase 2 as reference data, never a submission, and submissions are sealed
+    until the issuance window closes (RC-109); the model knowledge cutoff lives in an immutable arm version record
+    created before any event is registered under it (RC-112); the Phase 4 burn-in blinding bounds the earliest
+    knowable time of every member, not only its maturity (RC-110). Phase 0 exit waits on OD1, OD2, OD9a and OD10,
+    where OD10 now covers versions 5 to 8 of `17`; the fields added to OD4 and OD5 this round are listed in `16` §6.

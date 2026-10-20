@@ -74,3 +74,23 @@ proposer/promoter separation with frozen holdouts and controls, is the right sha
 9. **The restore test is the most valuable longevity control and the cheapest.** Do it from month one: rebuild
    registry state from the ledger on a clean machine. Probe P2 (`01-architecture.md` §3) shows the reference
    code cannot do this yet.
+
+## 5. Amendments after the Codex review (REVISION, 2026-10-16)
+
+Recorded after reconciliation round 1 (`16-reconciliation-matrix.md`); the text above is left as written.
+
+1. **§2 time-shifted holdout and §4 item 5 (RC-09).** Withdrawn: events resolved before T − lag are legitimate
+   training data, so the control does not test leakage; "must show no gain" without a tolerance is ill-posed.
+   Replaced by forbidden-future-information negative controls (a deliberately leaked feature must produce
+   detectable inflation), shuffled-label null distributions with pre-registered bounds, and fresh future
+   cohorts.
+2. **§4 item 4 α-budget (RC-08).** Multiplicative e-value combination requires independence or sequential
+   conditional validity that shared events, labels and adaptive selection do not provide; it is not a free
+   replacement. Promotions consume a lifetime error budget by α-spending with a pre-registered summable
+   sequence (shape agreed; level is owner decision OD3); e-BH only where false-discovery control is the stated
+   objective.
+3. **§4 items 1–3 (RC-18).** Extended with Codex's side channels: pass/fail feedback, runtime, cache hits,
+   score deltas and logs leak holdout information; "data-only" artefacts can still execute inside an evaluator.
+   Controls: network-less, secret-less evaluator with a pinned environment hash; evaluator and scorer
+   separated so artefacts never see labels; bounded feedback and a cap on adaptive proposals; exfiltration
+   canaries in evaluator-only data, tested in logs, crashes and telemetry.
