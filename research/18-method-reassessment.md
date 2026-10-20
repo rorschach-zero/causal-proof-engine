@@ -37,6 +37,16 @@ the four that reproduce, RC-292 and RC-294 to RC-296 (`16` §3ba):
 
 The commit-identity finding (RC-293) does not reproduce and is recorded for OD9b.
 
+**Revision R4 (2026-10-20).** Codex reviewed R3 at `038714c` (PR comment `6286736153`, five findings). R4 applies
+the four that reproduce, RC-297, RC-298, RC-300 and RC-301 (`16` §3bb):
+- 𝓛 is a class of centred shapes, the laws of M_b − θ. The null is every θ ≤ 0 shift of a law in 𝓛, and the boundary
+  θ = 0 is least favourable because both statistics move monotonically under a shift (F3; S12);
+- the 0.01 calibration budget is spent across the union of all laws of all components and statistics (F3, F7; S13);
+- a calibration too small to certify any cutoff is refused (F3, M-1; S14);
+- F1 states the covariance assumptions behind its variance and gives the general expression (S15).
+
+The commit-identity finding (RC-299) does not reproduce and is recorded for OD9b.
+
 **Evidence.** Every number below marked `REPRODUCED` comes from `research/reproduction/reassessment_sims.py`.
 Its output is committed in `16` Appendix AW and checked by `check_appendix_scripts.py`. Derivations are paper
 arguments, not Lean proofs. External literature is cited for orientation only: it was not re-read in this
@@ -48,7 +58,7 @@ execution and is `UNVERIFIED` as to exact statements.
 |---|---|---|
 | F1 | Once a period-level component exists, the information in the primary is set by the number G of independent calendar periods, not by the number of events. As n → ∞ the minimum detectable effect tends to (t_α + t_β)·τ/√G. | derivation; REPRODUCED |
 | F2 | An outcome-rate shock reaches the paired Brier difference only through FULL's mean lean away from the baseline: τ ≈ 2·s·\|E(p − b)\|. That quantity is observable before any outcome. | derivation; REPRODUCED on a toy law |
-| F3 | No test of the average null over a finite G is valid under an unrestricted joint law of the period means. Validity needs a pre-registered, complete validity class 𝓛 of joint laws (shape and covariance), which 24 periods cannot verify. Neither a scalar bound on serial correlation nor independence alone is such a class. | ESTABLISHED in kind; REPRODUCED for AR(1), equicorrelation, odd/even shocks and a skewed law |
+| F3 | No test of the average null over a finite G is valid under an unrestricted joint law of the period means. Validity needs a pre-registered, complete validity class 𝓛 of centred joint laws (shape and covariance), which 24 periods cannot verify. Neither a scalar bound on serial correlation nor independence alone is such a class. | ESTABLISHED in kind; REPRODUCED for AR(1), equicorrelation, odd/even shocks and a skewed law |
 | F4 | Outcome-independent inclusion is not identifiable from listing data. It can be established only by design, and the reference-universe holder's own selection is unprovable from the data. | constructive counterexample; REPRODUCED |
 | F5 | If the population is the reference universe itself and every one of its events is forecast, abstentions scored at baseline, the omission audit, draw and box rule add no identifying power. The universe already carries the whole selection assumption. | derivation |
 | F6 | With omitted share m and divergence bound d, a paired Brier increment is bounded by d(2 − d), and the sign of θ is identified only if m < θ/(θ + d(2 − d)). At θ = 0.01 and d = 0.5 that means m < 1.32 %. | derivation; REPRODUCED |
@@ -101,8 +111,16 @@ the anchored ledger; base rates; forecast divergence |p_F − p_C|; FULL's mean 
 
 **F1. Information is bounded by the number of periods.** Write the period mean of the increments as
 M_b = θ + a_b + ē_b. Here a_b is a period-level component with variance τ², and ē_b is the average of n_b
-cluster-level errors of variance σ². For any test whose validity rests on independence across periods, the
-variance of θ̂ is at least (τ² + σ²/n)/G. The minimum detectable effect of the one-sided level-α test at power
+cluster-level errors of variance σ². In general (R4, RC-301)
+Var(M_b) = τ² + σ²/n + 2·Cov(a_b, ē_b) + σ²·(n − 1)·ρ_w/n,
+where ρ_w is the mean pairwise correlation of the cluster errors within a period. The formulas below assume that both
+covariance terms vanish: a_b uncorrelated with the errors, and the errors uncorrelated with each other. S15 shows the
+difference at τ = 0.01, σ = 0.1 and n = 25. The formula τ² + σ²/n gives 0.00050. Errors that offset the period
+component (Cov = −τ²) give 0.00040, and equicorrelated errors (ρ_w = 0.05) give 0.00098. Both agree with the
+general expression (REPRODUCED). A positive ρ_w adds a part, σ²·ρ_w, that does not vanish as n grows. It is
+period-level variance and belongs to τ². A negative covariance makes the formula conservative. Under those
+assumptions, and for any test whose validity rests on independence across periods, the variance of θ̂ is
+(τ² + σ²/n)/G. The minimum detectable effect of the one-sided level-α test at power
 1 − β is therefore about (t_α,G−1 + t_β,G−1)·√((τ² + σ²/n)/G), which tends to (t_α + t_β)·τ/√G as n grows. More
 events per period stop helping once σ²/n ≪ τ²; only more independent periods do. The simulation confirms the
 formula: power 80.4 %, 80.3 % and 79.8 % at the predicted MDE in three cells, 20,000 replications each (S2,
@@ -167,16 +185,55 @@ period means under θ = 0, each fixing:
 - the covariance across periods;
 - the share of period-level variance.
 
+**𝓛 holds centred shapes, and the null is composite** (R4, RC-297). H0 is θ ≤ 0, so a class fixed only at θ = 0 says
+nothing about a law with θ < 0 of another shape. Codex's example shows this. With probability 0.1 every period sits
+in a common positive regime (0.01 + 0.001·z), and otherwise at −0.1 + 0.02·z. Then θ = −0.089, yet the block t
+rejects at the S9 cutoff in 10.0 % (99 % lower bound 9.87 %; S12, REPRODUCED). Each law of 𝓛 is therefore the law
+of the centred period means U_b = M_b − θ. The null is the set of laws θ + U with θ ≤ 0 and the law of U in 𝓛.
+
+The boundary θ = 0 is then least favourable, by a pointwise argument (derivation). Shifting every period mean by
+θ shifts the block mean by θ and leaves the sample standard deviation unchanged. So t(θ + U) = t(U) + θ·√G/s(U) ≤
+t(U) for θ ≤ 0, on every draw. The weighted statistic of F10 behaves the same way: its weights sum to one, and its
+residuals do not depend on θ. S12 confirms this on every law of the example class. Shifts of 0.05 and 0.2
+period-mean standard deviations below zero add no rejection on any of 50,000 draws per law, for either statistic.
+
+Codex's law is not a counterexample to this rule. Its centred shape also rejects in 10.0 %, so it lies outside any
+class whose certified cutoff is 3.357. The assumption is that the centred shape does not depend on θ. A null system
+whose shape changes as θ falls is covered only if every centred shape it can take is in 𝓛. The noise-only system of
+F2 is such a case: its shape changes with the noise. The assumption cannot be tested from G = 24 periods, as for 𝓛
+itself.
+
 **The critical value c_𝓛 is certified, not estimated** (R3, RC-292). For each law of 𝓛, draw n calibration values
 of the block t under θ = 0 and take the smallest order statistic whose exceedance probability is at most α with
-probability at least 1 − 0.01/|𝓛|. For a continuous statistic the exceedance probability of the (j + 1)-th largest
+probability at least 1 − 0.01/K. For a continuous statistic the exceedance probability of the (j + 1)-th largest
 draw is Beta(j + 1, n − j) whatever the law, so this needs no further assumption. c_𝓛 is the largest of these
-cutoffs over 𝓛. With probability at least 0.99 over the calibration draws, the size is then at most α on every law
-of 𝓛. The empirical 0.95 quantile, which R2 used, has an exceedance probability above α about half the time. The
-claim holds over 𝓛 only.
+cutoffs over 𝓛.
+
+**K counts every law certified anywhere in the family** (R4, RC-298). K = Σ_j |𝓛_j| over all components of the
+fixed sequence (F7), counting each law once more for each weighted variant (F10). The union bound then gives size at
+most α, with probability at least 0.99 over the calibration draws, on every law of every class at once. Spending
+0.01/|𝓛_j| inside each component gives each component 99 %, but the family only 1 − Σ 0.01 (97 % with three
+components). S13 shows this with three components of the eight example laws:
+- per component: an exact Beta failure bound of 0.00998 per component and 0.02995 for the family;
+- across the union: 0.00987 for the family;
+- the cutoff rises from 3.365 to 3.368, and power at δ = 0.01 falls from 15.37 % to 15.33 % (REPRODUCED).
+
+For a fixed configuration of true and false nulls, only the first true null's cutoff matters. That configuration is
+unknown, so the certificate must hold for all components together.
+
+**A calibration that cannot certify is refused** (R4, RC-300). Even the sample maximum of n draws exceeds the α
+quantile with probability (1 − α)^n. If (1 − α)^n > 0.01/K, no cutoff is certified. The calibration then needs
+n ≥ ln(0.01/K)/ln(1 − α), which is 131 draws at K = 8 and 152 at K = 24. Codex's example of n = 100 and K = 8 fails
+(0.95^100 = 0.0059 > 0.00125). R3's search returned the sample maximum anyway; the script now refuses (S14,
+REPRODUCED).
+
+With probability at least 0.99 over the calibration draws, the size is then at most α on every law of every 𝓛_j and
+on every θ ≤ 0 shift of them. The empirical 0.95 quantile, which R2 used, has an exceedance probability above α
+about half the time. The claim holds over 𝓛 only.
 
 The example class (REPRODUCED) holds Gaussian AR(1) at ρ ∈ {0, 0.25, 0.5} and the skewed two-point law, each at
-period shares 0.2 and 0.8. On it (S9, 200,000 calibration and 200,000 fresh draws per law):
+period shares 0.2 and 0.8. It is certified as one component alone, so K = 8. On it (S9, 200,000 calibration and
+200,000 fresh draws per law):
 - the empirical rule gives c = 3.335, and at the binding law, the skewed law at share 0.8, its fresh size is 5.06 %;
 - the certified cutoff is c_𝓛 = 3.357, with fresh size 4.93 % at that law (99 % simultaneous bounds 4.78–5.07 %);
   the nominal value is 1.714;
@@ -270,10 +327,11 @@ first true null in the order to be rejected, and that happens with probability a
 level α. Nothing about the dependence between components is needed. A cutoff calibrated for the first component
 does not make a later one valid: provider and committee increments can have another shape and serial dependence.
 In S10 the first component is false and always rejects. The second is a true null with equicorrelated period means
-(0.5, share 0.8). At the first component's certified cutoff, 1.733, the familywise error is 33.9 %. At a cutoff
-certified for the second component's own law, 7.113, it is 4.92 % (99 % upper bound 5.08 %). Each component j
-therefore has its own pre-registered validity class 𝓛_j of the joint laws of its own period means, and its own
-certified cutoff c_𝓛j.
+(0.5, share 0.8). At the first component's certified cutoff, 1.734, the familywise error is 33.9 %. At a cutoff
+certified for the second component's own law, 7.118, it is 4.91 % (99 % upper bound 5.07 %). Each component j
+therefore has its own pre-registered validity class 𝓛_j of the centred joint laws of its own period means, and its
+own certified cutoff c_𝓛j. All the cutoffs share the family's budget 0.01/K (F3, RC-298). S10 has two laws, so each
+uses 0.005; R3 used 0.01 for each, which gave 1.733 and 7.113.
 
 **F8. Anytime validity does not buy information.** Ville's inequality makes a betting e-process valid at every
 stopping time under the record-order conditional null. Its power over G independent periods is still limited by G.
@@ -311,7 +369,8 @@ single event at +0.10 give θ_E = −0.0089 and θ_P = +0.045 (S8, REPRODUCED; R
 Each estimand has its consistent test:
 - θ_P with the unweighted block t;
 - θ_E with the weighted mean θ̂_E = Σ_b w_b·M_b, w_b = n_b / Σ n, Studentized by the leverage-corrected estimate
-  V̂ = Σ_b w_b²·(M_b − θ̂_E)² / (1 − 2w_b + Σ_j w_j²), with a cutoff certified over 𝓛 for its weight vector.
+  V̂ = Σ_b w_b²·(M_b − θ̂_E)² / (1 − 2w_b + Σ_j w_j²), with a cutoff certified over 𝓛 for its weight vector. Its laws
+  count in the family's K (F3).
 
 **The weighted statistic has no nominal cutoff** (R3, RC-294). R2 wrote V̂ = Σ_b w_b²·(M_b − θ̂_E)²·G/(G − 1) on
 G − 1 df. That estimate collapses when one weight dominates. For two independent period means of variance σ² with
@@ -381,8 +440,8 @@ These bounds are optimistic for the current method and roughly attainable for th
 |---|---|---|---|---|---|
 | Population | source listings audited against a reference universe; omissions drawn and boxed | every question of a set fixed by an independent party before forecasting (or a beacon-seeded subsample) | as B | questions supplied by a third-party benchmark or tournament stream, or sampled at random from a large external pool | any of the above |
 | Selection assumption | universe holder independent of relative skill (unprovable), plus supply exogeneity screened on a burn-in | universe holder independent of relative skill (unprovable; same residual as A) | as B | the benchmark's question writer independent of the arms (unprovable) | none for the bound itself; the width carries it |
-| Dependence assumption | the true law lies in the enumerated null class N; links archived by T_D | the joint law of the period means (shape and covariance) lies in a pre-registered validity class 𝓛 (F3) | the record-order conditional null (stronger than the average null, `17` §3 item 3) | as B | stated per bound |
-| Finite-sample guarantee | calibration on N_0 only (A3 says so) | size ≤ α on every law of 𝓛 with probability ≥ 0.99 over the calibration draws (certified c_𝓛, S9); nothing outside 𝓛 (S6) | exact (Ville) under its null, for bounded increments | as B | the identified set is exact under the stated bounds |
+| Dependence assumption | the true law lies in the enumerated null class N; links archived by T_D | the joint law of the centred period means M_b − θ (shape and covariance) lies in a pre-registered validity class 𝓛, whatever θ (F3) | the record-order conditional null (stronger than the average null, `17` §3 item 3) | as B | stated per bound |
+| Finite-sample guarantee | calibration on N_0 only (A3 says so) | size ≤ α on every θ ≤ 0 shift of every law of 𝓛 with probability ≥ 0.99 over the calibration draws (certified c_𝓛, S9, S12, S13); nothing outside 𝓛 (S6) | exact (Ville) under its null, for bounded increments | as B | the identified set is exact under the stated bounds |
 | Power at G = 24, δ = 0.01, τ = 0.01, n = 25 | below B's (calibrated c* and the IUT) | 68.7 % at the nominal cutoff (𝓛 = independent normal means); 15.2 % at the certified c_𝓛 of the example class (S9) | no crossing in 20,000 (≤ 0.023 %) | as B | the sign is decided only if m < θ/(θ + d(2 − d)) |
 | Complexity | 405 KB specification, 280 RC items, every-subset partitions, K_max budget | one test, one assumption (𝓛), one sensitivity analysis | small kernel; already archived (GRAPA) | depends on the external provider; little CPE machinery | arithmetic |
 | What it cannot do | confirm under persistence or selection outside N | confirm under a law outside 𝓛; say anything about questions outside the set | detect useful effects within two years | guarantee that the questions match CPE's target domain | turn a bound into a point estimate |
@@ -453,7 +512,7 @@ falsified, and the difficulty lies in the problem, not in the method.
    The calibration of A3 becomes the calibration of this one test over the laws of 𝓛, with size and power fixtures (F1–F3). It is no longer a certification over a generator family of the whole pipeline.
 3. *Multiplicity.* A fixed-sequence family replaces the six-comparator IUT. Its first hypothesis is H0: θ(FULL − Design C) ≤ 0; the next is FULL against the best pre-registered single provider, then FULL against the equal-weight committee, each at α only after its predecessor rejects (F7). Each component j has its own validity class 𝓛_j and certified cutoff c_𝓛j (F7, RC-295). The order is an owner decision.
 
-**Narrow the claim.** Proposed wording: "On the pre-registered question set Q, fixed by [holder] before forecasting, over periods [T_0, T_A), the [period-balanced | event-weighted] mean improvement in Brier score of CPE's issued forecasts over the Design C base rate is positive (one-sided α = 0.05, the cutoff certified at 99 % confidence over the calibration). This holds under two stated assumptions: the joint law of the period means lies in the pre-registered class 𝓛, and Q's composition is independent of the arms' relative skill." The bracket is the OD4 weighting (F10). The claim makes no claim outside Q or 𝓛, none about investment value, and none from the monitor.
+**Narrow the claim.** Proposed wording: "On the pre-registered question set Q, fixed by [holder] before forecasting, over periods [T_0, T_A), the [period-balanced | event-weighted] mean improvement in Brier score of CPE's issued forecasts over the Design C base rate is positive (one-sided α = 0.05, the cutoff certified at 99 % confidence over the calibration). This holds under two stated assumptions: the joint law of the centred period means lies in the pre-registered class 𝓛 whatever the mean, and Q's composition is independent of the arms' relative skill." The bracket is the OD4 weighting (F10). The claim makes no claim outside Q or 𝓛, none about investment value, and none from the monitor.
 
 **Decision matrix** (++ strong, + adequate, − weak, −− fails; evidence in §2–§4):
 
@@ -472,7 +531,7 @@ Each test is phrased so that a wrong implementation fails it. Thresholds follow 
 
 | ID | Test | Pass condition |
 |---|---|---|
-| M-1 | Certified cutoff and fresh size of the block t on every law of 𝓛, for each component j of the fixed sequence with its own 𝓛_j, and for the weighted statistic with its weight vector (RC-292, RC-294, RC-295) | (i) c_𝓛 recomputed from the pre-registered seeds and calibration size equals the registered value; it is the largest over 𝓛 of the smallest calibration order statistic whose exceedance probability is ≤ α with probability ≥ 1 − 0.01/\|𝓛\| (F3). (ii) On 200,000 fresh draws per law, no one-sided lower Clopper–Pearson bound, simultaneous at 99 % over 𝓛, exceeds 0.05. S9: c_𝓛 = 3.357, binding law 4.93 % (bounds 4.78–5.07 %). The empirical-quantile cutoff 3.335 passes (ii) but fails (i); the nominal cutoff fails (ii) |
+| M-1 | Certified cutoff and fresh size of the block t on every law of 𝓛, for each component j of the fixed sequence with its own 𝓛_j, and for the weighted statistic with its weight vector (RC-292, RC-294, RC-295, RC-297, RC-298, RC-300) | (i) c_𝓛 recomputed from the pre-registered seeds and calibration size equals the registered value; it is the largest over 𝓛 of the smallest calibration order statistic whose exceedance probability is ≤ α with probability ≥ 1 − 0.01/K, K the number of laws certified across all components and statistics (F3). (ii) On 200,000 fresh draws per law, no one-sided lower Clopper–Pearson bound, simultaneous at 99 % over all K laws, exceeds 0.05. S9: c_𝓛 = 3.357, binding law 4.93 % (bounds 4.78–5.07 %). The empirical-quantile cutoff 3.335 passes (ii) but fails (i); the nominal cutoff fails (ii). (iii) A calibration with (1 − α)^n > 0.01/K is refused, not certified: S14 refuses n = 100 at K = 8. (iv) On the same draws shifted below θ = 0, no draw rejects that did not reject at θ = 0 (S12) |
 | M-2 | Invalid control: the cluster-iid t on the same data | its one-sided 99 % lower Clopper–Pearson bound must exceed 0.05 at τ > 0; S3 gives 6.85 % (99 % upper bound 7.28 %), so the control needs τ large enough to separate (OD4 sets the family) |
 | M-3 | Out-of-class control: a law outside 𝓛 that satisfies the same scalar persistence bound | its one-sided 99 % lower Clopper–Pearson bound at c_𝓛 must exceed 0.05, so that the report cannot extend the claim beyond 𝓛. S6 gives 21.5 % (equicorrelation 0.5) and 23.2 % (odd/even shocks) |
 | M-4 | Power at the pre-registered δ, τ, n and G on independent normal means, at the cutoff actually used (RC-296) | simulated power within ± 0.02 of the noncentral-t power at that cutoff, P(T > c) with T noncentral t on G − 1 df and noncentrality δ/se. At the nominal cutoff S2 gives 0.802, 0.803, 0.795 at 0.8; at c_𝓛 = 3.357, S9 gives 0.152 against 0.155 (δ = 0.01) and 0.827 against 0.829 (δ = 0.02). Power at c_𝓛 under a law of 𝓛 other than independent normal means has no closed form and is reported, not tested |
@@ -482,7 +541,7 @@ Each test is phrased so that a wrong implementation fails it. Thresholds follow 
 | M-8 | Selection fixture of F4 (world B) presented as a source-listed population | refused as non-confirmatory, because the population is not Q; an implementation that accepts it fails |
 | M-9 | Monitor never confirms | a crossing of the e-process produces no confirmatory record (the anytime-valid monitor row of `17` §6) |
 
-M-1 to M-4 and M-6 are backed by S2, S3, S6, S7, S9, S10 and S11. M-6 keeps its 0.06 threshold because its
+M-1 to M-4 and M-6 are backed by S2, S3, S6, S7 and S9 to S14. M-6 keeps its 0.06 threshold because its
 cutoffs are exact normal quantiles: there the threshold is a Monte Carlo tolerance for checking the gating, not a
 size claim. M-5 and M-7 to M-9 are specifications here, not yet code.
 
@@ -499,6 +558,9 @@ size claim. M-5 and M-7 to M-9 are specifications here, not yet code.
 | F10 period-balanced and event-weighted estimands differ, in sign too | exact example (S8); the choice is the OD4 field of RC-69 |
 | Certified cutoff: size ≤ α on every law of 𝓛 with probability ≥ 0.99 over the calibration | derivation (order statistics of a continuous statistic; paper); checked on the example class (S9); says nothing outside 𝓛 |
 | Fixed sequence: marginal level α of each component suffices for familywise α | derivation (paper); the failure with a shared cutoff and the repair are REPRODUCED (S10) |
+| Boundary θ = 0 least favourable for both statistics when 𝓛 holds centred shapes that do not depend on θ | derivation (translation equivariance; paper); checked draw by draw on the example class (S12); the shape assumption is UNPROVED and untestable from G = 24 |
+| Family certificate at 99 % with the budget 0.01/K over all laws of all components | union bound (paper); exact Beta failure bounds in S13 |
+| F1 variance (τ² + σ²/n)/G | holds when the period component and the cluster errors are mutually uncorrelated; general expression checked in S15 |
 | Leverage-corrected variance of θ̂_E unbiased under independent period means of common variance | derivation (paper); checked by simulation (S11); not unbiased under unequal variances, and the ratio is not t-distributed |
 | Holder's selection independent of relative skill | UNPROVED; untestable from the data under any design here |
 | Realistic δ, τ, σ, supply | EXPERIMENT_REQUIRED (Phase 2 measurement): supply and lean need no outcomes; σ has only a forecast-only upper bound; τ beyond the outcome-rate channel needs matured blinded outcomes |
@@ -513,13 +575,14 @@ size claim. M-5 and M-7 to M-9 are specifications here, not yet code.
 | (c) Narrow to D first (external benchmark) and run B later in the CPE domain | earliest falsifiable skill evidence; answers a different question; benchmark terms belong with OD8 |
 | (d) Pause confirmatory design until the Phase 2 measurements (supply, lean, the σ bound, reference-class outcome rates and their dependence) exist | no rounds wasted on parameters that are unknown; calendar cost only |
 
-Options (b) to (d) leave OD1–OD10 in place. Under (b), several OD4 fields lapse with the machinery they parametrise: M_late, K_max and S_max, the null-class box and γ_cal. The validity class 𝓛 of each fixed-sequence component (𝓛_j, RC-295) and the period length replace them, and the weighting stays the OD4 field of RC-69. That change is itself part of the decision. 𝓛 sets the power (F3), so choosing it is a trade between validity and power that the owner makes, not this document.
+Options (b) to (d) leave OD1–OD10 in place. Under (b), several OD4 fields lapse with the machinery they parametrise: M_late, K_max and S_max, the null-class box and γ_cal. The validity class 𝓛 of each fixed-sequence component (𝓛_j, RC-295), a class of centred shapes assumed not to depend on θ (RC-297), and the period length replace them, and the weighting stays the OD4 field of RC-69. That change is itself part of the decision. 𝓛 sets the power (F3), so choosing it is a trade between validity and power that the owner makes, not this document.
 
 ## 10. What was run and what was not
 
-**Run (R3):**
+**Run (R4):**
 - `python -I research/reproduction/reassessment_sims.py`, twice, byte-identical, about 26 s each, under Python 3.11.17 in a venv built with `pip install --require-hashes --no-deps -r research/reproduction/requirements.txt` (numpy 2.4.6, scipy 1.17.1). The output is committed in `16` Appendix AW and parses as one JSON object.
 - `check_appendix_scripts.py` without `--reference-code`, on the committed tree. The result is reported in the commit and the handoff.
+- S1 to S9 and S11 give output byte-identical to R3's. S10 changes only through the shared budget (RC-298).
 
 **Not run:**
 - a power simulation of the serial-correlation test at G = 24;
@@ -531,8 +594,9 @@ Options (b) to (d) leave OD1–OD10 in place. Under (b), several OD4 fields laps
 
 **Next responsible agent.** Codex: an independent adversarial review of this document and Appendix AW at the exact
 commit that carries them. The checks to make:
-- reproduce S1–S11;
+- reproduce S1–S15;
 - check the order-statistic argument of the certified cutoff, and look for a law inside a declared 𝓛 that it misses;
+- check the location-shift argument of F3 and the family budget 0.01/K;
 - check whether the leverage-corrected weighted statistic needs more than a certified cutoff over 𝓛 to be valid;
 - look for a counterexample to F5 (a selection path that survives an exhaustive forecast of Q);
 - look for a counterexample to F2's use as a pre-registration bound;

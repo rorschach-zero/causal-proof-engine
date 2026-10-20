@@ -28,7 +28,13 @@ below backs one numbered claim of `18`:
 - S10 (RC-295): a fixed-sequence family whose later component has a different joint law, tested at the first
   component's cutoff and at a cutoff certified for its own law;
 - S11 (RC-294): the variance estimate of the event-weighted mean of F10 with known weights, as written in R2 and with
-  the leverage correction, against the true variance and at the nominal t cutoff.
+  the leverage correction, against the true variance and at the nominal t cutoff;
+- S12 (reassessment R4, RC-297): a null law with theta < 0 whose centred shape lies outside the class, and the
+  pointwise monotonicity in theta of the block t and of the leverage-corrected weighted t under a location shift;
+- S13 (RC-298): the calibration budget spent per component against spent across the union of all laws of all
+  components, its joint certificate and its cost in cutoff and power;
+- S14 (RC-300): calibration sizes at which no cutoff is certifiable, and their refusal;
+- S15 (RC-301): the variance of a period mean when the period component and the cluster errors are correlated.
 Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
     python research/reproduction/reassessment_sims.py
 Deterministic: every section uses its own fixed seed. The output is one JSON object; a table row is one line of it
@@ -400,21 +406,31 @@ def s8_exact_examples():
     return {'increment_bound': bound, 'estimand_weighting': estimand, 'sigma_needs_outcomes': sigma}
 
 
-def certified_cutoff(t, n_laws):
+def certified_cutoff(t, budget):
     """Smallest order statistic of the calibration draws t of one law whose exceedance probability is at most alpha
-    with probability at least 1 - 0.01 / n_laws (RC-292). For a continuous statistic the exceedance probability of
-    the (j + 1)-th largest draw is Beta(j + 1, n - j), whatever the law, so taking the largest such cutoff over the
-    n_laws laws of a class certifies size <= alpha on every one of them at 99 % joint confidence over the
-    calibration. The empirical 0.95 quantile has exceedance probability above alpha about half of the time."""
+    with probability at least 1 - budget (RC-292). For a continuous statistic the exceedance probability of the
+    (j + 1)-th largest draw is Beta(j + 1, n - j), whatever the law. The caller spends the 0.01 of the whole family
+    across every law of every component and statistic it certifies, budget = 0.01 / (total laws), so the union bound
+    certifies size <= alpha on all of them at 99 % joint confidence over the calibration (RC-298). The empirical 0.95
+    quantile has exceedance probability above alpha about half of the time. When even the sample maximum fails the
+    condition, (1 - alpha)^n > budget, no cutoff is certified and the calibration is refused (RC-300)."""
     n = t.size
+    if stats.beta.sf(ALPHA, 1, n) > budget:
+        raise ValueError(f'no certifiable cutoff: (1 - alpha)^{n} > {budget}; '
+                         f'n >= {minimum_calibration_size(budget)} draws are needed')
     lo, hi = 0, n - 1
     while lo < hi:
         mid = (lo + hi + 1) // 2
-        if stats.beta.sf(ALPHA, mid + 1, n - mid) <= 0.01 / n_laws:
+        if stats.beta.sf(ALPHA, mid + 1, n - mid) <= budget:
             lo = mid
         else:
             hi = mid - 1
     return float(np.sort(t)[::-1][lo])
+
+
+def minimum_calibration_size(budget):
+    """Smallest n with (1 - alpha)^n <= budget: below it not even the sample maximum is certified (RC-300)."""
+    return int(np.ceil(np.log(budget) / np.log(1 - ALPHA)))
 
 
 def s9_certified_cutoff():
@@ -430,7 +446,7 @@ def s9_certified_cutoff():
     for law, share in in_class:
         t = t_statistic(null_period_means(rng, law, cal_reps, g, share))
         q95[(law, share)] = float(np.quantile(t, 1 - ALPHA))
-        cert[(law, share)] = certified_cutoff(t, len(in_class))
+        cert[(law, share)] = certified_cutoff(t, 0.01 / len(in_class))
     c_emp, c_cert = max(q95.values()), max(cert.values())
     level = 1 - 0.01 / len(in_class)
     rows = []
@@ -461,13 +477,15 @@ def s10_component_cutoffs():
     """Fixed sequence of two components: the first false (delta = 0.03, independent normal means, share 0.2), the
     second a true null whose period means are equicorrelated (0.5, share 0.8). Tested at the first component's
     certified cutoff, the second rejects a true null far above alpha once the first gate opens; at a cutoff certified
-    for its own law the familywise error is at most alpha. Marginal validity of each component suffices whatever the
+    for its own law the familywise error is at most alpha. The two cutoffs share the family's calibration budget 0.01
+    (RC-298). Marginal validity of each component suffices whatever the
     dependence between components, because the first true null in the order must reject for any error to occur."""
     rng = np.random.default_rng(29)
     g, cal_reps, reps = 24, 200000, 100000
     first, second = ('iid normal', 0.2), ('equicorrelated rho=0.5', 0.8)
-    c_first = certified_cutoff(t_statistic(null_period_means(rng, first[0], cal_reps, g, first[1])), 1)
-    c_second = certified_cutoff(t_statistic(null_period_means(rng, second[0], cal_reps, g, second[1])), 1)
+    budget = 0.01 / 2  # one law in each of the two components share the family's 0.01 (RC-298)
+    c_first = certified_cutoff(t_statistic(null_period_means(rng, first[0], cal_reps, g, first[1])), budget)
+    c_second = certified_cutoff(t_statistic(null_period_means(rng, second[0], cal_reps, g, second[1])), budget)
     sd = (0.01 ** 2 + 0.10 ** 2 / 25) ** 0.5
     t1 = t_statistic(0.03 + sd * null_period_means(rng, first[0], reps, g, first[1]))
     t2 = t_statistic(null_period_means(rng, second[0], reps, g, second[1]))
@@ -528,6 +546,115 @@ def s11_weighted_variance():
     return {'codex_example': codex, 'G': g, 'reps': reps, 'rows': rows}
 
 
+def weighted_t(means, w):
+    """The event-weighted mean of F10 Studentized by the leverage-corrected variance estimate."""
+    return means @ w / np.sqrt(leverage_corrected_variance(means, w))
+
+
+def s12_composite_null():
+    """RC-297. The class L fixes laws at theta = 0, while H0 is theta <= 0. (a) Codex's example: with probability 0.1
+    every period sits in a common positive regime (0.01 + 0.001 z), otherwise at -0.1 + 0.02 z, so theta = -0.089;
+    it rejects at the S9 cutoff in about 10 %, and so does its centred shape (M - theta), which is therefore outside
+    every class whose certified cutoff is 3.357. (b) Under a location shift M = theta + U, with the law of U fixed, both
+    statistics are translation-equivariant in the mean and invariant in the variance estimate, so a shift below zero
+    can only remove rejections: counted draw by draw on every law of the S9 class."""
+    rng = np.random.default_rng(37)
+    g, reps, c_cert = 24, 200000, 3.357  # c_cert as computed in S9
+    regime = rng.random((reps, 1)) < 0.1
+    means = np.where(regime, 0.01 + 0.001 * rng.normal(0, 1, (reps, g)), -0.1 + 0.02 * rng.normal(0, 1, (reps, g)))
+    theta = 0.1 * 0.01 + 0.9 * -0.1
+    hits, hits_centred = int((t_statistic(means) > c_cert).sum()), int((t_statistic(means - theta) > c_cert).sum())
+    counterexample = {'theta': round(theta, 4), 'rejection_at_c_cert': round(hits / reps, 4),
+                      'lower_99': round(float(stats.beta.ppf(0.01, hits, reps - hits + 1)), 4),
+                      'centred_shape_rejection_at_c_cert': round(hits_centred / reps, 4)}
+    counts = np.array([30] * 12 + [3] * 12)
+    w = counts / counts.sum()
+    rows = []
+    for law, share in [(law, share) for law in ['iid normal', 'AR(1) rho=0.25', 'AR(1) rho=0.5', 'skewed two-point']
+                       for share in [0.2, 0.8]]:
+        u = null_period_means(rng, law, reps // 4, g, share)
+        row = {'law': law, 'period_share': share}
+        for name, statistic in [('block_t', t_statistic), ('weighted_t', lambda m: weighted_t(m, w))]:
+            at_zero = statistic(u) > c_cert
+            row[f'{name}_size_theta_0'] = round(float(at_zero.mean()), 5)
+            for shift in [0.05, 0.2]:
+                below = statistic(u - shift) > c_cert
+                row[f'{name}_size_theta_minus_{shift}'] = round(float(below.mean()), 5)
+                row[f'{name}_new_rejections_minus_{shift}'] = int((below & ~at_zero).sum())
+        rows.append(row)
+    return {'G': g, 'reps': reps, 'location_reps': reps // 4, 'c_cert': c_cert, 'weights': 'two count levels',
+            'shift_unit': 'standard deviation of a period mean', 'counterexample': counterexample, 'location_shift': rows}
+
+
+def s13_family_budget():
+    """RC-298. A fixed sequence of three components, each with the eight laws of the S9 class (an illustration: each
+    component has its own class in the design). Spending 0.01 / 8 inside each component certifies each component at
+    99 %, and the union bound leaves the family 1 - 3 * 0.01 = 97 %; spending 0.01 / 24 across the union restores 99 %.
+    The failure probabilities are the exact Beta tails at the selected order statistics; the cost is the change in
+    cutoff and in noncentral-t power at the S3 point."""
+    rng = np.random.default_rng(43)
+    g, cal_reps, components = 24, 200000, 3
+    in_class = [(law, share) for law in ['iid normal', 'AR(1) rho=0.25', 'AR(1) rho=0.5', 'skewed two-point']
+                for share in [0.2, 0.8]]
+    draws = [t_statistic(null_period_means(rng, law, cal_reps, g, share)) for law, share in in_class]
+    sd = (0.01 ** 2 + 0.10 ** 2 / 25) ** 0.5
+    rows = []
+    for scheme, budget in [('per component', 0.01 / len(in_class)),
+                           ('union of all laws', 0.01 / (components * len(in_class)))]:
+        cutoffs = [certified_cutoff(t, budget) for t in draws]
+        failure = 0.0
+        for t, c in zip(draws, cutoffs):
+            j = int((t > c).sum())  # the selected cutoff is the (j + 1)-th largest draw
+            failure += float(stats.beta.sf(ALPHA, j + 1, cal_reps - j))
+        c = max(cutoffs)
+        rows.append({'scheme': scheme, 'budget_per_law': round(budget, 6), 'c_cert': round(c, 3),
+                     'component_failure_bound': round(failure, 5),
+                     'family_failure_bound': round(components * failure, 5),
+                     'power_delta_0.01': round(float(stats.nct.sf(c, g - 1, 0.01 / (sd / np.sqrt(g)))), 4),
+                     'power_delta_0.02': round(float(stats.nct.sf(c, g - 1, 0.02 / (sd / np.sqrt(g)))), 4)})
+    return {'G': g, 'calibration_reps': cal_reps, 'components': components, 'laws_per_component': len(in_class),
+            'rows': rows}
+
+
+def s14_unattainable_certification():
+    """RC-300. Even the sample maximum of n draws exceeds the alpha quantile with probability (1 - alpha)^n, so no
+    cutoff is certified when that exceeds the budget. Codex's example: 8 laws and n = 100. certified_cutoff refuses."""
+    rows = []
+    for n, laws in [(100, 8), (130, 8), (131, 8), (200000, 8), (200000, 24)]:
+        budget = 0.01 / laws
+        try:
+            certified_cutoff(np.random.default_rng(47).normal(0, 1, n), budget)
+            refused = False
+        except ValueError:
+            refused = True
+        rows.append({'n': n, 'laws': laws, 'budget_per_law': round(budget, 6),
+                     'log10_maximum_failure_probability': round(n * float(np.log10(1 - ALPHA)), 3),
+                     'minimum_n': minimum_calibration_size(budget), 'refused': refused})
+    return {'rows': rows}
+
+
+def s15_within_period_covariance():
+    """RC-301. Period mean M_b = a_b + e_bar_b with a_b of variance tau^2 and n cluster errors of variance sigma^2.
+    Var(M_b) = tau^2 + sigma^2 / n + 2 Cov(a_b, e_bar_b) + sigma^2 (n - 1) rho_w / n, with rho_w the mean pairwise
+    correlation of the errors within a period; F1's tau^2 + sigma^2 / n needs both covariance terms to vanish."""
+    rng = np.random.default_rng(53)
+    reps, n, tau, sigma = 200000, 25, 0.01, 0.1
+    a = rng.normal(0, tau, (reps, 1))
+    rho_w = 0.05
+    cases = [('independent components', sigma * rng.normal(0, 1, (reps, n)), 0.0, 0.0),
+             ('errors offset the period component', -a + np.sqrt(sigma ** 2 - tau ** 2) * rng.normal(0, 1, (reps, n)),
+              -tau ** 2, tau ** 2 / sigma ** 2),
+             ('equicorrelated errors rho_w=0.05',
+              sigma * (np.sqrt(rho_w) * rng.normal(0, 1, (reps, 1)) + np.sqrt(1 - rho_w) * rng.normal(0, 1, (reps, n))),
+              0.0, rho_w)]
+    rows = []
+    for label, errors, cov, rho in cases:
+        rows.append({'case': label, 'simulated_var': float(f'{float((a[:, 0] + errors.mean(1)).var()):.4g}'),
+                     'f1_formula': float(f'{tau ** 2 + sigma ** 2 / n:.4g}'),
+                     'general_formula': float(f'{tau ** 2 + sigma ** 2 / n + 2 * cov + sigma ** 2 * (n - 1) * rho / n:.4g}')})
+    return {'n': n, 'tau': tau, 'sigma': sigma, 'reps': reps, 'rows': rows}
+
+
 def dumps(value, depth=0):
     """JSON text of value: a container holding containers spans lines, anything else stays on one line, so the
     committed output is one JSON object whose table rows are single lines (RC-288)."""
@@ -546,7 +673,10 @@ def main():
                 ('S4 selection', s4_selection), ('S5 conjunction', s5_conjunction),
                 ('S6 validity class', s6_validity_class), ('S7 fixed sequence', s7_fixed_sequence),
                 ('S8 exact examples', s8_exact_examples), ('S9 certified cutoff', s9_certified_cutoff),
-                ('S10 component cutoffs', s10_component_cutoffs), ('S11 weighted variance', s11_weighted_variance)]
+                ('S10 component cutoffs', s10_component_cutoffs), ('S11 weighted variance', s11_weighted_variance),
+                ('S12 composite null', s12_composite_null), ('S13 family budget', s13_family_budget),
+                ('S14 unattainable certification', s14_unattainable_certification),
+                ('S15 within-period covariance', s15_within_period_covariance)]
     print(dumps({name: section() for name, section in sections}))
 
 
