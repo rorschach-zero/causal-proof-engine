@@ -1,0 +1,1627 @@
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/allocation.py work_v02/cpe/allocation.py
+--- work_v01/cpe/allocation.py	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/cpe/allocation.py	2026-10-16 07:30:03.605566617 +0200
+@@ -0,0 +1,77 @@
++"""Robust multi-scenario allocation (v0.2) replacing the single-bet binary Kelly
++rule of v0.1 (core.py:95-128) for portfolio use.
++
++Model: K joint scenarios, N fully paid instruments. R[k, i] = total return
++multiple minus 1 of instrument i in scenario k (so -1 = total loss, after
++costs, FX and taxes supplied by the caller). Uncertainty about the scenario
++probabilities is a finite credal set Q = {q_1..q_J} (vertices of the feasible
++polytope from cpe.coherence or hand-specified stress vectors).
++
++Objective:  max_w  min_{q in Q}  sum_k q_k log(1 + R_k . w)
++Constraints: w >= 0; sum w <= gross_cap; w_i <= cap_i;
++             worst-scenario loss  -min_k R_k . w  <= max_loss (hard, path-free).
++             Optional fractional-Kelly: w <- kelly_fraction * w.
++
++Why this is still a toy: scenarios are discrete, joint dependence must be
++encoded in the scenario set by the caller, there is no intra-horizon path,
++margin, liquidation, option exercise or re-balancing. It IS enough for a
++$1,000 pilot of fully paid instruments. Hypothesis, not a theorem: that
++fractional robust Kelly on calibrated credal inputs avoids ruin; ruin remains
++possible if inputs are miscalibrated (see spec §6).
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass
++import numpy as np
++from scipy.optimize import minimize
++
++
++@dataclass(frozen=True)
++class AllocationResult:
++    weights: np.ndarray
++    robust_log_growth: float
++    worst_scenario_loss: float
++    binding: tuple[str, ...]
++    interpretation: str = ('CONDITIONAL on the scenario set, credal set and after-cost return inputs; '
++                           'not a forecast and not a guarantee.')
++
++
++def robust_allocation(R: np.ndarray, Q: np.ndarray, *, gross_cap: float = 0.25,
++                      caps: np.ndarray | None = None, max_loss: float = 0.10,
++                      kelly_fraction: float = 0.5) -> AllocationResult:
++    R = np.asarray(R, float); Q = np.asarray(Q, float)
++    K, N = R.shape
++    if Q.ndim != 2 or Q.shape[1] != K:
++        raise ValueError('Q must be (J, K)')
++    if (Q < -1e-12).any() or not np.allclose(Q.sum(axis=1), 1.0, atol=1e-9):
++        raise ValueError('each row of Q must be a probability vector')
++    if (R < -1).any():
++        raise ValueError('return multiple below zero (loss > 100%) not allowed for fully paid instruments')
++    if not (0 < gross_cap <= 1 and 0 < kelly_fraction <= 1 and 0 < max_loss <= 1):
++        raise ValueError('bad caps')
++    caps = np.full(N, gross_cap) if caps is None else np.asarray(caps, float)
++
++    def growth_q(w, q):
++        return float(q @ np.log1p(R @ w))
++
++    # epigraph: maximize t s.t. t <= growth_q(w,q) for all q
++    x0 = np.concatenate([np.full(N, min(0.01, gross_cap / N)), [0.0]])
++    cons = []
++    for j in range(Q.shape[0]):
++        cons.append({'type': 'ineq', 'fun': (lambda x, j=j: growth_q(x[:N], Q[j]) - x[N])})
++    cons.append({'type': 'ineq', 'fun': lambda x: gross_cap - x[:N].sum()})
++    cons.append({'type': 'ineq', 'fun': lambda x: max_loss + (R @ x[:N]).min()})  # worst loss <= max_loss
++    bounds = [(0.0, float(c)) for c in caps] + [(None, None)]
++    res = minimize(lambda x: -x[N], x0, method='SLSQP', bounds=bounds, constraints=cons,
++                   options={'maxiter': 500, 'ftol': 1e-12})
++    if not res.success:
++        raise ArithmeticError(f'allocation solver failed: {res.message}')
++    w = np.clip(res.x[:N], 0, caps) * kelly_fraction
++    rg = min(growth_q(w, q) for q in Q)
++    worst = float(-(R @ w).min())
++    binding = []
++    if abs(w.sum() / kelly_fraction - gross_cap) < 1e-6: binding.append('gross_cap')
++    if abs(worst / kelly_fraction - max_loss) < 1e-6: binding.append('max_loss')
++    for i in range(N):
++        if abs(w[i] / kelly_fraction - caps[i]) < 1e-6: binding.append(f'cap[{i}]')
++    return AllocationResult(w, rg, worst, tuple(binding))
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/coherence.py work_v02/cpe/coherence.py
+--- work_v01/cpe/coherence.py	2026-10-16 07:07:20.244821524 +0200
++++ work_v02/cpe/coherence.py	2026-10-16 07:27:13.320031305 +0200
+@@ -76,6 +76,8 @@
+ def event_probability_bounds(event_intervals: Mapping[str,ProbabilityInterval],
+                              target_event: str, implications: tuple[tuple[str,str],...]=()) -> tuple[float,float] | None:
+     events=tuple(sorted(event_intervals))
++    if not events or len(events)>14:
++        raise ValueError('1-14 events allowed in prototype (2^n enumeration)')  # v0.2: guard was missing
+     if target_event not in events:
+         raise ValueError('Target not among events')
+     for interval in event_intervals.values():
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/core.py work_v02/cpe/core.py
+--- work_v01/cpe/core.py	2026-10-16 07:07:20.244837507 +0200
++++ work_v02/cpe/core.py	2026-10-16 07:27:13.319579134 +0200
+@@ -29,8 +29,8 @@
+         for dt in (self.published_at, self.first_observed_at, self.available_at, as_of):
+             if not _aware(dt):
+                 raise ValueError('All timestamps must be timezone-aware')
+-        if not self.source_url.startswith(('https://', 'http://')):
+-            raise ValueError('Primary/source document URL required')
++        if not self.source_url.startswith('https://'):
++            raise ValueError('Primary/source document URL over TLS required (v0.2)')
+         if len(self.document_sha256) != 64 or any(c not in '0123456789abcdef' for c in self.document_sha256):
+             raise ValueError('Valid SHA-256 digest required')
+         # The economically usable timestamp cannot precede public disclosure or receipt.
+@@ -40,6 +40,13 @@
+             raise ValueError('LOOKAHEAD BIAS: evidence not available at forecast time')
+ 
+ 
++def evidence_digest(content: bytes) -> str:
++    """Digest of the ARCHIVED bytes. v0.1 accepted any 64-hex string; v0.2 callers
++    must derive document_sha256 from the stored snapshot via this helper."""
++    import hashlib
++    return hashlib.sha256(content).hexdigest()
++
++
+ @dataclass(frozen=True)
+ class BinaryThesis:
+     hypothesis_id: str
+@@ -102,8 +109,8 @@
+     thesis.validate(forecast_at)
+     if not (0 <= max_fraction < 1):
+         raise ValueError('max_fraction must be in [0,1)')
+-    if fixed_cost_fraction_of_portfolio < 0:
+-        raise ValueError('cost must be nonnegative')
++    if not (0 <= fixed_cost_fraction_of_portfolio < 1):
++        raise ValueError('cost fraction must be in [0,1)')
+     p = thesis.p_success_low
+     a = thesis.upside_multiple - 1
+     b = thesis.downside_multiple - 1
+@@ -112,7 +119,10 @@
+     w_opt = -(p * a + (1-p) * b) / (a * b)
+     w = max(0.0, min(max_fraction, w_opt))
+     lower_growth = growth(w, p, thesis.upside_multiple, thesis.downside_multiple)
+-    if lower_growth <= fixed_cost_fraction_of_portfolio:
++    # v0.2: compare log-growth with the log-cost of paying a fraction c of wealth,
++    # -log(1-c), not with c itself (unit mismatch in v0.1; equal only to first order).
++    log_cost = -log(1 - fixed_cost_fraction_of_portfolio)
++    if lower_growth <= log_cost:
+         w = 0.0
+         lower_growth = 0.0
+     return AllocationCertificate(
+@@ -134,15 +144,23 @@
+ 
+ 
+ class ChallengerEvidence:
+-    """An anytime-valid e-process for sequential *pre-registered* Brier score comparisons.
++    """DEPRECATED in v0.2: use cpe.eprocess.CommittedEProcess.
++
++    This class accepts forecast probabilities at resolution time, has no event
++    identity and allows betting_fraction == 1. Kept for backward compatibility of
++    the v0.1 tests only; it emits a DeprecationWarning.
++
++    An anytime-valid e-process for sequential *pre-registered* Brier score comparisons.
+ 
+     Under H0, if E[loss_baseline - loss_challenger | past] <= 0,
+     product(1 + lam_t*(loss_baseline-loss_challenger)) is a test supermartingale.
+     The statement requires properly resolved pre-registered forecasts and null assumptions.
+     """
+     def __init__(self, betting_fraction: float = 0.5) -> None:
+-        if not 0 <= betting_fraction <= 1:
+-            raise ValueError('betting_fraction in [0,1]')
++        import warnings
++        warnings.warn('ChallengerEvidence is deprecated; use cpe.eprocess.CommittedEProcess', DeprecationWarning, stacklevel=2)
++        if not 0 <= betting_fraction < 1:
++            raise ValueError('betting_fraction in [0,1); 1 creates an absorbing zero')
+         self.betting_fraction = betting_fraction
+         self.evalue = 1.0
+         self.n = 0
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/eprocess.py work_v02/cpe/eprocess.py
+--- work_v01/cpe/eprocess.py	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/cpe/eprocess.py	2026-10-16 07:26:32.569554072 +0200
+@@ -0,0 +1,128 @@
++"""Commit-before-resolve e-process for pre-registered Brier comparisons (v0.2).
++
++Fixes v0.1 `ChallengerEvidence` (core.py:136-165), which accepted forecast
++probabilities at *resolution* time and therefore could not distinguish a
++prospective forecast from a hindsight one, had no event identity (the same
++outcome could be fed repeatedly), used a static betting fraction, and allowed
++betting_fraction == 1 (absorbing zero).
++
++Statistical statement (unchanged, now enforced by the API):
++  X_t = Brier(baseline_t) - Brier(challenger_t)  in [-1, 1]
++  M_n = prod_{t<=n} (1 + lam_t X_t), lam_t in [0, lam_max], lam_max < 1,
++  lam_t measurable w.r.t. information BEFORE outcome t is revealed.
++Under H0: E[X_t | F_{t-1}] <= 0 for all t, M is a nonnegative supermartingale
++with M_0 = 1 and P(exists n: M_n >= 1/alpha) <= alpha (Ville).
++
++What this does NOT give you: validity if forecasts are edited after commit,
++if the pair (baseline, challenger) is chosen after seeing which pair "won",
++or if the e-value is compared against many alphas chosen post hoc.
++Resolution ORDER matters: events are incorporated in resolution order and
++lam_t is computed from previously resolved events only, so delayed labels
++are handled correctly as long as `resolve` is called once per event.
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++from datetime import datetime
++from math import isfinite
++from typing import Callable
++
++
++def _aware(dt: datetime) -> bool:
++    return dt.tzinfo is not None and dt.utcoffset() is not None
++
++
++@dataclass(frozen=True)
++class CommittedForecastPair:
++    event_id: str
++    baseline_p: float
++    challenger_p: float
++    committed_at: datetime
++    resolves_not_before: datetime  # earliest time the outcome can be known
++
++
++def grapa_lambda(past_x: list[float], lam_max: float = 0.5, shrink: float = 1.0) -> float:
++    """Predictable betting fraction from PAST increments only.
++
++    Approximate growth-rate-optimal lambda = clip(mean/ (var + mean^2)) shrunk
++    toward 0 for small n. With no history returns 0 (no bet) -> M stays 1.
++    Reference idea: Waudby-Smith & Ramdas, "Estimating means of bounded random
++    variables by betting" (2020, arXiv:2010.09686). UNVERIFIED here beyond the
++    nonnegativity property, which is what validity needs; lambda only affects power.
++    """
++    n = len(past_x)
++    if n < 2:
++        return 0.0
++    m = sum(past_x) / n
++    v = sum((x - m) ** 2 for x in past_x) / (n - 1)
++    denom = v + m * m
++    if denom <= 0:
++        return 0.0
++    lam = m / denom
++    lam *= n / (n + shrink * 10)  # shrink for small samples
++    return float(max(0.0, min(lam_max, lam)))
++
++
++class CommittedEProcess:
++    """E-process over committed (pre-registered) forecast pairs."""
++
++    def __init__(self, lambda_rule: Callable[[list[float]], float] | None = None,
++                 lam_max: float = 0.5) -> None:
++        if not (0.0 <= lam_max < 1.0):
++            raise ValueError('lam_max must be in [0,1); 1 creates an absorbing zero')
++        self.lam_max = lam_max
++        self._rule = lambda_rule or (lambda past: grapa_lambda(past, lam_max=lam_max))
++        self._committed: dict[str, CommittedForecastPair] = {}
++        self._resolved: dict[str, int] = {}
++        self._x_history: list[float] = []
++        self.evalue = 1.0
++        self.max_evalue = 1.0
++
++    # ---- commitment phase -------------------------------------------------
++    def commit(self, pair: CommittedForecastPair) -> None:
++        for p in (pair.baseline_p, pair.challenger_p):
++            if not (isfinite(p) and 0.0 <= p <= 1.0):
++                raise ValueError('Probabilities must be in [0,1]')
++        if not (_aware(pair.committed_at) and _aware(pair.resolves_not_before)):
++            raise ValueError('Timestamps must be timezone-aware')
++        if pair.resolves_not_before <= pair.committed_at:
++            raise ValueError('Forecast must be committed strictly before resolution window')
++        if pair.event_id in self._committed:
++            raise ValueError(f'Event {pair.event_id} already committed; forecasts are immutable')
++        self._committed[pair.event_id] = pair
++
++    # ---- resolution phase -------------------------------------------------
++    def resolve(self, event_id: str, outcome: int, resolved_at: datetime) -> float:
++        if outcome not in (0, 1):
++            raise ValueError('Outcome must be binary')
++        if event_id not in self._committed:
++            raise ValueError(f'No committed forecast for {event_id}: hindsight entry rejected')
++        if event_id in self._resolved:
++            raise ValueError(f'Event {event_id} already resolved: duplicate rejected')
++        pair = self._committed[event_id]
++        if not _aware(resolved_at) or resolved_at < pair.resolves_not_before:
++            raise ValueError('Resolution before the declared resolution window is not allowed')
++        lam = self._rule(list(self._x_history))  # predictable: uses past only
++        if not (0.0 <= lam <= self.lam_max):
++            raise ValueError('lambda rule violated [0, lam_max]')
++        x = (pair.baseline_p - outcome) ** 2 - (pair.challenger_p - outcome) ** 2
++        self.evalue *= (1.0 + lam * x)
++        self.max_evalue = max(self.max_evalue, self.evalue)
++        self._x_history.append(x)
++        self._resolved[event_id] = outcome
++        return self.evalue
++
++    # ---- inference ----------------------------------------------------------
++    def reject_null(self, alpha: float) -> bool:
++        """alpha must be PRE-REGISTERED. Anytime-valid: may be checked at any n."""
++        if not 0 < alpha < 1:
++            raise ValueError('alpha invalid')
++        return self.max_evalue >= 1.0 / alpha  # running max: valid by Ville
++
++    @property
++    def n(self) -> int:
++        return len(self._resolved)
++
++    @property
++    def pending(self) -> int:
++        return len(self._committed) - len(self._resolved)
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/fusion.py work_v02/cpe/fusion.py
+--- work_v01/cpe/fusion.py	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/cpe/fusion.py	2026-10-16 07:28:24.993560755 +0200
+@@ -0,0 +1,152 @@
++"""Correlation-aware multi-model fusion with explicit abstention (v0.2).
++
++Mandatory inputs per event: an interval forecast from EACH of the three LLM
++researchers (Claude, OpenAI, Gemini) and a Jev triage record. Missing mandatory
++input => decision RE_RESEARCH, never a silent 2-of-3.
++
++Fusion is NOT majority voting:
++  1. Each forecaster's historical standardized errors e_i = (p_i - y) are used to
++     estimate the error correlation matrix R (shrunk toward identity).
++  2. Weights are the minimum-variance pooling weights w = R^-1 1 / (1' R^-1 1),
++     clipped to [0,1] and renormalised (if clipping is needed we fall back to
++     equal weights and flag it). Three models that always agree therefore
++     count roughly as ONE source, not three.
++  3. The fused credal interval is the convex combination of the input intervals.
++  4. Abstention is explicit: large disagreement, wide fused interval, a model's
++     abstention, or Jev flagging the evidence as not a dated primary claim all
++     stop the pipeline with a typed reason.
++
++All thresholds are pre-registered constants (see FusionPolicy); they are not
++tuned on the live ledger.
++
++HYPOTHESIS (untested): that this fusion has lower Brier than the best single
++model on prospectively registered events. See SCIENTIFIC_EXPERIMENTS.md H1/H3.
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass, field
++from enum import Enum
++from typing import Sequence
++import numpy as np
++
++
++class Decision(str, Enum):
++    FORECAST = 'forecast'
++    ABSTAIN = 'abstain'
++    RE_RESEARCH = 're_research'
++
++
++@dataclass(frozen=True)
++class ModelInterval:
++    forecaster: str
++    p_low: float
++    p_high: float
++    abstained: bool = False
++
++    @property
++    def mid(self) -> float:
++        return 0.5 * (self.p_low + self.p_high)
++
++
++@dataclass(frozen=True)
++class JevTriage:
++    """Typed Jev outputs. These are classification probabilities, NOT investment probabilities."""
++    dated_primary_evidence: float      # noul: evidence has date + traceable primary source
++    relevance_to_event: float          # noul: evidence bears on the registered event
++    complement_gap: float              # |p(X) + p(not X) - 1| measured on this call
++
++
++@dataclass(frozen=True)
++class FusionPolicy:
++    required: tuple[str, ...] = ('claude', 'openai', 'gemini')
++    max_disagreement: float = 0.30      # max spread of midpoints before abstain
++    max_fused_width: float = 0.35
++    min_jev_primary: float = 0.60
++    min_jev_relevance: float = 0.50
++    max_jev_complement_gap: float = 0.15
++    shrink_to_identity: float = 0.30    # Ledoit-Wolf style shrinkage weight
++    min_history: int = 20               # below this, equal weights
++
++
++@dataclass(frozen=True)
++class FusionResult:
++    decision: Decision
++    p_low: float
++    p_high: float
++    weights: dict[str, float]
++    disagreement: float
++    effective_models: float
++    reasons: tuple[str, ...]
++
++
++def error_correlation(errors: np.ndarray, shrink: float) -> np.ndarray:
++    """errors: (n_events, n_models) matrix of p_i - y. Returns shrunk correlation."""
++    n, m = errors.shape
++    if n < 2:
++        return np.eye(m)
++    c = np.corrcoef(errors, rowvar=False)
++    c = np.nan_to_num(c, nan=0.0)
++    np.fill_diagonal(c, 1.0)
++    return (1 - shrink) * c + shrink * np.eye(m)
++
++
++def min_variance_weights(R: np.ndarray) -> tuple[np.ndarray, bool]:
++    m = R.shape[0]
++    ones = np.ones(m)
++    try:
++        inv = np.linalg.solve(R, ones)
++    except np.linalg.LinAlgError:
++        return ones / m, True
++    w = inv / inv.sum()
++    if (w < 0).any() or not np.isfinite(w).all():
++        return ones / m, True  # fallback flagged
++    return w, False
++
++
++def effective_models(w: np.ndarray, R: np.ndarray) -> float:
++    return float(w.sum() ** 2 / (w @ R @ w))
++
++
++def fuse(intervals: Sequence[ModelInterval], jev: JevTriage | None,
++         error_history: np.ndarray | None, policy: FusionPolicy = FusionPolicy()) -> FusionResult:
++    reasons: list[str] = []
++    by_name = {iv.forecaster: iv for iv in intervals}
++    missing = [r for r in policy.required if r not in by_name]
++    if missing or jev is None:
++        return FusionResult(Decision.RE_RESEARCH, 0.0, 1.0, {}, 1.0, 0.0,
++                            tuple([f'missing mandatory input: {m}' for m in missing] + ([] if jev else ['missing jev triage'])))
++    if jev.complement_gap > policy.max_jev_complement_gap:
++        reasons.append(f'jev incoherent on this item (complement gap {jev.complement_gap:.2f})')
++    if jev.dated_primary_evidence < policy.min_jev_primary:
++        reasons.append('jev: evidence not a dated primary claim')
++    if jev.relevance_to_event < policy.min_jev_relevance:
++        reasons.append('jev: evidence not relevant to registered event')
++    if reasons:
++        return FusionResult(Decision.RE_RESEARCH, 0.0, 1.0, {}, 1.0, 0.0, tuple(reasons))
++
++    ordered = [by_name[r] for r in policy.required]
++    if any(iv.abstained for iv in ordered):
++        return FusionResult(Decision.ABSTAIN, 0.0, 1.0, {}, 1.0, 0.0,
++                            tuple(f'{iv.forecaster} abstained' for iv in ordered if iv.abstained))
++    m = len(ordered)
++    if error_history is not None and error_history.shape[0] >= policy.min_history and error_history.shape[1] == m:
++        R = error_correlation(error_history, policy.shrink_to_identity)
++    else:
++        R = np.eye(m)
++        reasons.append('insufficient history: equal weights')
++    w, fell_back = min_variance_weights(R)
++    if fell_back:
++        reasons.append('weights fell back to equal (negative or singular solution)')
++    lows = np.array([iv.p_low for iv in ordered]); highs = np.array([iv.p_high for iv in ordered])
++    mids = 0.5 * (lows + highs)
++    p_low = float(w @ lows); p_high = float(w @ highs)
++    disagreement = float(mids.max() - mids.min())
++    n_eff = effective_models(w, R)
++    weights = {iv.forecaster: float(wi) for iv, wi in zip(ordered, w)}
++    if disagreement > policy.max_disagreement:
++        reasons.append(f'disagreement {disagreement:.2f} > {policy.max_disagreement}')
++        return FusionResult(Decision.ABSTAIN, p_low, p_high, weights, disagreement, n_eff, tuple(reasons))
++    if (p_high - p_low) > policy.max_fused_width:
++        reasons.append(f'fused width {p_high - p_low:.2f} > {policy.max_fused_width}')
++        return FusionResult(Decision.ABSTAIN, p_low, p_high, weights, disagreement, n_eff, tuple(reasons))
++    return FusionResult(Decision.FORECAST, p_low, p_high, weights, disagreement, n_eff, tuple(reasons))
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/jev_adapter.py work_v02/cpe/jev_adapter.py
+--- work_v01/cpe/jev_adapter.py	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/cpe/jev_adapter.py	2026-10-16 07:28:54.653562518 +0200
+@@ -0,0 +1,138 @@
++"""Typed TypeSafe Jev adapter (v0.2). Schema verified against the live OpenAPI
++document at https://api.typesafe.ai/openapi.json (title 'TypeSafe', version
++0.2.0, fetched 2026-10-16): POST /v1/systemone with {model, state, questions};
++response {model, answers{name -> {type, noul|choice|score...}}, usage}.
++GET /v1/models lists model names with release_date.
++
++Design rules:
++  * Jev never sees broker credentials, account data or order drafts.
++  * Every call is recorded with origin timestamps and the model name RETURNED
++    (the alias 'jev-latest' can silently change; the response's `model` is
++    the version of record).
++  * Every noul question is asked in both polarities; the complement gap
++    |p + q - 1| is recorded. Published independent evaluation (arXiv:2609.33209)
++    reports a mean gap of 0.064 on complement pairs; items with a large gap are
++    treated as unreliable rather than averaged.
++  * Jev probabilities are triage/classification signals. They become inputs to
++    calibration only after prospective outcome data exists (see SCIENTIFIC_EXPERIMENTS.md).
++  * Transport is injectable so tests run without network or API key.
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass
++from datetime import datetime, timezone
++from typing import Any, Callable, Protocol
++import json
++import os
++import time
++
++JEV_URL = 'https://api.typesafe.ai/v1/systemone'
++JEV_MODELS_URL = 'https://api.typesafe.ai/v1/models'
++
++
++class Transport(Protocol):
++    def __call__(self, url: str, headers: dict, body: dict, timeout: float) -> tuple[int, dict]: ...
++
++
++def httpx_transport(url: str, headers: dict, body: dict, timeout: float) -> tuple[int, dict]:
++    import httpx  # imported lazily so tests do not need network
++    with httpx.Client(timeout=timeout) as client:
++        r = client.post(url, headers=headers, json=body)
++        try:
++            return r.status_code, r.json()
++        except ValueError:
++            return r.status_code, {'_raw': r.text[:2000]}
++
++
++class JevMalformed(ValueError):
++    pass
++
++
++@dataclass(frozen=True)
++class JevNoulResult:
++    question: str
++    p_yes: float
++    p_not: float            # from the negated question
++    complement_gap: float   # |p_yes + p_not - 1|
++    model_returned: str
++    requested_at: datetime
++    received_at: datetime
++    latency_ms: float
++    input_tokens: int
++    raw_digest: str
++
++
++def _check_prob(x: Any, name: str) -> float:
++    if not isinstance(x, (int, float)) or isinstance(x, bool):
++        raise JevMalformed(f'{name}: probability not numeric: {x!r}')
++    if not (0.0 <= float(x) <= 1.0):
++        raise JevMalformed(f'{name}: probability out of range: {x}')
++    return float(x)
++
++
++def parse_noul_response(resp: dict, names: tuple[str, str]) -> tuple[float, float, str, int]:
++    if not isinstance(resp, dict) or 'answers' not in resp or 'model' not in resp:
++        raise JevMalformed('response missing answers/model')
++    ans = resp['answers']
++    out = []
++    for n in names:
++        a = ans.get(n)
++        if not isinstance(a, dict) or a.get('type') != 'noul':
++            raise JevMalformed(f'answer {n} missing or wrong type')
++        out.append(_check_prob(a.get('noul'), n))
++    usage = resp.get('usage', {})
++    toks = usage.get('input_tokens', 0) if isinstance(usage, dict) else 0
++    return out[0], out[1], str(resp['model']), int(toks)
++
++
++class JevClient:
++    def __init__(self, api_key: str | None = None, transport: Transport | None = None,
++                 model: str = 'jev-latest', timeout: float = 10.0, max_retries: int = 2,
++                 cost_ceiling_tokens: int = 50_000_000, clock: Callable[[], datetime] | None = None):
++        self.api_key = api_key or os.environ.get('TYPESAFE_API_KEY')
++        self.transport = transport or httpx_transport
++        self.model = model
++        self.timeout = timeout
++        self.max_retries = max_retries
++        self.cost_ceiling_tokens = cost_ceiling_tokens
++        self.tokens_used = 0
++        self._clock = clock or (lambda: datetime.now(timezone.utc))
++        if transport is None and not self.api_key:
++            raise ValueError('TYPESAFE_API_KEY required for live transport')
++
++    def ask_noul_pair(self, state: str | dict, question: str, negated_question: str,
++                      criteria_true: str | None = None, criteria_false: str | None = None) -> JevNoulResult:
++        if self.tokens_used >= self.cost_ceiling_tokens:
++            raise RuntimeError('Jev cost ceiling reached; research degraded, no further Jev calls')
++        if any(k in json.dumps(state).lower() for k in ('accountkey', 'bearer ', 'refresh_token', 'access_token')):
++            raise ValueError('refusing to send credential-like content to Jev')
++        q: dict[str, Any] = {'type': 'noul', 'instructions': question}
++        if criteria_true or criteria_false:
++            q['criteria'] = {'true': criteria_true, 'false': criteria_false}
++        body = {'model': self.model, 'state': state,
++                'questions': {'q': q, 'q_not': {'type': 'noul', 'instructions': negated_question}}}
++        headers = {'Authorization': f'Bearer {self.api_key}', 'Content-Type': 'application/json'}
++        requested_at = self._clock()
++        t0 = time.perf_counter()
++        last_err: Exception | None = None
++        for attempt in range(self.max_retries + 1):
++            try:
++                status, resp = self.transport(JEV_URL, headers, body, self.timeout)
++            except Exception as ex:  # network-level
++                last_err = ex
++                time.sleep(min(2 ** attempt * 0.2, 2.0))
++                continue
++            if status == 429 or 500 <= status < 600:
++                last_err = RuntimeError(f'Jev HTTP {status}')
++                time.sleep(min(2 ** attempt * 0.2, 2.0))
++                continue
++            if status != 200:
++                raise RuntimeError(f'Jev HTTP {status}: {str(resp)[:200]}')
++            p, pn, model_ret, toks = parse_noul_response(resp, ('q', 'q_not'))
++            received_at = self._clock()
++            self.tokens_used += toks
++            import hashlib
++            return JevNoulResult(question, p, pn, abs(p + pn - 1.0), model_ret, requested_at, received_at,
++                                 (time.perf_counter() - t0) * 1000, toks,
++                                 hashlib.sha256(json.dumps(resp, sort_keys=True).encode()).hexdigest())
++        raise RuntimeError(f'Jev unavailable after retries: {last_err}')
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/ledger.py work_v02/cpe/ledger.py
+--- work_v01/cpe/ledger.py	2026-10-16 07:07:20.244854922 +0200
++++ work_v02/cpe/ledger.py	2026-10-16 07:26:55.777555452 +0200
+@@ -1,47 +1,113 @@
+-"""Append-only JSONL event ledger. Do not edit historical outcome labels in place."""
++"""Append-only JSONL event ledger with external anchoring (v0.2).
++
++Threat model (new in v0.2):
++  T1  In-place edit of one line            -> detected by v0.1 hash chain.
++  T2  Full rewrite + re-hash of the chain  -> NOT detected by v0.1 (reproduced in
++      review, attack F1). Detected in v0.2 iff an anchor taken BEFORE the rewrite
++      is stored somewhere the writer cannot modify (separate volume/account,
++      signed commit, OpenTimestamps, printed hash, e-mail to self, ...).
++  T3  Truncation (drop tail entries)       -> detected by anchor length + head.
++  T4  Clock rollback / reordering          -> `written_at` must be monotone.
++  T5  Writer process itself is malicious   -> out of scope for a file ledger;
++      requires an append-only store owned by a different principal (see spec §9).
++
++Anchors are tiny JSON records {n, head_hash, anchored_at} and MUST be kept
++outside the writer's write permission to be meaningful.
++"""
+ from __future__ import annotations
++
+ from datetime import datetime, timezone
+ from hashlib import sha256
+ from pathlib import Path
++import hmac
+ import json
+ 
++
++def _canonical(entry: dict) -> bytes:
++    return json.dumps(entry, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode('utf8')
++
++
+ class AppendOnlyLedger:
+     def __init__(self, file: str | Path):
+         self.path = Path(file)
+         self.path.parent.mkdir(parents=True, exist_ok=True)
+ 
++    # ------------------------------------------------------------------ write
+     def append(self, event_type: str, payload: dict) -> str:
+         if not event_type or not isinstance(payload, dict):
+             raise ValueError('event_type and payload required')
+-        prev = self.tail_hash()
++        prev_hash, n, last_written = self._tail()
++        now = datetime.now(timezone.utc)
++        if last_written is not None and now < last_written:
++            raise ValueError('Clock moved backwards relative to ledger tail; refusing to append')
+         entry = {
++            'seq': n,
+             'event_type': event_type,
+-            'written_at': datetime.now(timezone.utc).isoformat(),
++            'written_at': now.isoformat(),
+             'payload': payload,
+-            'prev_hash': prev,
++            'prev_hash': prev_hash,
+         }
+-        entry['entry_hash'] = sha256(json.dumps(entry, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
++        entry['entry_hash'] = sha256(_canonical(entry)).hexdigest()
+         with self.path.open('a', encoding='utf8') as out:
+-            out.write(json.dumps(entry, sort_keys=True, ensure_ascii=False)+'\n')
++            out.write(json.dumps(entry, sort_keys=True, ensure_ascii=False) + '\n')
+         return entry['entry_hash']
+ 
+-    def tail_hash(self) -> str:
++    # ------------------------------------------------------------------- read
++    def _tail(self) -> tuple[str, int, datetime | None]:
+         if not self.path.exists() or self.path.stat().st_size == 0:
+-            return 'GENESIS'
++            return 'GENESIS', 0, None
+         with self.path.open('rb') as inp:
+-            # Small research starter. Production should index tail hashes via a DB.
+             lines = inp.read().splitlines()
+-        return json.loads(lines[-1])['entry_hash']
++        last = json.loads(lines[-1])
++        return last['entry_hash'], len(lines), datetime.fromisoformat(last['written_at'])
++
++    def tail_hash(self) -> str:
++        return self._tail()[0]
++
++    def __len__(self) -> int:
++        return self._tail()[1]
+ 
+     def verify_chain(self) -> bool:
+         previous = 'GENESIS'
+         if not self.path.exists():
+             return True
+-        for line in self.path.read_text(encoding='utf8').splitlines():
++        last_time: datetime | None = None
++        for i, line in enumerate(self.path.read_text(encoding='utf8').splitlines()):
+             entry = json.loads(line)
+             reported = entry.pop('entry_hash')
+-            actual = sha256(json.dumps(entry, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+-            if reported != actual or entry['prev_hash'] != previous:
++            if entry.get('seq') != i:
++                return False
++            if sha256(_canonical(entry)).hexdigest() != reported or entry['prev_hash'] != previous:
++                return False
++            t = datetime.fromisoformat(entry['written_at'])
++            if last_time is not None and t < last_time:
+                 return False
++            last_time = t
+             previous = reported
+         return True
++
++    # ---------------------------------------------------------------- anchors
++    def anchor(self, secret: bytes | None = None) -> dict:
++        """Snapshot {n, head_hash, anchored_at[, mac]}. Store it OUTSIDE the writer's reach."""
++        head, n, _ = self._tail()
++        rec = {'n': n, 'head_hash': head, 'anchored_at': datetime.now(timezone.utc).isoformat()}
++        if secret is not None:
++            rec['mac'] = hmac.new(secret, _canonical(rec), 'sha256').hexdigest()
++        return rec
++
++    def verify_against_anchor(self, anchor: dict, secret: bytes | None = None) -> bool:
++        """True iff the first anchor['n'] entries of the chain still hash to anchor['head_hash']."""
++        if secret is not None:
++            rec = {k: v for k, v in anchor.items() if k != 'mac'}
++            if not hmac.compare_digest(hmac.new(secret, _canonical(rec), 'sha256').hexdigest(), anchor.get('mac', '')):
++                return False
++        if not self.verify_chain():
++            return False
++        if not self.path.exists():
++            return anchor['n'] == 0 and anchor['head_hash'] == 'GENESIS'
++        lines = self.path.read_text(encoding='utf8').splitlines()
++        if len(lines) < anchor['n']:
++            return False  # truncated
++        if anchor['n'] == 0:
++            return anchor['head_hash'] == 'GENESIS'
++        return json.loads(lines[anchor['n'] - 1])['entry_hash'] == anchor['head_hash']
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/registry.py work_v02/cpe/registry.py
+--- work_v01/cpe/registry.py	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/cpe/registry.py	2026-10-16 07:27:42.249558214 +0200
+@@ -0,0 +1,153 @@
++"""Forecast registry (v0.2): every forecast carries as-of, known-at, an exact
++resolution criterion, an expiry and an objective grading rule, committed to the
++ledger BEFORE the outcome can be known.
++
++"10x potential" is not a forecast. A forecast is: "P(event E resolves YES by T)
++where E := <machine-checkable predicate over a named data source>".
++"""
++from __future__ import annotations
++
++from dataclasses import dataclass, asdict
++from datetime import datetime
++from enum import Enum
++from hashlib import sha256
++import json
++
++from .ledger import AppendOnlyLedger
++
++
++def _aware(dt: datetime) -> bool:
++    return dt.tzinfo is not None and dt.utcoffset() is not None
++
++
++class ForecastStatus(str, Enum):
++    COMMITTED = 'committed'
++    RESOLVED_YES = 'resolved_yes'
++    RESOLVED_NO = 'resolved_no'
++    EXPIRED_NO = 'expired_no'        # expiry passed, criterion not met -> graded NO
++    VOID = 'void'                     # resolution source disappeared; graded as abstain, counted in void-rate
++
++
++class Forecaster(str, Enum):
++    CLAUDE = 'claude'
++    OPENAI = 'openai'
++    GEMINI = 'gemini'
++    JEV = 'jev'
++    FUSION = 'fusion'
++    BASELINE_BASE_RATE = 'baseline_base_rate'
++    BASELINE_MARKET = 'baseline_market_implied'
++    HUMAN = 'human'
++
++
++@dataclass(frozen=True)
++class EventSpec:
++    event_id: str
++    statement: str                      # human-readable
++    resolution_source: str              # named source (e.g. 'SEC EDGAR 10-K item 7', 'FDA approvals DB')
++    resolution_predicate: str           # machine-checkable rule text, versioned
++    resolves_not_before: datetime       # earliest time outcome can be known
++    expires_at: datetime                # if not YES by then -> NO
++    grading_rule_version: str
++
++    def validate(self) -> None:
++        for dt in (self.resolves_not_before, self.expires_at):
++            if not _aware(dt):
++                raise ValueError('timezone-aware timestamps required')
++        if self.expires_at <= self.resolves_not_before:
++            raise ValueError('expiry must follow earliest resolution')
++        if not (self.statement and self.resolution_source and self.resolution_predicate):
++            raise ValueError('statement, resolution_source and resolution_predicate required')
++        banned = ('potential', 'could', 'might', 'significant', 'strong')
++        low = self.resolution_predicate.lower()
++        if any(f' {b} ' in f' {low} ' for b in banned):
++            raise ValueError(f'resolution_predicate contains vague wording: {banned}')
++
++
++@dataclass(frozen=True)
++class Forecast:
++    forecast_id: str
++    event_id: str
++    forecaster: Forecaster
++    forecaster_version: str
++    p_low: float
++    p_high: float
++    as_of: datetime                     # information cutoff used by the forecaster
++    known_at: datetime                  # wall-clock when the forecast was produced
++    evidence_ids: tuple[str, ...]
++    reasoning_digest: str               # sha256 of the archived reasoning text
++    abstained: bool = False
++
++    def validate(self, spec: EventSpec) -> None:
++        if self.event_id != spec.event_id:
++            raise ValueError('forecast/event mismatch')
++        if not (_aware(self.as_of) and _aware(self.known_at)):
++            raise ValueError('timezone-aware timestamps required')
++        if self.as_of > self.known_at:
++            raise ValueError('as_of cannot be after known_at')
++        if self.known_at >= spec.resolves_not_before:
++            raise ValueError('forecast produced inside the resolution window: not prospective')
++        if not self.abstained and not (0 <= self.p_low <= self.p_high <= 1):
++            raise ValueError('incoherent probability interval')
++        if not self.abstained and (self.p_high - self.p_low) > 0.5:
++            raise ValueError('interval wider than 0.5 must be recorded as abstention')
++        if len(self.reasoning_digest) != 64:
++            raise ValueError('reasoning_digest must be sha256 hex')
++
++
++class ForecastRegistry:
++    """Ledger-backed registry. All writes are append-only ledger events."""
++
++    def __init__(self, ledger: AppendOnlyLedger):
++        self.ledger = ledger
++        self._events: dict[str, EventSpec] = {}
++        self._forecasts: dict[str, Forecast] = {}
++        self._status: dict[str, ForecastStatus] = {}
++
++    def register_event(self, spec: EventSpec) -> str:
++        spec.validate()
++        if spec.event_id in self._events:
++            raise ValueError('event already registered; specs are immutable')
++        self._events[spec.event_id] = spec
++        self._status[spec.event_id] = ForecastStatus.COMMITTED
++        payload = {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in asdict(spec).items()}
++        return self.ledger.append('event_registered', payload)
++
++    def commit_forecast(self, f: Forecast) -> str:
++        spec = self._events.get(f.event_id)
++        if spec is None:
++            raise ValueError('unknown event')
++        f.validate(spec)
++        if f.forecast_id in self._forecasts:
++            raise ValueError('forecast ids are immutable; submit a new forecast_id for an update')
++        if self._status[f.event_id] != ForecastStatus.COMMITTED:
++            raise ValueError('event already resolved: late forecast rejected')
++        self._forecasts[f.forecast_id] = f
++        payload = {k: (v.isoformat() if isinstance(v, datetime) else (v.value if isinstance(v, Enum) else v))
++                   for k, v in asdict(f).items()}
++        payload['commit_digest'] = sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
++        return self.ledger.append('forecast_committed', payload)
++
++    def resolve(self, event_id: str, outcome: bool | None, resolved_at: datetime, resolver: str, evidence_id: str) -> str:
++        spec = self._events[event_id]
++        if not _aware(resolved_at) or resolved_at < spec.resolves_not_before:
++            raise ValueError('resolution before window')
++        if self._status[event_id] != ForecastStatus.COMMITTED:
++            raise ValueError('already resolved')
++        if outcome is None:
++            status = ForecastStatus.VOID
++        elif outcome:
++            status = ForecastStatus.RESOLVED_YES
++        elif resolved_at >= spec.expires_at:
++            status = ForecastStatus.EXPIRED_NO
++        else:
++            status = ForecastStatus.RESOLVED_NO
++        self._status[event_id] = status
++        return self.ledger.append('event_resolved', {
++            'event_id': event_id, 'status': status.value, 'resolved_at': resolved_at.isoformat(),
++            'resolver': resolver, 'evidence_id': evidence_id})
++
++    def status(self, event_id: str) -> ForecastStatus:
++        return self._status[event_id]
++
++    def forecasts_for(self, event_id: str) -> list[Forecast]:
++        return [f for f in self._forecasts.values() if f.event_id == event_id]
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/cpe/saxo_sim.py work_v02/cpe/saxo_sim.py
+--- work_v01/cpe/saxo_sim.py	2026-10-16 07:07:20.244873218 +0200
++++ work_v02/cpe/saxo_sim.py	2026-10-16 07:29:35.029564918 +0200
+@@ -1,14 +1,105 @@
+-"""Saxo OpenAPI: SIM-only order precheck. NO ORDER EXECUTION in this starter.
++"""Saxo OpenAPI: SIM-only order precheck with an explicit gate state machine (v0.2).
+ 
+-Docs: https://www.developer.saxo/openapi/referencedocs/trade/v2/orders/post__trade__precheck
+-Requires Saxo SIM token supplied externally; never place secrets in source control.
++NO ORDER EXECUTION. There is still no function that calls POST /trade/v2/orders.
++
++Verified against official docs on 2026-10-16:
++  * Environments (SIM base URL https://gateway.saxobank.com/sim/openapi, LIVE
++    https://gateway.saxobank.com/openapi, one-day Developer-Portal tokens are
++    SIM-only, "market data ... not available in SIM"):
++    https://www.developer.saxo/openapi/learn/environments
++  * Precheck request fields (AccountKey, Amount, AssetType, BuySell, OrderType,
++    OrderPrice, OrderDuration, Uic, ExternalReference(<=50 chars), FieldGroups;
++    `ManualOrder` is NOT listed on the precheck page):
++    https://www.developer.saxo/openapi/referencedocs/trade/v2/orders/post__trade__precheck
++  * Order placement: duplicate protection via `x-request-id` header ("exactly
++    the same order within 15 seconds without specifying a different x-request-id
++    header will be rejected"); `ManualOrder` "Indicates if the order is
++    originated by a manual or automatic action", automated = "generated and/or
++    routed without human intervention"; FX Options not tradable via OpenAPI:
++    https://www.developer.saxo/openapi/learn/order-placement
++  * PKCE: /authorize + /token, code_challenge_method S256, example
++    expires_in 1200 s, refresh_token_expires_in 2400 s:
++    https://www.developer.saxo/openapi/learn/oauth-authorization-code-grant-pkce
++
++Changes vs v0.1:
++  - AssetType restricted to a pilot whitelist of fully paid, loss-bounded types.
++  - `ManualOrder` removed from the PRECHECK payload (undocumented there); it is
++    set to False on the (future, not implemented) placement payload only.
++  - ExternalReference (certificate id) and x-request-id (uuid4) added.
++  - Amount must be an integer number of units for Stock/Etf; price sanity checks.
++  - Fail-closed GateState machine; promotion requires an owner authorization
++    record, never a code path the research agents can call.
++  - Token never logged; HTTP errors are re-raised without request headers.
+ """
+ from __future__ import annotations
++
+ from dataclasses import dataclass
++from enum import Enum
++from hashlib import sha256
+ import os
++import uuid
++
+ import httpx
+ 
+ SIM_API = 'https://gateway.saxobank.com/sim/openapi'
++LIVE_API = 'https://gateway.saxobank.com/openapi'  # never used by this module
++
++PILOT_ASSET_TYPES = ('Stock', 'Etf', 'Bond', 'MutualFund')   # fully paid, loss bounded by premium/price
++EXCLUDED_IN_PILOT = ('CfdOnStock', 'CfdOnIndex', 'FxSpot', 'FxForward', 'FxOption', 'FuturesOption',
++                     'StockOption', 'StockIndexOption', 'FutureContracts', 'FutureStrategies', 'Cfd')
++
++
++class GateState(str, Enum):
++    RESEARCH_ONLY = 'RESEARCH_ONLY'
++    SIM_READ_ONLY = 'SIM_READ_ONLY'
++    SIM_PRECHECK = 'SIM_PRECHECK'
++    SIM_EXECUTION = 'SIM_EXECUTION'
++    SHADOW_LIVE_QUOTES = 'SHADOW_LIVE_QUOTES'
++    LIVE_CAPPED_1000 = 'LIVE_CAPPED_1000'
++
++
++_ORDER = list(GateState)
++
++
++@dataclass(frozen=True)
++class OwnerAuthorization:
++    """Signed-off promotion record. The secret lives only with the owner."""
++    from_state: GateState
++    to_state: GateState
++    evidence_bundle_sha256: str   # hash of the test report that justifies promotion
++    owner_mac: str                # HMAC(owner_secret, from|to|evidence) hex
++
++
++class Gate:
++    def __init__(self, state: GateState = GateState.RESEARCH_ONLY):
++        self.state = state
++
++    @staticmethod
++    def expected_mac(owner_secret: bytes, from_state: GateState, to_state: GateState, bundle: str) -> str:
++        import hmac
++        return hmac.new(owner_secret, f'{from_state.value}|{to_state.value}|{bundle}'.encode(), 'sha256').hexdigest()
++
++    def promote(self, auth: OwnerAuthorization, owner_secret: bytes) -> GateState:
++        import hmac
++        if auth.from_state != self.state:
++            raise PermissionError('authorization does not match current state')
++        if _ORDER.index(auth.to_state) != _ORDER.index(self.state) + 1:
++            raise PermissionError('gates can only be promoted one step at a time')
++        if not hmac.compare_digest(self.expected_mac(owner_secret, auth.from_state, auth.to_state, auth.evidence_bundle_sha256), auth.owner_mac):
++            raise PermissionError('owner authorization invalid')
++        if auth.to_state == GateState.LIVE_CAPPED_1000:
++            raise PermissionError('LIVE promotion is blocked in v0.2 code by design; requires independent risk-gate sign-off and a separate release')
++        self.state = auth.to_state
++        return self.state
++
++    def demote(self, reason: str) -> GateState:
++        """Anyone (including automation) may demote; this is the kill switch."""
++        self.state = GateState.RESEARCH_ONLY
++        return self.state
++
++    def require(self, minimum: GateState) -> None:
++        if _ORDER.index(self.state) < _ORDER.index(minimum):
++            raise PermissionError(f'gate {self.state.value} below required {minimum.value}')
+ 
+ 
+ @dataclass(frozen=True)
+@@ -16,15 +107,27 @@
+     uic: int
+     asset_type: str
+     account_key: str
++    currency: str = 'USD'
++    lot_size: float = 1.0
++    tradable: bool = False   # must be set True from /ref/v1/instruments/details readback, never by hand
+ 
+ 
+-def build_precheck_payload(inst: SaxoInstrument, amount: float, *,
+-                           limit_price: float, buy_sell: str = 'Buy') -> dict:
++def build_precheck_payload(inst: SaxoInstrument, amount: float, *, limit_price: float,
++                           buy_sell: str = 'Buy', certificate_id: str = '') -> tuple[dict, dict]:
++    """Returns (json_body, headers_without_auth). Caller adds Authorization."""
++    if inst.asset_type in EXCLUDED_IN_PILOT or inst.asset_type not in PILOT_ASSET_TYPES:
++        raise ValueError(f'AssetType {inst.asset_type!r} not permitted in the pilot whitelist {PILOT_ASSET_TYPES}')
++    if not inst.tradable:
++        raise ValueError('Instrument tradability must be confirmed from Saxo reference data readback')
+     if amount <= 0 or limit_price <= 0:
+         raise ValueError('Positive quantity and limit required')
+-    if buy_sell not in ('Buy','Sell'):
++    if inst.asset_type in ('Stock', 'Etf') and (amount != int(amount) or amount < inst.lot_size):
++        raise ValueError('Stock/Etf amount must be a whole number of units >= lot size')
++    if buy_sell not in ('Buy', 'Sell'):
+         raise ValueError('Bad direction')
+-    return {
++    if not certificate_id or len(certificate_id) > 50:
++        raise ValueError('certificate_id (ExternalReference) required, <= 50 chars per Saxo docs')
++    body = {
+         'AccountKey': inst.account_key,
+         'Amount': amount,
+         'AssetType': inst.asset_type,
+@@ -33,18 +136,33 @@
+         'OrderType': 'Limit',
+         'OrderPrice': limit_price,
+         'OrderDuration': {'DurationType': 'DayOrder'},
+-        'ManualOrder': False,  # Prepared by an autonomous system, not manually entered.
+-        'FieldGroups': ['Costs','MarginImpactBuySell'],
++        'ExternalReference': certificate_id,
++        'FieldGroups': ['Costs', 'MarginImpactBuySell'],
+     }
++    headers = {'x-request-id': str(uuid.uuid4()), 'Content-Type': 'application/json'}
++    return body, headers
++
++
++class SaxoHttpError(RuntimeError):
++    pass
+ 
+ 
+-def sim_precheck(payload: dict, *, access_token: str | None = None) -> dict:
+-    """SIM precheck only: does not place an order, nor accept disclaimers."""
++def sim_precheck(gate: Gate, payload: dict, headers: dict, *, access_token: str | None = None) -> dict:
++    """SIM precheck only. Raises unless gate >= SIM_PRECHECK. Never places an order."""
++    gate.require(GateState.SIM_PRECHECK)
+     token = access_token or os.environ.get('SAXO_SIM_ACCESS_TOKEN')
+     if not token:
+         raise ValueError('Set SAXO_SIM_ACCESS_TOKEN using Saxo SIM developer portal')
+     url = SIM_API + '/trade/v2/orders/precheck'
+-    with httpx.Client(timeout=15) as client:
+-        response = client.post(url, headers={'Authorization': f'Bearer {token}'}, json=payload)
+-        response.raise_for_status()
+-        return response.json()
++    assert '/sim/' in url and 'precheck' in url  # fail closed
++    h = dict(headers); h['Authorization'] = f'Bearer {token}'
++    try:
++        with httpx.Client(timeout=15) as client:
++            response = client.post(url, headers=h, json=payload)
++    except httpx.HTTPError as ex:  # do not propagate request objects (they carry the bearer header)
++        raise SaxoHttpError(f'transport error: {type(ex).__name__}') from None
++    if response.status_code != 200:
++        raise SaxoHttpError(f'precheck HTTP {response.status_code}: {response.text[:300]}')
++    data = response.json()
++    data['_payload_digest'] = sha256(repr(sorted(payload.items())).encode()).hexdigest()
++    return data
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/proofs/BetThreshold.lean work_v02/proofs/BetThreshold.lean
+--- work_v01/proofs/BetThreshold.lean	2026-10-16 07:07:20.245044592 +0200
++++ work_v02/proofs/BetThreshold.lean	2026-10-16 07:31:43.833438845 +0200
+@@ -1,5 +1,5 @@
+--- Proof specification for Lean 4 + mathlib4. NOT COMPILED in this environment.
+--- A Lean 4 installation is required before counting these as machine-checked proofs.
++-- Compiled and checked 2026-10-16 with Lean leanprover/lean4:v4.35.0 and Mathlib rev cfc55fc58714a59dc06e6e79edc6d1d95140d3c2 (see proofs/lean-toolchain, proofs/lake-manifest.json).
++-- Proves ALGEBRA under stated hypotheses only; says nothing about p's empirical value.
+ import Mathlib
+ 
+ -- If the return is 10x on success and 0.2x on failure, expected multiple >1
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/proofs/RiskBudget.lean work_v02/proofs/RiskBudget.lean
+--- work_v01/proofs/RiskBudget.lean	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/proofs/RiskBudget.lean	2026-10-16 07:31:43.831656346 +0200
+@@ -0,0 +1,79 @@
++/-
++CPE v0.2 — risk-budget certificates.
++Toolchain pin: see lean-toolchain and lake-manifest.json in this project.
++Everything here is conditional algebra over the reals. A compiled theorem proves
++that CONCLUSIONS follow from HYPOTHESES; it never establishes that a hypothesis
++(a probability interval, a payoff multiple, a correlation) is true of the world.
++-/
++import Mathlib
++
++namespace CPE
++
++/-- Two-state log-growth of wealth fraction `w` with success probability `p`,
++    success log-multiple `ls = log(1 + w(up-1))` and failure log-multiple `lf`.
++    We take `ls, lf` as given reals so the statement is pure linear algebra. -/
++def growthLin (p ls lf : ℝ) : ℝ := p * ls + (1 - p) * lf
++
++/-- Worst case over a probability interval is attained at the LOWER bound
++    whenever the success branch is at least as good as the failure branch.
++    This is the justification `core.py` relies on when it uses only `p_success_low`. -/
++theorem growth_min_at_lower_bound (pl ph p ls lf : ℝ)
++    (hpl : pl ≤ p) (_hph : p ≤ ph) (hls : lf ≤ ls) :
++    growthLin pl ls lf ≤ growthLin p ls lf := by
++  unfold growthLin
++  nlinarith
++
++/-- Arithmetic expected multiple is monotone in `p` when `up ≥ down`. -/
++theorem expected_multiple_mono (pl p up down : ℝ)
++    (hpl : pl ≤ p) (hud : down ≤ up) :
++    pl * up + (1 - pl) * down ≤ p * up + (1 - p) * down := by
++  nlinarith
++
++/-- A fully paid long position with wealth fraction `w` and worst terminal
++    multiple `down ∈ [0,1)` loses at most `w * (1 - down)` of wealth, and this is
++    bounded by the position cap `c` when `w ≤ c`. -/
++theorem fully_paid_worst_loss_le_cap (w c down : ℝ)
++    (hw0 : 0 ≤ w) (hwc : w ≤ c) (hd0 : 0 ≤ down) (_hd1 : down ≤ 1) :
++    w * (1 - down) ≤ c := by
++  nlinarith
++
++/-- Portfolio-level budget: if every position's worst-case loss is bounded by its
++    cap, the total worst-case loss is bounded by the sum of caps. -/
++theorem portfolio_worst_loss_le_sum_caps {ι : Type*} (s : Finset ι)
++    (loss cap : ι → ℝ) (h : ∀ i ∈ s, loss i ≤ cap i) :
++    ∑ i ∈ s, loss i ≤ ∑ i ∈ s, cap i :=
++  Finset.sum_le_sum h
++
++/-- If the sum of caps is within the gross budget `B`, so is the total worst loss. -/
++theorem portfolio_worst_loss_le_budget {ι : Type*} (s : Finset ι)
++    (loss cap : ι → ℝ) (B : ℝ) (h : ∀ i ∈ s, loss i ≤ cap i)
++    (hB : ∑ i ∈ s, cap i ≤ B) :
++    ∑ i ∈ s, loss i ≤ B :=
++  le_trans (portfolio_worst_loss_le_sum_caps s loss cap h) hB
++
++/-- Implication coherence: if event A implies event B (A ⊆ B as sets of worlds)
++    then P(A) ≤ P(B). Stated for a finite world space with a nonnegative weight. -/
++theorem implication_prob_le {Ω : Type*} (s : Finset Ω) (q : Ω → ℝ)
++    (A B : Ω → Prop) [DecidablePred A] [DecidablePred B]
++    (hq : ∀ ω ∈ s, 0 ≤ q ω) (hAB : ∀ ω, A ω → B ω) :
++    ∑ ω ∈ s with A ω, q ω ≤ ∑ ω ∈ s with B ω, q ω := by
++  apply Finset.sum_le_sum_of_subset_of_nonneg
++  · intro ω hω
++    simp only [Finset.mem_filter] at hω ⊢
++    exact ⟨hω.1, hAB ω hω.2⟩
++  · intro ω hω _
++    exact hq ω (Finset.mem_filter.mp hω).1
++
++/-- E-process step factor is nonnegative when the bet fraction is in [0,1] and the
++    score difference is in [-1,1]; nonnegativity is what Ville's inequality needs. -/
++theorem eprocess_factor_nonneg (lam x : ℝ)
++    (hl0 : 0 ≤ lam) (hl1 : lam ≤ 1) (hx : -1 ≤ x) (_hx1 : x ≤ 1) :
++    0 ≤ 1 + lam * x := by
++  nlinarith
++
++end CPE
++
++#print axioms CPE.growth_min_at_lower_bound
++#print axioms CPE.portfolio_worst_loss_le_budget
++#print axioms CPE.implication_prob_le
++#print axioms CPE.eprocess_factor_nonneg
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/proofs/lake-manifest.json work_v02/proofs/lake-manifest.json
+--- work_v01/proofs/lake-manifest.json	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/proofs/lake-manifest.json	2026-10-16 07:31:43.837139566 +0200
+@@ -0,0 +1,96 @@
++{"version": "1.3.0",
++ "packagesDir": ".lake/packages",
++ "packages":
++ [{"url": "https://github.com/leanprover-community/mathlib4",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "cfc55fc58714a59dc06e6e79edc6d1d95140d3c2",
++   "name": "mathlib",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "master",
++   "inherited": false,
++   "configFile": "lakefile.lean"},
++  {"url": "https://github.com/leanprover-community/plausible",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "dfa4f38190d07c37e315953e08b90fe2d95b3c24",
++   "name": "plausible",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "main",
++   "inherited": true,
++   "configFile": "lakefile.toml"},
++  {"url": "https://github.com/leanprover-community/LeanSearchClient",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "d6b4c7be5be75ec4917c873ac50c756dc1436372",
++   "name": "LeanSearchClient",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "main",
++   "inherited": true,
++   "configFile": "lakefile.toml"},
++  {"url": "https://github.com/leanprover-community/import-graph",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "a41f0e9a4dea23188ea9cc1c41ac9f8bbafe0b93",
++   "name": "importGraph",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "main",
++   "inherited": true,
++   "configFile": "lakefile.toml"},
++  {"url": "https://github.com/leanprover-community/ProofWidgets4",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "df72b022e558978a1c50264cfc4d7fec86fa8e04",
++   "name": "proofwidgets",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "main",
++   "inherited": true,
++   "configFile": "lakefile.lean"},
++  {"url": "https://github.com/leanprover-community/aesop",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "4a174c490d8707121c4a9290800489f105d85e07",
++   "name": "aesop",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "master",
++   "inherited": true,
++   "configFile": "lakefile.toml"},
++  {"url": "https://github.com/leanprover-community/quote4",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "dce0ad79c486cb1fb504af04f953c3466b0c6db8",
++   "name": "Qq",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "master",
++   "inherited": true,
++   "configFile": "lakefile.toml"},
++  {"url": "https://github.com/leanprover-community/batteries",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover-community",
++   "rev": "66e469188fe07963e5cf666c7d4433f45b8131c5",
++   "name": "batteries",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "main",
++   "inherited": true,
++   "configFile": "lakefile.toml"},
++  {"url": "https://github.com/leanprover/lean4-cli",
++   "type": "git",
++   "subDir": null,
++   "scope": "leanprover",
++   "rev": "c24fe6078c630e89b489bffe59b3e20ac30d12c8",
++   "name": "Cli",
++   "manifestFile": "lake-manifest.json",
++   "inputRev": "v4.35.0",
++   "inherited": true,
++   "configFile": "lakefile.toml"}],
++ "name": "cpe_proofs",
++ "lakeDir": ".lake",
++ "fixedToolchain": false}
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/proofs/lakefile.toml work_v02/proofs/lakefile.toml
+--- work_v01/proofs/lakefile.toml	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/proofs/lakefile.toml	2026-10-16 07:31:43.839026930 +0200
+@@ -0,0 +1,18 @@
++name = "cpe_proofs"
++version = "0.1.0"
++keywords = ["math"]
++defaultTargets = ["CpeProofs"]
++
++[leanOptions]
++pp.unicode.fun = true # pretty-prints `fun a ↦ b`
++autoImplicit = false
++relaxedAutoImplicit = false
++weak.linter.mathlibStandardSet = true
++maxSynthPendingDepth = 3
++
++[[require]]
++name = "mathlib"
++scope = "leanprover-community"
++
++[[lean_lib]]
++name = "CpeProofs"
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/proofs/lean-toolchain work_v02/proofs/lean-toolchain
+--- work_v01/proofs/lean-toolchain	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/proofs/lean-toolchain	2026-10-16 07:31:43.835484545 +0200
+@@ -0,0 +1 @@
++leanprover/lean4:v4.35.0
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/pyproject.toml work_v02/pyproject.toml
+--- work_v01/pyproject.toml	2026-10-16 07:07:20.245059005 +0200
++++ work_v02/pyproject.toml	2026-10-16 07:31:43.841009614 +0200
+@@ -1,9 +1,9 @@
+ [project]
+ name = "causal-proof-engine-starter"
+-version = "0.1.0"
++version = "0.2.0"
+ description = "Research-only skeleton for evidence-anchored coherent investment forecasts"
+ requires-python = ">=3.11"
+-dependencies = ["httpx>=0.26", "scipy>=1.11"]
++dependencies = ["httpx>=0.26", "scipy>=1.11", "numpy>=1.26"]
+ 
+ [project.optional-dependencies]
+ test = ["pytest>=8"]
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/tests/test_engine.py work_v02/tests/test_engine.py
+--- work_v01/tests/test_engine.py	2026-10-16 07:07:20.245085943 +0200
++++ work_v02/tests/test_engine.py	2026-10-16 07:31:31.197505125 +0200
+@@ -39,7 +39,8 @@
+  e.verify_as_of(NOW+timedelta(seconds=2))
+ 
+ def test_eprocess_proper_and_bounded():
+- e=ChallengerEvidence(.5)
++ with pytest.warns(DeprecationWarning):
++  e=ChallengerEvidence(.5)
+  for outcome in [1,1,1,1]:
+   e.update(.5,.9,outcome)
+  assert e.evalue > 1
+@@ -55,11 +56,14 @@
+  assert not x.verify_chain()
+ 
+ def test_saxo_sim_never_executes():
+- payload=build_precheck_payload(SaxoInstrument(123,'Stock','fake-sim-key'),3,limit_price=9.9)
+- assert payload['ManualOrder'] is False
++ # v0.2: tradability must come from reference-data readback; certificate id is mandatory;
++ # ManualOrder is NOT part of the documented precheck request and is no longer sent.
++ payload,headers=build_precheck_payload(SaxoInstrument(123,'Stock','fake-sim-key',tradable=True),3,limit_price=9.9,certificate_id='PCCB-TEST')
++ assert 'ManualOrder' not in payload
+  assert payload['OrderType']=='Limit'
+  assert '/sim/' in SIM_API
+  assert payload['FieldGroups']==['Costs','MarginImpactBuySell']
++ assert 'x-request-id' in headers
+ 
+ from cpe.coherence import ProbabilityInterval, coherent_joint, event_probability_bounds
+ 
+diff -ruN -x __pycache__ -x .pytest_cache work_v01/tests/test_v02_regressions.py work_v02/tests/test_v02_regressions.py
+--- work_v01/tests/test_v02_regressions.py	1970-01-01 01:00:00.000000000 +0100
++++ work_v02/tests/test_v02_regressions.py	2026-10-16 07:31:14.665570841 +0200
+@@ -0,0 +1,283 @@
++"""v0.2 regression tests. Each test is tied to a review finding (see CLAUDE_REVIEW.md IDs)."""
++from datetime import datetime, timezone, timedelta
++import hashlib
++import json
++import random
++import pytest
++import numpy as np
++
++from cpe.ledger import AppendOnlyLedger
++from cpe.eprocess import CommittedEProcess, CommittedForecastPair, grapa_lambda
++from cpe.core import BinaryThesis, robust_binary_allocation, Evidence, evidence_digest, growth
++from cpe.coherence import ProbabilityInterval, event_probability_bounds
++from cpe.registry import ForecastRegistry, EventSpec, Forecast, Forecaster, ForecastStatus
++from cpe.fusion import fuse, ModelInterval, JevTriage, FusionPolicy, Decision, effective_models, min_variance_weights
++from cpe.jev_adapter import JevClient, JevMalformed, parse_noul_response
++from cpe.saxo_sim import Gate, GateState, OwnerAuthorization, SaxoInstrument, build_precheck_payload, sim_precheck
++from cpe.allocation import robust_allocation
++
++NOW = datetime(2026, 10, 16, tzinfo=timezone.utc)
++D = timedelta(days=1)
++
++
++# ---------------------------------------------------------------- P1-LEDGER-01
++def test_full_rewrite_detected_with_anchor(tmp_path):
++    f = tmp_path / 'l.jsonl'
++    L = AppendOnlyLedger(f)
++    L.append('forecast', {'id': 'H1', 'p': 0.05})
++    L.append('resolution', {'id': 'H1', 'outcome': 1})
++    anchor = L.anchor(secret=b'owner-secret')
++    assert L.verify_against_anchor(anchor, secret=b'owner-secret')
++    # attacker rewrites p and re-hashes the whole chain (v0.1 attack F1)
++    entries = [json.loads(l) for l in f.read_text().splitlines()]
++    entries[0]['payload']['p'] = 0.60
++    prev = 'GENESIS'; out = []
++    for e in entries:
++        e.pop('entry_hash'); e['prev_hash'] = prev
++        e['entry_hash'] = hashlib.sha256(json.dumps(e, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
++        prev = e['entry_hash']; out.append(json.dumps(e, sort_keys=True, ensure_ascii=False))
++    f.write_text('\n'.join(out) + '\n')
++    assert L.verify_chain()                       # internal chain still consistent ...
++    assert not L.verify_against_anchor(anchor, secret=b'owner-secret')   # ... but anchor catches it
++    # truncation also caught
++    f.write_text(out[0] + '\n')
++    assert not L.verify_against_anchor(anchor, secret=b'owner-secret')
++    # forged anchor caught
++    bad = dict(anchor); bad['head_hash'] = prev
++    assert not L.verify_against_anchor(bad, secret=b'owner-secret')
++
++
++def test_ledger_seq_and_monotone_time(tmp_path):
++    L = AppendOnlyLedger(tmp_path / 'l.jsonl')
++    L.append('a', {}); L.append('b', {})
++    lines = (tmp_path / 'l.jsonl').read_text().splitlines()
++    e = json.loads(lines[1]); assert e['seq'] == 1
++
++
++# ---------------------------------------------------------------- P1-EPROC-01..04
++def _pair(i, pb, pc):
++    return CommittedForecastPair(f'E{i}', pb, pc, NOW, NOW + D)
++
++
++def test_eprocess_rejects_hindsight_and_duplicates():
++    e = CommittedEProcess()
++    with pytest.raises(ValueError, match='hindsight'):
++        e.resolve('never-committed', 1, NOW + 2 * D)
++    e.commit(_pair(1, 0.5, 0.9))
++    with pytest.raises(ValueError, match='immutable'):
++        e.commit(_pair(1, 0.5, 0.99))          # cannot overwrite a committed forecast
++    with pytest.raises(ValueError, match='before the declared'):
++        e.resolve('E1', 1, NOW)                 # resolution inside commit window
++    e.resolve('E1', 1, NOW + 2 * D)
++    with pytest.raises(ValueError, match='duplicate'):
++        e.resolve('E1', 1, NOW + 2 * D)
++
++
++def test_eprocess_no_absorbing_zero():
++    with pytest.raises(ValueError):
++        CommittedEProcess(lam_max=1.0)
++
++
++def test_eprocess_false_alarm_rate_under_null():
++    """Under H0 (challenger == baseline in distribution), P(sup M >= 1/alpha) <= alpha.
++    Monte Carlo with a fixed seed; margin accounts for MC error (binomial sd ~0.5%)."""
++    rng = random.Random(7)
++    alpha, runs, n = 0.05, 1500, 60
++    alarms = 0
++    for r in range(runs):
++        e = CommittedEProcess()
++        for i in range(n):
++            # both forecasters are equally (mis)calibrated noisy versions of truth p
++            p = rng.random()
++            pb = min(1, max(0, p + rng.gauss(0, 0.2)))
++            pc = min(1, max(0, p + rng.gauss(0, 0.2)))
++            e.commit(_pair(i, pb, pc))
++            e.resolve(f'E{i}', int(rng.random() < p), NOW + 2 * D)
++        alarms += e.reject_null(alpha)
++    assert alarms / runs <= alpha + 0.015
++
++
++def test_eprocess_has_power_when_challenger_better():
++    rng = random.Random(3)
++    e = CommittedEProcess()
++    for i in range(300):
++        p = rng.random()
++        e.commit(_pair(i, 0.5, p))           # baseline uninformative, challenger = truth
++        e.resolve(f'E{i}', int(rng.random() < p), NOW + 2 * D)
++    assert e.reject_null(0.05)
++
++
++def test_grapa_lambda_predictable_and_bounded():
++    assert grapa_lambda([]) == 0.0
++    assert 0 <= grapa_lambda([0.1, 0.2, -0.05] * 10, lam_max=0.5) <= 0.5
++
++
++# ---------------------------------------------------------------- P2-CORE-01 cost units
++def test_fixed_cost_uses_log_units():
++    th = BinaryThesis('X', NOW + 3650 * D, 'def', 0.10, 0.15, 10.0, 0.2, ('e1',), 'v')
++    g = growth(0.025, 0.10, 10.0, 0.2)       # ~0.00211
++    # cost fraction c with -log(1-c) just below g must still allow the bet
++    c = 1 - np.exp(-(g - 1e-5))
++    assert robust_binary_allocation(th, forecast_at=NOW, fixed_cost_fraction_of_portfolio=c).max_portfolio_fraction > 0
++    c = 1 - np.exp(-(g + 1e-5))
++    assert robust_binary_allocation(th, forecast_at=NOW, fixed_cost_fraction_of_portfolio=c).max_portfolio_fraction == 0
++    with pytest.raises(ValueError):
++        robust_binary_allocation(th, forecast_at=NOW, fixed_cost_fraction_of_portfolio=1.0)
++
++
++# ---------------------------------------------------------------- P2-EVID-01
++def test_evidence_requires_tls_and_digest_helper():
++    h = evidence_digest(b'archived bytes')
++    with pytest.raises(ValueError, match='TLS'):
++        Evidence('E', 'http://example.org/x', h, NOW, NOW, NOW, 's').verify_as_of(NOW)
++    Evidence('E', 'https://example.org/x', h, NOW, NOW, NOW, 's').verify_as_of(NOW)
++
++
++# ---------------------------------------------------------------- P1-COH-01
++def test_bounds_guard_prevents_exponential_blowup():
++    with pytest.raises(ValueError, match='1-14'):
++        event_probability_bounds({f'E{i}': ProbabilityInterval(0, 1) for i in range(15)}, 'E0')
++
++
++# ---------------------------------------------------------------- P0-SCI-01 registry
++def test_registry_rejects_vague_and_non_prospective(tmp_path):
++    reg = ForecastRegistry(AppendOnlyLedger(tmp_path / 'l.jsonl'))
++    with pytest.raises(ValueError, match='vague'):
++        EventSpec('EV1', 'Company X has 10x potential', 'src', 'strong potential upside', NOW + 30 * D, NOW + 365 * D, 'g1').validate()
++    spec = EventSpec('EV1', 'FDA grants 510(k) clearance for device D', 'FDA 510(k) database',
++                     'row with K-number for applicant X and device D exists with decision date <= expires_at',
++                     NOW + 30 * D, NOW + 365 * D, 'g1')
++    reg.register_event(spec)
++    digest = hashlib.sha256(b'reasoning').hexdigest()
++    late = Forecast('F1', 'EV1', Forecaster.CLAUDE, 'fable-5.1', 0.2, 0.4, NOW + 31 * D, NOW + 31 * D, ('e1',), digest)
++    with pytest.raises(ValueError, match='not prospective'):
++        reg.commit_forecast(late)
++    wide = Forecast('F1', 'EV1', Forecaster.CLAUDE, 'fable-5.1', 0.1, 0.9, NOW, NOW, ('e1',), digest)
++    with pytest.raises(ValueError, match='abstention'):
++        reg.commit_forecast(wide)
++    ok = Forecast('F1', 'EV1', Forecaster.CLAUDE, 'fable-5.1', 0.2, 0.4, NOW, NOW, ('e1',), digest)
++    reg.commit_forecast(ok)
++    with pytest.raises(ValueError, match='immutable'):
++        reg.commit_forecast(ok)
++    reg.resolve('EV1', False, NOW + 400 * D, 'fda-db-check-v1', 'ev-res-1')
++    assert reg.status('EV1') == ForecastStatus.EXPIRED_NO
++    with pytest.raises(ValueError, match='already resolved'):
++        reg.commit_forecast(Forecast('F2', 'EV1', Forecaster.GEMINI, 'argon', 0.2, 0.4, NOW, NOW, ('e1',), digest))
++
++
++# ---------------------------------------------------------------- P0-ARCH-01..03 fusion
++JEV_OK = JevTriage(0.9, 0.8, 0.03)
++
++
++def test_fusion_requires_all_three_models_and_jev():
++    ivs = [ModelInterval('claude', 0.2, 0.3), ModelInterval('openai', 0.25, 0.35)]
++    r = fuse(ivs, JEV_OK, None)
++    assert r.decision == Decision.RE_RESEARCH and 'gemini' in ' '.join(r.reasons)
++    ivs.append(ModelInterval('gemini', 0.2, 0.3))
++    assert fuse(ivs, None, None).decision == Decision.RE_RESEARCH
++
++
++def test_fusion_abstains_on_disagreement_and_jev_incoherence():
++    ivs = [ModelInterval('claude', 0.05, 0.10), ModelInterval('openai', 0.6, 0.7), ModelInterval('gemini', 0.2, 0.3)]
++    r = fuse(ivs, JEV_OK, None)
++    assert r.decision == Decision.ABSTAIN and r.disagreement > 0.3
++    ivs = [ModelInterval('claude', 0.2, 0.3), ModelInterval('openai', 0.25, 0.35), ModelInterval('gemini', 0.2, 0.3)]
++    assert fuse(ivs, JevTriage(0.9, 0.8, 0.30), None).decision == Decision.RE_RESEARCH
++    assert fuse(ivs, JEV_OK, None).decision == Decision.FORECAST
++
++
++def test_correlated_models_do_not_count_three_times():
++    rng = np.random.default_rng(0)
++    n = 200
++    truth_err = rng.normal(0, 0.2, n)
++    # claude & openai share the same error; gemini independent
++    hist = np.column_stack([truth_err, truth_err + rng.normal(0, 0.01, n), rng.normal(0, 0.2, n)])
++    ivs = [ModelInterval('claude', 0.2, 0.3), ModelInterval('openai', 0.2, 0.3), ModelInterval('gemini', 0.2, 0.3)]
++    r = fuse(ivs, JEV_OK, hist)
++    assert r.effective_models < 2.5
++    assert r.weights['gemini'] > r.weights['claude']
++    R = np.ones((3, 3))
++    assert effective_models(np.ones(3) / 3, R) == pytest.approx(1.0)
++    assert effective_models(np.ones(3) / 3, np.eye(3)) == pytest.approx(3.0)
++
++
++# ---------------------------------------------------------------- P0-ARCH-02 Jev adapter
++def test_jev_adapter_parses_and_rejects_malformed():
++    good = {'model': 'jev-2026-09-15', 'answers': {'q': {'type': 'noul', 'noul': 0.8}, 'q_not': {'type': 'noul', 'noul': 0.25}},
++            'usage': {'input_tokens': 100, 'output_tokens': 2}}
++    calls = []
++    def transport(url, headers, body, timeout):
++        calls.append(body); return 200, good
++    c = JevClient(api_key='x', transport=transport)
++    r = c.ask_noul_pair('evidence text', 'Is it dated?', 'Is it undated?')
++    assert r.p_yes == 0.8 and r.complement_gap == pytest.approx(0.05) and r.model_returned == 'jev-2026-09-15'
++    assert set(calls[0]['questions']) == {'q', 'q_not'} and calls[0]['model'] == 'jev-latest'
++    with pytest.raises(JevMalformed):
++        parse_noul_response({'model': 'm', 'answers': {'q': {'type': 'noul', 'noul': 1.7}, 'q_not': {'type': 'noul', 'noul': 0.1}}}, ('q', 'q_not'))
++    with pytest.raises(JevMalformed):
++        parse_noul_response({'model': 'm', 'answers': {'q': {'type': 'choice'}}}, ('q', 'q_not'))
++    with pytest.raises(ValueError, match='credential'):
++        c.ask_noul_pair({'AccountKey': 'abc'}, 'q', 'nq')
++
++
++def test_jev_adapter_retries_then_fails_closed():
++    n = {'i': 0}
++    def flaky(url, headers, body, timeout):
++        n['i'] += 1; return 503, {}
++    c = JevClient(api_key='x', transport=flaky, max_retries=1)
++    with pytest.raises(RuntimeError, match='unavailable'):
++        c.ask_noul_pair('s', 'q', 'nq')
++    assert n['i'] == 2
++    c = JevClient(api_key='x', transport=flaky, cost_ceiling_tokens=0)
++    with pytest.raises(RuntimeError, match='ceiling'):
++        c.ask_noul_pair('s', 'q', 'nq')
++
++
++# ---------------------------------------------------------------- P0-BRKR gates
++def test_gate_promotion_requires_owner_and_blocks_live():
++    g = Gate(); secret = b'owner'
++    mac = Gate.expected_mac(secret, GateState.RESEARCH_ONLY, GateState.SIM_READ_ONLY, 'abc')
++    g.promote(OwnerAuthorization(GateState.RESEARCH_ONLY, GateState.SIM_READ_ONLY, 'abc', mac), secret)
++    assert g.state == GateState.SIM_READ_ONLY
++    with pytest.raises(PermissionError, match='one step'):
++        mac2 = Gate.expected_mac(secret, GateState.SIM_READ_ONLY, GateState.SIM_EXECUTION, 'abc')
++        g.promote(OwnerAuthorization(GateState.SIM_READ_ONLY, GateState.SIM_EXECUTION, 'abc', mac2), secret)
++    with pytest.raises(PermissionError, match='invalid'):
++        g.promote(OwnerAuthorization(GateState.SIM_READ_ONLY, GateState.SIM_PRECHECK, 'abc', '00' * 32), secret)
++    g = Gate(GateState.SHADOW_LIVE_QUOTES)
++    mac3 = Gate.expected_mac(secret, GateState.SHADOW_LIVE_QUOTES, GateState.LIVE_CAPPED_1000, 'abc')
++    with pytest.raises(PermissionError, match='LIVE promotion is blocked'):
++        g.promote(OwnerAuthorization(GateState.SHADOW_LIVE_QUOTES, GateState.LIVE_CAPPED_1000, 'abc', mac3), secret)
++    assert g.demote('kill') == GateState.RESEARCH_ONLY
++
++
++def test_precheck_payload_whitelist_and_gate(monkeypatch):
++    inst = SaxoInstrument(123, 'Stock', 'k', tradable=True)
++    body, headers = build_precheck_payload(inst, 3, limit_price=9.9, certificate_id='PCCB-0001')
++    assert 'ManualOrder' not in body and body['ExternalReference'] == 'PCCB-0001' and 'x-request-id' in headers
++    with pytest.raises(ValueError, match='not permitted'):
++        build_precheck_payload(SaxoInstrument(1, 'CfdOnStock', 'k', tradable=True), 1, limit_price=1, certificate_id='c')
++    with pytest.raises(ValueError, match='tradability'):
++        build_precheck_payload(SaxoInstrument(1, 'Stock', 'k'), 1, limit_price=1, certificate_id='c')
++    with pytest.raises(ValueError, match='whole number'):
++        build_precheck_payload(inst, 0.5, limit_price=1, certificate_id='c')
++    monkeypatch.setenv('SAXO_SIM_ACCESS_TOKEN', 'dummy')
++    with pytest.raises(PermissionError, match='below required'):
++        sim_precheck(Gate(), body, headers)   # RESEARCH_ONLY gate: no network call is made
++
++
++# ---------------------------------------------------------------- P1-RISK-01 allocation
++def test_robust_allocation_reduces_to_binary_kelly():
++    R = np.array([[9.0], [-0.8]])                    # 10x or 0.2x
++    Q = np.array([[0.10, 0.90], [0.15, 0.85]])        # credal vertices p in {0.10, 0.15}
++    r = robust_allocation(R, Q, gross_cap=0.5, max_loss=0.5, kelly_fraction=1.0)
++    assert r.weights[0] == pytest.approx(0.025, abs=2e-4)
++
++
++def test_robust_allocation_respects_max_loss_and_caps():
++    R = np.array([[2.0, 0.5], [-0.9, -0.9], [0.1, 0.1]])
++    Q = np.array([[0.3, 0.3, 0.4]])
++    r = robust_allocation(R, Q, gross_cap=0.3, max_loss=0.05, kelly_fraction=1.0)
++    assert r.worst_scenario_loss <= 0.05 + 1e-6 and r.weights.sum() <= 0.3 + 1e-6
++    with pytest.raises(ValueError):
++        robust_allocation(np.array([[-1.5]]), np.array([[1.0]]))
