@@ -82,6 +82,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Outcome-blind enrolment T_E (RC-219, RC-220), pre-enrolment breach audit against resolution records (RC-223, RC-244, RC-246), supply-exogeneity hypothesis and screen (RC-228 to RC-241) | retired | `18` F5: the audit adds no identification once Q is the universe; `18` §6 "Replace" 1 retires the screen; Q is fixed before forecasting |
 | Resolution rules (RC-11, RC-71): occurrence-time rule, YES needs evidence of timely occurrence, VOID when a YES has no time, `EXPIRED_NO` needs evidence | retained | OD1: resolution-rule registry |
 | Point-in-time store and as-of read interface (RC-79, RC-86) | gated: OD9a | `17` A0 and item 1 ("built only after OD9a, with T-15"); the Phase 1 brief builds it after the OD9a wording is merged into `AGENTS.md` |
+| Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | gated: OD9a | evaluating the predicate needs the archived bytes of the point-in-time store; until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it |
 
 ### 3.2 Item 2, ledger and registry
 
@@ -206,6 +207,21 @@ Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
 - **OD8:** the model knowledge cutoff each provider declares per model version (RC-98).
 - **OD9b:** the designated author and committer identities for T-09 (RC-81); the `AGENTS.md` §2 item 3 wording
   (RC-84); the reading of §7 on reviewer names (RC-28).
+- **Specification questions raised in review, for the owner (none applied):**
+  - PR #19 deviation 6 (findings `4329369309`, `4329659300`, `4329659293`): the bounds applied are "claim,
+    calibration record and register recorded before `period_start`"; whether the claim's own record must also be
+    anchored before the period, and by which anchor cadence, is not stated (RC-304 names the anchor for the
+    calibration record and the register, not for the claim).
+  - PR #19 round-3 finding `4329836229`: the anchor that makes a listed claim confirmatory may be published after
+    the claim's evaluation period; whether the covering anchor's publication must precede every listed claim's
+    `period_start` is the same anchor-before-period question.
+  - PR #19 deviation 7 (finding `4329369285`): the calibration record names one beacon round in advance; the
+    alternative, a deterministic rule such as "the first round published after the record's anchor", needs the
+    beacon's round schedule, which no record carries.
+  - PR #18 round-4 finding `4329838021`: under the monotone-publication condition the earliest late record among
+    those submitted is taken as proof that nothing matched at finality, while the registry holds only what was
+    submitted; RC-113 makes the condition the source rule's promise (OD5), and whether an archived read must
+    accompany the record is for the owner.
 - **Not assigned by OD1 (§3.1 to §4.1):** the fusion pool and n_eff (T-23, T-24, F-14, F-17, F-18); the
   nested-chain identity (T-21); the source withdrawal rule of RC-169; the SIM-phase clause of T-33.
 - **Branch base:** this document is written on `8d5dbb9` (R9), while the decision comment reads `62d4c2a` (R8);
@@ -283,3 +299,73 @@ rows remain "not implemented").
 **Next responsible agent.** Codex: one review of this document at its exact commit. Factual errors are fixed; every
 other finding is listed for the owner in the PR description. The owner: the merge of this document, after which
 Phase 1 code starts.
+
+## 9. Phase 1 hardening list
+
+Every Codex finding raised on a follow-up PR, or on a component after its follow-up PR was open, one line each
+with this session's assessment: **defect** (a fix with a failing-then-passing test is possible and worth its
+code), **specification question** (the finding asks for text that `17`, `18` or an owner decision does not give),
+or **not worth its code** (the path is far-fetched or the fix costs more than it prevents). Nothing here is
+applied: follow-up PRs take no fix rounds, and the owner decides what, if anything, a later PR carries. Findings
+raised on a component PR before its follow-up was open are recorded in that PR's description and were applied in
+the follow-up (PR #16 round 3 in PR #20; PR #17 rounds 3 and 4 in PR #22; PR #18 rounds 3 and 4 in PR #21 but for
+the two above; PR #19 round 3 in PR #23). Written 2026-10-20 at the heads PR #20 `21d2b63`, PR #21 `26163e2`,
+PR #22 `fcffeaf`, PR #23 `2e4a72c`; later findings are appended by the PR that lists them.
+
+### 9.1 Ledger follow-up (PR #20)
+
+- `4329707438` (P1), `4329707419` (P2), `4329707427` (P2): the pending anchor row deleted on a refused publish
+  (lost publication time, replaced published row, memory and disk disagreeing). **Decided by the owner and
+  applied in `0166f6b`** (pending rows are never deleted; a separate `pending_anchors` table; the high-water mark
+  reloaded from disk after every outcome).
+- `4329904090` (P2): a retry after a store that committed the anchor and then reported a timeout republishes
+  and records the retry's `published_at`, while an idempotent store keeps the original, so the local copy names a
+  publication time at which nothing was published externally. **Defect**: when `anchors()` already holds the
+  prefix and digest, settle the pending row with the external anchor's time instead of publishing again (a few
+  lines in `Ledger.anchor()`, one test with the harness store).
+
+### 9.2 Adjudication follow-up (PR #21)
+
+- `4330044547` (P1): with `occurrence_is_public_act`, an occurrence before finality whose publication follows
+  finality is now `late` (the partition of `4329664911`), so the public knowability at the occurrence is lost for
+  eligibility and a forecast received after the public occurrence stays eligible. **Specification question**: the
+  partition applied RC-105 and RC-88 as the owner accepted (deviation 9 of PR #18); RC-146 makes the public
+  occurrence a knowable time; which of the two stamps t*_k when they disagree is not stated. A defensive reading
+  (keep the disposition, take the public occurrence for the knowable time) is possible if the owner wants it.
+- `4330044561` (P1): among several timely public-act records, selection by publication order can choose a later
+  occurrence's knowable time (occurrence 95 published 100 over occurrence 90 published 105), against RC-146's
+  "earliest". **Defect**: partition by publication, select the deciding timely record by its knowable time.
+- `4330044572` (P2): `classify_forecast` labels a forecast eligible when its receipt equals the registration time,
+  on the reading that the ledger sequence put the registration first; a caller of the pure function cannot show
+  that from timestamps alone. **Not worth its code** on the registry path, where `submit_forecast` refuses a
+  forecast before the registration record exists, so no forecast-first pair at one timestamp reaches the ledger;
+  if the pure function is ever called with other inputs, a sequence argument is the fix.
+- `4330044580` (P2): when a failed status and an absence observation coexist, the status decides VOID while the
+  recorded receipt is the observation's. **Defect**: pass the status receipts through and record the deciding
+  status's receipt (the registry already keeps them on replay).
+- `4330044588` (P1): the `observation_receipts` input of the pure `adjudicate` is not checked against
+  `observed_at <= receipt <= now`, as resolution-record receipts are. **Defect** of the pure function's contract,
+  two comparisons; on the registry path the ledger guarantees both bounds (submission refuses an observation
+  after the clock, the clock never runs below a receipt).
+
+### 9.3 CI follow-up (PR #22)
+
+- `4330035931` (P2): the trailer check matches keys ending in `-by` only (`Tested: Bob` passes) and exempts
+  `Reviewed-by:` whatever its value. **Defect** against `AGENTS.md` §10 ("no trailers of any kind except
+  `Reviewed-by:` naming a human"): parse the trailer block and refuse every key but `Reviewed-by`; whose name counts
+  as human is the open OD9b field (RC-28), so the value check beyond the assistant-name list is a **specification
+  question**.
+- `4330035940` (P2): `from os.path import *` and a relative `from .os import *` are reported as star imports of
+  `os`. **Defect** (a false positive fails CI): keep `ImportFrom.level` and match the module `os` exactly.
+- `4330035947` (P1): `import os.path` binds the local name `os` but yields no alias, so `os.system(...)` through it
+  passes the process-use check, a regression of PR #22 against the earlier implementation. **Defect**: an
+  unaliased dotted import of `os` binds `os`.
+- `4330035955` (P2): a line opening with "Generated by" is a promotional footer whatever follows, so ordinary
+  provenance prose ("Generated by make_fixture.py ...") is refused. **Not worth its code**: the structural match
+  was the owner's choice in `4329652621` (any such line is a finding), a false positive is visible in the T-09 job
+  and reworded, and narrowing the match reopens the gap that finding closed.
+
+### 9.4 Registration follow-up (PR #23)
+
+- None at `2e4a72c`; the automatic review had not run when this section was written.
+
