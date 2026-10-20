@@ -4,6 +4,7 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
+from datetime import datetime
 
 from cpe.adjudication.records import AbsenceObservation, ResolutionRecord, SourceRule, SourceStatus
 from cpe.adjudication.rules import (
@@ -30,6 +31,8 @@ KIND_STATUS = "source_status"
 KIND_DISPOSITION = "disposition"
 KIND_DEFECT = "source_latency_defect"
 KIND_INCIDENT = "integrity_incident"
+KINDS: frozenset[str] = frozenset({KIND_EVENT, KIND_RULE, KIND_RECORD, KIND_OBSERVATION, KIND_STATUS, KIND_DISPOSITION,
+                                   KIND_DEFECT, KIND_INCIDENT})
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -43,6 +46,7 @@ class _EventState:
     spec: EventSpec | None = None
     records: list[ReceivedRecord] = field(default_factory=list)
     observations: list[AbsenceObservation] = field(default_factory=list)
+    observation_receipts: dict[str, datetime] = field(default_factory=dict)
     disposition: Adjudication | None = None
     defect_record_ids: set[str] = field(default_factory=set)
 
@@ -51,7 +55,7 @@ class _EventState:
 class _State:
     head: str = ""
     rules: dict[str, SourceRule] = field(default_factory=dict)
-    status: dict[str, list[SourceStatus]] = field(default_factory=dict)
+    status: dict[str, list[tuple[SourceStatus, datetime]]] = field(default_factory=dict)  # with the receipt
     events: dict[str, _EventState] = field(default_factory=dict)
 
     def event(self, event_id: str) -> _EventState:
@@ -62,8 +66,11 @@ def replay_state(records: tuple[Record, ...]) -> _State:
     state = _State()
     for record in records:
         state.head = record.entry_hash
+        if record.kind not in KINDS:
+            continue  # another registry's record on the same ledger, whatever its payload
         payload = record.payload
-        assert isinstance(payload, dict)
+        if not isinstance(payload, dict):
+            raise Refusal("invalid_payload", f"{record.record_id}: a {record.kind} record carries a mapping")
         if record.kind == KIND_EVENT:
             spec = EventSpec.from_payload(payload)
             state.event(spec.event_id).spec = spec
@@ -76,10 +83,13 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                 ReceivedRecord(resolution, parse_timestamp(record.receipt_time, "receipt_time")))
         elif record.kind == KIND_OBSERVATION:
             observation = AbsenceObservation.from_payload(payload)
-            state.event(observation.event_id).observations.append(observation)
+            event = state.event(observation.event_id)
+            event.observations.append(observation)
+            event.observation_receipts[observation.observation_id] = parse_timestamp(record.receipt_time, "receipt_time")
         elif record.kind == KIND_STATUS:
             status = SourceStatus.from_payload(payload)
-            state.status.setdefault(status.source_id, []).append(status)
+            state.status.setdefault(status.source_id, []).append(
+                (status, parse_timestamp(record.receipt_time, "receipt_time")))
         elif record.kind == KIND_DISPOSITION:
             adjudication = Adjudication.from_payload(payload)
             state.event(adjudication.event_id).disposition = adjudication
@@ -194,14 +204,21 @@ class AdjudicationRegistry:
                     raise Refusal("unknown_source", f"{spec.predicate.source} has no registered source rule (OD5)")
                 event = state.event(event_id)
                 now = self._ledger.now()
-                fresh = adjudicate(spec, rule, event.records, event.observations, state.status.get(rule.source_id, []), now)
+                # Only a status the registry held by logical finality can decide the failure condition (RC-88).
+                statuses = [status for status, receipt in state.status.get(rule.source_id, [])
+                            if receipt <= spec.logical_finality]
+                fresh = adjudicate(spec, rule, event.records, event.observations, statuses, now,
+                                   event.observation_receipts)
                 if self.before_write is not None:
                     hook, self.before_write = self.before_write, None
                     hook()
                 if event.disposition is not None:
+                    # The disposition record embeds the defects and incidents known when it was written; side
+                    # rows carry only those found later. Both sets are known, so a retry adds nothing twice.
                     stored = event.disposition
+                    known_defects = event.defect_record_ids | {d.record_id for d in stored.defects}
                     for defect in fresh.defects:
-                        if defect.record_id not in event.defect_record_ids:
+                        if defect.record_id not in known_defects:
                             self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
                                                 {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
                             stored = replace(stored, defects=stored.defects + (defect,))
@@ -214,6 +231,8 @@ class AdjudicationRegistry:
                     return stored
                 if fresh.disposition not in FINAL:
                     return fresh
+                # One record: the disposition with its defects and incidents embedded; nothing to lose between
+                # a commit and a side row.
                 try:
                     self._ledger.append(KIND_DISPOSITION, _ledger_id("disposition", event_id), fresh.to_payload(),
                                         expected_head=state.head)
@@ -221,11 +240,5 @@ class AdjudicationRegistry:
                     if refusal.reason != "stale_head":
                         raise
                     continue
-                for defect in fresh.defects:
-                    self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
-                                        {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
-                for incident in fresh.incidents:
-                    self._ledger.append(KIND_INCIDENT, _ledger_id("incident", event_id, incident.kind, incident.reference_id),
-                                        {"event_id": event_id, **incident.to_payload()})
                 return fresh
             raise Refusal("contended", f"{event_id}: the ledger kept advancing during adjudication")

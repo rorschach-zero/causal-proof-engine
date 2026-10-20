@@ -32,7 +32,7 @@ def cluster_knowable_time(members: Iterable[Adjudication]) -> datetime | None:
 
 def classify_forecast(receipt: datetime, spec: EventSpec, registration_time: datetime,
                       t_star: datetime | None) -> ForecastStatus:
-    if receipt <= registration_time:
+    if receipt < registration_time:  # at the same server time the ledger's sequence put the registration first
         return "before_registration"
     if not spec.issuance_open <= receipt <= spec.issuance_close:
         return "out_of_window"
