@@ -45,7 +45,10 @@ below backs one numbered claim of `18`:
   quoted is committed output, pooled with and without the seed that prompted it, and the normal law alone on seeds
   that played no part in that choice;
 - S17 (reassessment R7, RC-309): an operator who anchors m calibration records and runs only the one with the
-  smallest cutoff, exactly and by an end-to-end simulation, and one who reports whichever of m cohorts rejects.
+  smallest cutoff, exactly and by an end-to-end simulation, and one who reports whichever of m cohorts rejects;
+- S18 (reassessment R8, RC-312): S_max confirmatory claims calibrated with the index chosen at alpha against the index
+  chosen at alpha/S_max, the bound check (j + 1)/(n + 1) <= alpha/S_max on each, the smallest certifiable calibration,
+  and the familywise error of S_max = 2 claims end to end.
 Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
     python research/reproduction/reassessment_sims.py
 Deterministic: every section uses its own fixed seed. The output is one JSON object; a table row is one line of it
@@ -417,35 +420,36 @@ def s8_exact_examples():
     return {'increment_bound': bound, 'estimand_weighting': estimand, 'sigma_needs_outcomes': sigma}
 
 
-def certified_cutoff(t, budget):
+def certified_cutoff(t, budget, alpha=ALPHA):
     """Smallest order statistic of the calibration draws t of one law whose exceedance probability is at most alpha
-    with probability at least 1 - budget (RC-292). For a continuous statistic the exceedance probability of the
-    (j + 1)-th largest draw is Beta(j + 1, n - j), whatever the law. The caller spends the 0.01 of the whole family
-    across every law of every component and statistic it certifies, budget = 0.01 / (total laws), so the union bound
-    certifies size <= alpha on all of them at 99 % joint confidence over the calibration (RC-298). The empirical 0.95
-    quantile has exceedance probability above alpha about half of the time. When even the sample maximum fails the
-    condition, (1 - alpha)^n > budget, no cutoff is certified and the calibration is refused (RC-300). The 99 %
-    certificate alone bounds the unconditional size only by alpha + 0.01 (RC-302); the procedure's unconditional
-    size on the calibrated law is (j + 1)/(n + 1) by exchangeability, and a cutoff for which that exceeds alpha is
-    refused."""
+    with probability at least 1 - budget (RC-292). A claim that is one of S_max confirmatory claims passes
+    alpha = ALPHA / S_max, which every step below then uses (RC-312). For a continuous statistic the exceedance
+    probability of the (j + 1)-th largest draw is Beta(j + 1, n - j), whatever the law. The caller spends the 0.01 of
+    the whole family across every law of every component and statistic it certifies, budget = 0.01 / (total laws), so
+    the union bound certifies size <= alpha on all of them at 99 % joint confidence over the calibration (RC-298). The
+    empirical 0.95 quantile has exceedance probability above alpha about half of the time. When even the sample
+    maximum fails the condition, (1 - alpha)^n > budget, no cutoff is certified and the calibration is refused
+    (RC-300). The 99 % certificate alone bounds the unconditional size only by alpha + 0.01 (RC-302); the procedure's
+    unconditional size on the calibrated law is (j + 1)/(n + 1) by exchangeability, and a cutoff for which that
+    exceeds alpha is refused."""
     n = t.size
-    j = certified_index(n, budget)
+    j = certified_index(n, budget, alpha)
     if j is None:
-        raise ValueError(f'no certifiable cutoff: (1 - alpha)^{n} > {budget}; '
-                         f'n >= {minimum_calibration_size(budget)} draws are needed')
-    if marginal_size(j, n) > ALPHA:
+        raise ValueError(f'no certifiable cutoff: (1 - {alpha})^{n} > {budget}; '
+                         f'n >= {minimum_calibration_size(budget, alpha)} draws are needed')
+    if marginal_size(j, n) > alpha:
         raise ValueError(f'unconditional size {marginal_size(j, n)} of index {j} exceeds alpha')
     return float(np.sort(t)[::-1][j])
 
 
-def certified_index(n, budget):
+def certified_index(n, budget, alpha=ALPHA):
     """Index j of the order statistic that certified_cutoff returns for n draws, or None when it refuses (RC-300)."""
-    if stats.beta.sf(ALPHA, 1, n) > budget:
+    if stats.beta.sf(alpha, 1, n) > budget:
         return None
     lo, hi = 0, n - 1
     while lo < hi:
         mid = (lo + hi + 1) // 2
-        if stats.beta.sf(ALPHA, mid + 1, n - mid) <= budget:
+        if stats.beta.sf(alpha, mid + 1, n - mid) <= budget:
             lo = mid
         else:
             hi = mid - 1
@@ -459,9 +463,9 @@ def marginal_size(j, n):
     return (j + 1) / (n + 1)
 
 
-def minimum_calibration_size(budget):
+def minimum_calibration_size(budget, alpha=ALPHA):
     """Smallest n with (1 - alpha)^n <= budget: below it not even the sample maximum is certified (RC-300)."""
-    return int(np.ceil(np.log(budget) / np.log(1 - ALPHA)))
+    return int(np.ceil(np.log(budget) / np.log(1 - alpha)))
 
 
 def s9_certified_cutoff():
@@ -864,6 +868,43 @@ def s17_record_selection():
     return {'rows': rows, 'end_to_end': simulated}
 
 
+def s18_claim_level():
+    """RC-312. R7 certified each of S_max confirmatory claims at alpha / S_max only in the final bound check, while the
+    index, the certificate and the fresh-size check stayed at alpha. For each certification of S17 and each S_max the
+    index chosen at alpha and the index chosen at alpha / S_max are compared on that check: the first fails it for
+    every S_max >= 2 at n = 1,000 and n = 200,000, and at n = 131 it passes while its certificate states only
+    exceedance <= alpha. The smallest calibration that certifies at alpha / S_max is reported. End to end, two true
+    null claims, each calibrated on its own n = 1,000 uniform draws at alpha / 2, reject at least once with
+    probability 1 - (1 - b)^2 <= 2 b <= alpha, b the bound of one claim."""
+    used = [('S14 minimum n, K = 8', 131, 0.01 / 8), ('three-law example', 1000, 0.01 / 3),
+            ('S9, K = 8', 200000, 0.01 / 8)]
+    rows = []
+    for name, n, budget in used:
+        for s_max in [1, 2, 3, 5]:
+            level = ALPHA / s_max
+            j_alpha, j_level = certified_index(n, budget), certified_index(n, budget, level)
+            rows.append({'certification': name, 'n': n, 's_max': s_max, 'claim_level': round(level, 5),
+                         'index_at_alpha': j_alpha, 'bound_at_alpha': round(marginal_size(j_alpha, n), 5),
+                         'bound_check_at_alpha': marginal_size(j_alpha, n) <= level,
+                         'index_at_claim_level': j_level,
+                         'bound_at_claim_level': None if j_level is None else round(marginal_size(j_level, n), 5),
+                         'minimum_n_at_claim_level': minimum_calibration_size(budget, level)})
+    rng = np.random.default_rng(71)
+    n, budget, s_max, reps, batch = 1000, 0.01 / 3, 2, 200000, 2000
+    j = certified_index(n, budget, ALPHA / s_max)
+    familywise = 0
+    for _ in range(reps // batch):
+        cutoffs = -np.partition(-rng.random((batch, s_max, n)), j, axis=2)[:, :, j]
+        familywise += int((rng.random((batch, s_max)) > cutoffs).any(axis=1).sum())
+    bound = marginal_size(j, n)
+    simulated = {'n': n, 's_max': s_max, 'index_j': j, 'reps': reps, 'bound_per_claim': round(bound, 5),
+                 'exact_familywise': round(1 - (1 - bound) ** s_max, 5),
+                 'simulated_familywise': round(familywise / reps, 5),
+                 'lower_99': round(float(stats.beta.ppf(0.005, familywise, reps - familywise + 1)), 5),
+                 'upper_99': round(float(stats.beta.ppf(0.995, familywise + 1, reps - familywise)), 5)}
+    return {'rows': rows, 'end_to_end': simulated}
+
+
 def dumps(value, depth=0):
     """JSON text of value: a container holding containers spans lines, anything else stays on one line, so the
     committed output is one JSON object whose table rows are single lines (RC-288)."""
@@ -887,7 +928,7 @@ def main():
                 ('S14 unattainable certification', s14_unattainable_certification),
                 ('S15 within-period covariance', s15_within_period_covariance),
                 ('S16 unconditional size', s16_unconditional_size),
-                ('S17 record selection', s17_record_selection)]
+                ('S17 record selection', s17_record_selection), ('S18 claim level', s18_claim_level)]
     print(dumps({name: section() for name, section in sections}))
 
 

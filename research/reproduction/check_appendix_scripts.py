@@ -107,7 +107,8 @@ FIRST_NUMBERED_OD10_VERSION = 23
 def od10_record_failures(matrix: str, spec_version: int) -> list:
     """Every specification version from the first the section 6 OD10 row names by number to the current one must
     have exactly one entry there ("and version N ..." or ", version N ..."), and the entry must cite a matrix ID before
-    the next entry starts (RC-280: an endpoint check passed a record that named neither version 47 nor 48)."""
+    the next entry starts (RC-280: an endpoint check passed a record that named neither version 47 nor 48). An entry
+    for any other version is a failure too (RC-314: an entry for a version beyond the specification passed)."""
     row = re.search(r'^\| OD10 \|.*$', matrix, flags=re.MULTILINE)
     if row is None:
         return ['OD10 record: no section 6 OD10 row']
@@ -123,6 +124,9 @@ def od10_record_failures(matrix: str, spec_version: int) -> list:
             failures.append(f'OD10 record, version {version}: {len(found)} entries found, exactly one is required')
         elif not re.search(r'RC-\d+', found[0]):
             failures.append(f'OD10 record, version {version}: the entry cites no matrix ID')
+    for version in sorted(set(entries) - set(range(FIRST_NUMBERED_OD10_VERSION, spec_version + 1))):
+        failures.append(f'OD10 record, version {version}: an entry outside versions '
+                        f'{FIRST_NUMBERED_OD10_VERSION} to {spec_version}')
     return failures
 
 
