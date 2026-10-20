@@ -5,7 +5,8 @@ Three checks, provider-neutral:
 1. Text: every commit message in the range, and the pull-request title and body when given, must carry no AI
    attribution trailer, tool session link or promotional footer, from any tool.
 2. Identity: every commit in the range has an author and a committer on the designated list (``AGENTS.md``
-   section 7; a text check cannot see metadata, RC-81).
+   section 7, recorded on issue #3 comment 6300164338; a text check cannot see metadata, RC-81); GitHub's own
+   committer identity passes only on a two-parent commit whose author is designated.
 3. Labels: a message that names a reconciliation round, a matrix version or a specification version must name
    the ones its tree carries (RC-277). The pull-request title and body are checked against the head tree before
    the merge; after it, every commit the merge added is checked against its own tree, whether it has one parent
@@ -23,7 +24,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-DESIGNATED_IDENTITIES: frozenset[str] = frozenset({"Salah Aouaj <salah@hydeout.ch>"})
+# Designated identities, as the owner recorded them on issue #3, comment 6300164338 (OD9b, partial record): one
+# person under two display names and one address as author and committer; GitHub's committer identity only on a
+# commit with two parents whose author is designated (a merge made through GitHub).
+DESIGNATED_AUTHORS: frozenset[str] = frozenset({"Salah Aouaj <salah@hydeout.ch>", "rorschach0 <salah@hydeout.ch>"})
+DESIGNATED_COMMITTERS: frozenset[str] = DESIGNATED_AUTHORS
+GITHUB_MERGE_COMMITTER = "GitHub <noreply@github.com>"
 
 # Provider-neutral: trailers, session links and promotional lines of any assistant.
 PROHIBITED_PATTERNS: tuple[tuple[str, str], ...] = (
@@ -91,11 +97,14 @@ def text_findings(text: str, where: str) -> list[str]:
     return findings
 
 
-def identity_findings(commit: Commit, designated: frozenset[str] = DESIGNATED_IDENTITIES) -> list[str]:
+def identity_findings(commit: Commit, authors: frozenset[str] = DESIGNATED_AUTHORS,
+                      committers: frozenset[str] = DESIGNATED_COMMITTERS) -> list[str]:
     findings = []
-    if commit.author not in designated:
+    author_designated = commit.author in authors
+    if not author_designated:
         findings.append(f"commit {commit.sha[:10]}: author {commit.author!r} is not a designated identity")
-    if commit.committer not in designated:
+    github_merge = commit.committer == GITHUB_MERGE_COMMITTER and len(commit.parents) == 2 and author_designated
+    if commit.committer not in committers and not github_merge:
         findings.append(f"commit {commit.sha[:10]}: committer {commit.committer!r} is not a designated identity")
     return findings
 

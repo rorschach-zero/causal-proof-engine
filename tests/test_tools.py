@@ -205,3 +205,28 @@ def test_4329260540_version_labels_are_matched_case_insensitively() -> None:
                                  "Fix\n\nChatGPT.com/Codex/Tasks/1"])
 def test_4329260532_session_markers_are_matched_case_insensitively(bad: str) -> None:
     assert text_findings(bad, "commit") != []
+
+
+# Designated identities as recorded by the owner on issue #3, comment 6300164338 (OD9b, partial record).
+
+GITHUB = "GitHub <noreply@github.com>"
+OWNER_ACCOUNT = "rorschach0 <salah@hydeout.ch>"
+
+
+def test_od9b_a_merge_made_through_github_by_the_owner_passes() -> None:
+    merge = commit("Merge pull request #16", author=OWNER_ACCOUNT, committer=GITHUB, parents=2)
+    assert identity_findings(merge) == []
+    assert identity_findings(commit("Merge pull request #16", author=OWNER, committer=GITHUB, parents=2)) == []
+    assert identity_findings(commit("plain commit", author=OWNER_ACCOUNT, committer=OWNER_ACCOUNT)) == []
+
+
+def test_od9b_the_github_committer_is_refused_on_a_single_parent_commit() -> None:
+    squash = commit("Squashed", author=OWNER_ACCOUNT, committer=GITHUB, parents=1)
+    findings = identity_findings(squash)
+    assert len(findings) == 1 and "committer" in findings[0]
+
+
+def test_od9b_a_foreign_author_on_a_github_merge_is_refused() -> None:
+    merge = commit("Merge pull request #99", author="Someone <s@example.org>", committer=GITHUB, parents=2)
+    findings = identity_findings(merge)
+    assert len(findings) == 2 and any("author" in f for f in findings) and any("committer" in f for f in findings)
