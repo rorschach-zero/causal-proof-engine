@@ -86,6 +86,7 @@ Labels follow `research/README.md`. Disposition statuses used here, per the prot
 | Fifty-second Codex review of PR #4 (round 50) | the automatic review of the round-49 push at `11606b17bf126206ea61e7f250c3630f5e786596`, posted as PR #4 comment `6259158574` (2026-10-19 03:42:10 UTC; summary comment `6216072575` edited 03:42:12 UTC, `has_unresolved_findings: true`; this execution was dispatched by an API fire that named the commit and that summary comment); no review object and no inline review comment exists for `11606b1`, so the two findings are keyed `6259158574/1` (P1, `17` line 1645) and `6259158574/2` (P1, `16` line 1506); none repeats a comment ID of rounds 1–49; no other comment on PR #1, #2, #4 or issue #3 after handoff 49 (`6259122149`), and no owner decision | round 50 (§3aw) |
 | Fifty-third Codex review of PR #4 (round 51) | the automatic review of the round-50 push at `c373e0695fd8aac0d7dd0d9347cbd11db0da3a0c`, posted as PR #4 comment `6259649678` (2026-10-19 04:27:12 UTC; summary comment `6216072575` edited 04:27:13 UTC, `has_unresolved_findings: true`; this execution was dispatched by an API fire that named the commit and that summary comment); no review object and no inline review comment exists for `c373e06`, so the two findings are keyed `6259649678/1` (P1, `17` line 1643) and `6259649678/2` (P2, `16` line 9); none repeats a comment ID of rounds 1–50; no other comment on PR #1, #2, #4 or issue #3 after handoff 50 (`6259586398`), and no owner decision | round 51 (§3ax) |
 | Fifty-fourth Codex review of PR #4 (round 52) | the automatic review of the round-51 push at `00c2c468a311f5a9bef9addfc961fd45da3e3210`, posted as PR #4 comment `6260254110` (2026-10-19 05:19:09 UTC; summary comment `6216072575` named by the API fire that dispatched this execution, `has_unresolved_findings: true`); no review object and no inline review comment exists for `00c2c46`, so the three findings are keyed `6260254110/1` (P1, `17` line 1644), `6260254110/2` (P2, `17` line 1644) and `6260254110/3` (P2, `16` line 1815); none repeats a comment ID of rounds 1–51; no other comment on PR #1, #2, #4 or issue #3 after handoff 51 (`6260160206`), and no owner decision | round 52 (§3ay) |
+| Owner research directive on PR #4 (method reassessment) | PR #4 comment `6283736614` (2026-10-20 04:57:59 UTC, the owner): reassess whether the Phase 1 statistical proof method is identifiable, valid and practically useful before further incremental rounds; baseline `a22f9df` verified equal to live HEAD; Codex's automatic review of `a22f9df` is recorded as failed in summary comment `6216072575` (2026-10-19 06:10:56 UTC) with no finding posted, so no Codex finding is pending | reassessment R1: `18-method-reassessment.md` and Appendix AW; no change to `17`, so this matrix keeps version v53 and round 52; the recommendation is owner decision OD11 (§6) |
 | PR #12 | `feature/graphify-agent-workflow-20261017` against `research/claude-handoff` (agent workflow and snapshot tests), opened 2026-10-17 | read for scope only: not a reconciliation input and touches neither `16` nor `17` |
 | Codex review of PR #7 (owner's Rust-first RFC) | review `5552078599` on `00642e3a1f5d3600cb169541c60d9736d39b08e7`, five findings, comment IDs `4297992981`, `4297992983`, `4297992988`, `4297993002`, `4297993009`; PR #7 is the owner's branch and is not revised here; the one finding that bears on `17` (`4297992983`: a fixed-horizon primary conflicts with the anytime-valid wording of `AGENTS.md` §2 item 3) is recorded as RC-84 | round 7 (§3f, RC-84; OD9b) |
 | Codex review of PR #10 (owner's CANNON protocol) | review `5552523817` on `b5d104cd25ee82a094cae1b4a04deb801e8ee674`, ten findings, comment IDs `4298363597` to `4298363703`; all on the protocol documents, none on the Phase 1 science; read for the §4.6 rule (durable finding state, pause not close, verification on the exact SHA), not reconciled here | round 7 (§4.6) |
@@ -1836,6 +1837,7 @@ is not met by this commit: Codex has not reviewed version 14.
 | OD9a | `AGENTS.md` §2 item 7 (floor → shrinkage) and §2 item 10 (time-shifted holdouts → forbidden-future-information controls) wording, proposed text below; **prerequisite of A0** because the Phase 1 shrinkage estimator (T-20) and leak detector (T-15) would otherwise contradict binding product requirements (RC-33) | governance change; owner approves personally; until recorded, T-20 and T-15 are not built |
 | OD9b | `AGENTS.md` §2 item 9 and §3 secrets wording; CI enforcement of the attribution rule; the owner's reading of §7 on reviewer names in reconciliation documents (RC-28); **§2 item 3 wording** so that "anytime-valid sequential tests" cannot be read as requiring the confirmatory test to be anytime-valid (RC-84, proposed text below); **§7 commit identity**: whether the two round-7 commits, which carry the tool identity `Claude <noreply@anthropic.com>` because the execution environment denied setting the owner's identity, are squashed on merge, re-created under the owner's identity, or accepted by designating that identity (RC-81; the round-9 commit carries the owner's identity, because the execution environment honoured the setting this time, so the three commits of rounds 7 and 8 remain the only ones at issue); **§2 item 1 (RC-106):** whether an exploratory single-arm Design C track record may be issued in Phase 2 before the three adapters and Jev operate, which the binding text forbids; until amended, no forecast is issued before Phase 4; **§4 layout (RC-122):** a row for `research/reproduction/`, the committed evidence scripts of this matrix, proposed below; **commit identities Codex reports that are in no ref of the repository** (RC-116 `50897415`, RC-126 `a47567ec`, RC-140 `fadd6adb`, RC-151 `51b580c1`, RC-162 `fc6296fc`, RC-165 `a2d8d4e5`, RC-172 `65b72d1a`, RC-175 `50a72f58`, RC-177 `ab01c17b`, RC-189 `412fe9e7`, RC-203 `3ca9583c`, RC-211 `c31a1e7e`, RC-213 `9c6fdcdf`, RC-221 `baa21db3`, RC-225 `6a5fa9b5`, RC-233 `e1f13643`, RC-237 `d5292c72`, RC-242 `b7a6e298`; RC-177 adds the claim that the object is in the repository, which does not reproduce either): whether to ask Codex where these objects live, since none of the reviewed commits carries a non-owner identity; RC-176 gives a HYPOTHESIS, that Codex reviews a squash of the PR onto its base, made under its own identity, with the PR title and description as its message, which the owner can confirm from Codex's task logs; RC-178 found the round-22 test of it confounded, because the PR text was advanced 31 s after the push that triggered the review, and restates the test; Codex's review of the round-23 push quotes no commit message, so the restated test was not exercised (round 24), nor by its comment on the round-25 push (round 26) or on the round-27 push (round 28), or by its review of the round-28 push (round 29); **round 40 (RC-236, RC-237):** Codex states that the object it reviews, `d5292c7`, is a squash whose parent is `8b2dba7`, the base of PR #4, which supports the hypothesis that each of the seventeen identities is that of Codex's review checkout and not of a repository commit; the owner can confirm it from Codex's task logs; **round 41 (RC-242):** `b7a6e298` is the eighteenth, and the finding names no parent; **round 42 (RC-247):** `4f03d5a2` is the nineteenth; Codex calls it fresh evidence for the exact requested SHA, but its own links name `492bc6a`, which carries the owner's identity, and `4f03d5a2` is in no ref of the repository; **round 43 (RC-251):** `20c948ab` is the twentieth, again called fresh evidence for the exact requested SHA while Codex's own links name `4fb9fd0`, which carries the owner's identity, and GitHub's commit API finds no such commit (round 44: the round-43 insertion had split the round-42 clause, now restored); **round 44 (RC-256):** `3c4c5599` is the twenty-first, on the same terms, Codex's own links naming `51a3405`; **round 45 (RC-258):** `5af19c75` is the twenty-second, on the same terms, Codex's own links naming `f44abbb`; **round 46 (RC-262):** `0052d4e9` is the twenty-third, now called a squash of the branch, on the same terms, Codex's own links naming `e77192f`; **round 47 (RC-264):** `7aeae667` is the twenty-fourth, on the same terms, Codex's own links naming `7c23175`; **round 48 (RC-268):** `06b853a3` is the twenty-fifth, on the same terms, Codex's own links naming `1918c72`; **round 49 (RC-271):** `f8be982b` is the twenty-sixth, on the same terms, Codex's own links naming `f5354f9`; **round 50 (RC-275):** `f89b1048` is the twenty-seventh, now called the reviewed squash, on the same terms, Codex's own links naming `11606b1`; **round 51 (RC-276):** `d9582802` is the twenty-eighth, again called the reviewed squash and fresh evidence for the exact requested SHA, on the same terms, Codex's own links naming `c373e06`; its companion finding RC-277 quotes the PR #4 title at trigger time, which supports the RC-176 hypothesis that these objects are squashes built from the PR text in Codex's environment (§3ax); **round 52 (RC-278):** `65d0c832` is the twenty-ninth, on the same terms, Codex's own links naming `00c2c46`; its companion finding RC-279 describes `65d0c832` as a single-parent commit, the shape of a squash, which is consistent with the RC-176 hypothesis and cannot be checked from the repository (§3ay); **document titles (RC-190):** the title of `16` no longer names the two reviewers, while its position columns keep them as provenance under RC-28; **tool names in the specification (RC-199):** `17` §8 no longer names the tools of the review pairing and defers to `AGENTS.md` §9, which names them itself; whether the provenance references to the reviews that remain in `17` ("Codex's review … at …", 52 occurrences on 47 lines of version 25, each naming a review a change answers) are provenance under §7 or markings is the owner's reading | governance change; owner approves personally; not a prerequisite of A0; the §2 item 3 wording is a prerequisite of freezing the Phase 2 contract |
 | OD10 | **Approve or revert the version-5 to version-49 diffs of `17`** (commit `b19483a`, the round-8 commit `8af2ae9`, the round-9 commit `922956b`, the round-10 commit `04bc122` that applies RC-108 to RC-115, §3i, the round-11 commit `78225fd` that applies RC-117 to RC-123, §3j, among them the start-at-floor rule of RC-123 and the withdrawal of the Appendix J critical values under RC-118, and the round-12 commit that carries this matrix v13 and applies RC-124, RC-125, RC-127, RC-129, RC-130 and RC-132, §3k, among them the rule that a post-unblinding cutoff correction ends the confirmatory claim (RC-132; the alternative, keeping the corrected members, is the owner's to choose), and the round-13 commit `b1935db` that carries this matrix v14 and applies RC-133, RC-134, RC-135 and RC-138, §3l, among them the rule that an early-knowability breach stays in every statistic at its least favourable outcome (RC-135; the alternative, ending the confirmatory claim of every comparison a breach touches, is the owner's to choose), and the round-14 commit `0bef5f8` that carries this matrix v15 and applies RC-139 and RC-142, §3m, and the round-15 commit that carries this matrix v16 and applies RC-143 to RC-147, §3n, among them the rule that a registration-breach cluster is outside the scored population (RC-143; Codex's alternative, ending the confirmatory claim, is the owner's to choose) and the rule that a recorded late-source defect is scored at its least favourable outcome (RC-145; Codex's alternatives, a calibrated defect mechanism or a non-confirmatory comparison, are the owner's to choose), and the round-16 commit `018057b` that carried matrix v17 and applies RC-148 to RC-150 and RC-152 to RC-154, §3o, among them the box rule that replaces the least favourable outcome of RC-135 and RC-145 (RC-148; the alternative, ending the confirmatory claim at the first breach or defect, is the owner's to choose), the decision date T_D with the budget η_max (RC-149), and the rule that a cutoff correction after the first registration under an arm version ends the claim (RC-150; the alternatives, withdrawal before any forecast on the cohort and keeping the corrected members, are the owner's to choose), and the round-17 commit that carries this matrix v18 and applies RC-155 to RC-157, §3p, among them the rule that an arm's effective cutoff is the latest over its inputs (RC-156; Codex's alternative, freeing every downstream forecast without a recorded arm graph, is the owner's to choose) and monitor factors committed at H_k + D with later records withdrawing crossings (RC-157; Codex's alternative, invalidating and relabelling the whole monitor at the first late defect, is the owner's to choose), and the round-18 commit that carries this matrix v19 and applies RC-158 to RC-160, §3q, among them the four-step anchored commit (RC-158) and the equal-probability sampling rule (RC-160; Codex's alternative, inverse-probability weighting with its block variance and calibration, is the owner's to choose), and the round-19 commit that carries this matrix v20 and applies RC-161 and RC-163, §3r, among them the certification of every component at α − η_max (RC-161) and the issuance breach routed through the box rule (RC-163; Codex's alternative, making every comparison the breach touches non-confirmatory, is the owner's to choose), and the round-20 commit that carries this matrix v21 and applies RC-164, RC-168 and RC-169, §3s, among them the cohort-level η_max (RC-164), the adjudication of pre-declared VOID members (RC-168; Codex's alternative, making the affected claim non-confirmatory, is the owner's to choose) and source withdrawal deferred to the next cohort (RC-169; Codex's alternatives, a non-confirmatory current claim or an estimand and calibration that include the adaptive rule, are the owner's to choose), and the round-21 commit that carries this matrix v22 and applies RC-171, RC-173 and RC-174, §3t, among them the registration close of the η budget with the estimand stated over [T_0, τ) (RC-171; Codex's alternative, a pre-registered cohort ceiling or a uniform sampling probability that guarantees every selected registration fits the budget, is the owner's to choose, and a ceiling binding before T_R is a close by count), the miscoverage spent in the level budget (RC-173; Codex's alternative, describing the result as a 99 %-confidence size certificate rather than a level-α test, is the owner's to choose) and G over emitting blocks (RC-174), and the round-23 commit that carries this matrix v24 and applies RC-179, §3v, the calibration seed derived from a value that does not exist until the calibration record is anchored (RC-179; Codex's alternative, a declared attempt budget spent in the simultaneous error budget, is the owner's to choose and holds only with a verifiable attempt count), and the T-09 scope sentence (RC-177), and the round-24 commit that carries this matrix v25 and applies RC-180 to RC-182, §3w, the record limit S_max and the search budget K_max fixed before any calibration output (RC-180, RC-181; Codex's alternative to S_max, a summable allocation fixed in advance, is the owner's to choose) and v from a named public beacon round only (RC-182; Codex's alternative, another auditable protocol, or a non-confirmatory simulated family if no beacon is approved, is the owner's to choose), and the round-25 commit that carries this matrix v26 and applies RC-183 to RC-188, §3x, among them S_max and K_max bound to the cohort's primary contract (RC-183), the controller-stream separation of the search (RC-186), the beacon-derived inclusion draws (RC-187; Codex's alternative, a sampling seed anchored before the candidate stream with its attempts counted, is the owner's to choose and holds only if the anchored seed cannot inform later declarations) and the η close on the eligible stream (RC-188; Codex's alternatives, a pre-registered ceiling that cannot bind or a weighted statistic calibrated over the coupled rule, are the owner's to choose), and version 23 the exhaustive, audited candidate log (RC-191; the alternative, an estimand over the logged stream only, would make the population the registrar's choice) and the relabelling of two PROVED claims (RC-192), and version 24 the close replayed over the audited stream with later registrations excluded (RC-193; Codex's alternative, the claim made non-confirmatory whenever an omission moves τ, is the owner's to choose), the derived cluster records of omissions (RC-195), the epoch re-check at the commit transaction with the change effective at its ledger position (RC-197) and the remaining PROVED labels (RC-194), and version 25 the scheduled registration time with late registrations boxed (RC-200; it combines Codex's two routes, automatic registration on a schedule and a delayed cluster carried as missing under the box rule, with the VOID cap ending the claim when the delays are many), the cluster-keyed omission draw in §2 item 2 (RC-198) and §8 without tool names (RC-199), and version 26 cohort membership read from the audited stream with the T_R condition at t_reg,b (RC-202; Codex's alternative, membership read at t_reg,b, is the owner's to choose and leaves a candidate listed before τ and scheduled after it in no cohort), the cap numerator with late registrations and drawn omissions (RC-204; Codex's alternative, a separate enforced cap for late registrations, is the owner's to choose) and the record order fixed at t_reg,b (RC-205; Codex's alternative, holding every factor until each scheduled registration with a smaller maturity is accounted for, is equivalent once the schedule is known and is not adopted separately), and version 27 the supported-crossing rule of the monitor (RC-207, RC-209; the alternative, an equal-weight mixture over fixed λ that keeps every crossing supported at a power cost, 0.485 against 0.706 on the T-36 (c) alternative, is the owner's to choose) and the non-confirmatory primary when a batch's beacon is silent at T_D (RC-208), and version 28 the wait of a supported crossing at cluster k for every batch with t_reg,b < H_k (RC-210) and the registration id (b, cluster id) read from the source listing (RC-212), version 29 the batch b(k) of a cluster (RC-214), and version 30 the estimand over registration-time members (RC-215; Codex's all-member route and its non-confirmatory route are the alternatives, Appendix AG), and version 31 the point-in-time cluster assignment (RC-216; Codex's boxed-defect route, which costs power when linkage does not depend on outcomes, and its non-confirmatory route are the alternatives, Appendix AH), and version 32 the outcome-blind enrolment (RC-218, RC-219; the alternatives are retaining a later cluster linked after its predecessor's earliest-knowable bound (fails when the source lists a dependent follow-up), the box over excluding and including it (valid, costs power), a non-confirmatory claim whenever such a linkage exists or the η budget binds (the latter does not hold the level against a source that stops supply), calibration over a modelled supply process, and continuous accrual through staggered cohorts combined with pre-registered inverse-normal weights (not simulated), Appendix AI), and version 33 the calendar ending by T_E, the population-average null, the non-confirmatory pre-enrolment breach and the supply-exogeneity HYPOTHESIS (RC-220, RC-222, RC-223; the alternatives are reconstructing an omitted member's linkage at its listing time (leaves the closure conflict), keeping the version-32 handling of a breach (6.7 % to 11.7 % against 5.4 % to 5.7 % on the block-shock law), and boxing the breached cluster's whole calendar block (valid only under across-block independence; not simulated), Appendix AJ), and version 34 η over every eligible candidate and the supply-exogeneity test on the block increment for every source (RC-227, RC-228; the alternative to the test is a calendar mechanism independent of every party that can observe relative skill, recorded under OD5, which cannot be verified from inside the protocol, Appendix AK), and version 35 the supply screen on the blinded burn-in with the HC3 t test (RC-229; the alternative is Phase 2 forecasts for the screen, which needs the full comparator set and an OD9b amendment, Appendix AL), and version 36 that screen over every calendar block through a leave-out response and over every confirmatory component with a permutation joint rule (RC-232, RC-234; the alternatives are a cohort with an empty block made non-confirmatory, and an unscreened component made non-confirmatory, which ends the IUT claim, Appendix AM), and version 37 an audit of every source against an independent reference universe, every unlisted universe event an audited omission, and B ≥ 2/level − 1 (RC-239, RC-241, RC-238; the alternatives are a cohort with a block that no source lists made non-confirmatory, which does not reach fixed-count selection, and fixed-count selection without an outcome-blind mechanism made non-confirmatory, which no test of the listing finds, Appendix AN), and version 38 the universe's cluster assignment for every universe event and the resolution record of every eligible event for the pre-enrolment-breach audit (RC-243, RC-244; the alternative is a linkage disagreement between source and universe made non-confirmatory, which also ends the cohorts of honest sources whose linkage conventions differ, Appendix AO), and version 39 the universe's listing times for b(k), the adjudicated `knowable_at` over every route for the breach audit, and the union of every eligible universe's links as the cohort's one cluster authority (RC-245, RC-246, RC-248; the alternative is a frozen precedence order over the universes, which keeps finer clusters but drops the links of every lower-ranked universe, Appendix AP), and version 40 one reading of the union, at the batch that draws a cluster, with a later-anchored link joining the variance blocks of the clusters it connects (RC-250; the alternatives are every universe's linkage of an event frozen before its earliest draw, which needs a snapshot of a universe that has not yet listed the event, and a later cross-universe link made non-confirmatory, which ends the cohorts of honest universes that list late, Appendix AQ), and version 41 b(k) read from the anchored union of the batch that draws the cluster alone, with no audit-time re-enumeration, and the RC-250 null toy rerun with one common component per linked chain (RC-254, RC-255; no alternative was recorded; this entry was missing from round 44 to round 51 and was added in round 52, RC-280, Appendix AR), and version 42 variance blocks joined by the connected components of the final anchored union (RC-259) and a confirmatory rejection on both the anchored and the T_D-extended blocks (RC-260; the alternative is a primary made non-confirmatory by any post-T_E link that joins primary blocks, which gives every such link a veto whatever the evidence, Appendix AS), and version 43 a confirmatory rejection on every late partition, the anchored blocks extended by each subset of the late links, with the M_late close (RC-261; the alternatives are a c* calibrated over a committed model of mixed genuine and selected late links, which needs a model of the selector, and a cohort with any late link made non-confirmatory, Appendix AT), and version 44 late links read as every link archived by T_D outside the final anchored union, with M_late counted over node pairs (RC-266, RC-265; the alternative to RC-266 is a complete snapshot of every universe anchored at T_E, which costs less power but adds an anchor outside the batch calendar, Appendix AU), and version 45 variance blocks as the connected components of the bipartite graph of components and calendar blocks (RC-267; a projection that is not closed is not a partition, so there is no alternative), every late partition's calibration counted in K_max (RC-270; the alternative is the marginal coverage of the genuine partition, which needs the seeds independent of which late links are genuine, Appendix AV) and the optional confirmatory interim withdrawn to an OD4 alternative that needs its own amendment (RC-269), and version 46 K_max summed over the components and the late partitions in A3 and in the K sentence of §3 item 3 (RC-272; no alternative, since a contract may not give K_max two values), and version 47 K = K_max summed over the components and the late partitions in the T-12 pass condition and in the §6 primary-test row (RC-274; no alternative, as for RC-272), and version 48 T-09 failing a merge commit whose message names a round, matrix version or specification version other than its tree's (RC-277; no alternative was recorded), and version 49 that merge message checked before the merge, as the prospective PR title and description against the head tree, and after it, on every commit the merge adds to the base branch whatever its parent count (RC-279; the residual, a message edited in the merge dialog, is seen only after the merge; entries 47 and 48 were added in round 52, RC-280)): RC-60 and RC-64 to RC-79 (§3c–§3e wording, applied), RC-80 to RC-83 (§3f) and RC-85, RC-86 (§3g, defects Codex found in the round-7 remedies for RC-67 and RC-79), each change carrying its matrix ID; the propagation fixes RC-57 and RC-59 stand unless reverted; the owner names any item to revert, and any item reverted returns to `OWNER_DECISION` with its evidence intact. The round budget question of the former OD10 is answered by the owner's audit and the §4.6 rule (findings are applied on assessment and closed on evidence) | no cost beyond review time; without OD10 T-34 and the secret-handling code of §3 item 5 are not built (A0, RC-64) while the rest of Phase 1 waits only on OD1, OD2 and OD9a; the items that already misstated evidence offered to OD4 (RC-70, RC-72, RC-83) are corrected in the diff and are the reason the figures in the OD4 row changed |
+| OD11 | **Method reassessment (`18`, owner directive `6283736614`):** retain the confirmatory method of `17` v49, simplify it to an externally fixed question set forecast exhaustively with a period-level fixed-horizon test, one pre-registered persistence bound ρ_max and a fixed-sequence family whose first claim is FULL against Design C (`18` §6), narrow first to an external benchmark, or pause the confirmatory design until the Phase 2 measurements exist | (a) retain: review cost per round as in rounds 43–52, power below the simplified test's; (b) simplify: a dated amendment of `17` §3 item 3 and §6, OD4 fields M_late, K_max, S_max, the null-class box and γ_cal lapse and ρ_max and the period length replace them, Codex reviews the amendment at its exact SHA; (c) external benchmark: earliest falsifiable skill evidence, on a different question, with provider terms under OD8; (d) pause: calendar cost only (`18` §9) |
 
 **Proposed `AGENTS.md` wording (for OD9a and OD9b; not applied here):**
 
@@ -1865,7 +1867,7 @@ inputs_processed:
   codex_review_commit: 59206fe5f652cc3ea63114ad1c2b0fd7252962c2
   pr2_comments: [6215215092, 6215369656]
   issue3_comments: [6216073335, 6218571025, 6218864121, 6218965225, 6219320639, 6219896670, 6220313901, 6220770348, 6222759237, 6231265852, 6231483746, 6236946882, 6237338855, 6237998297, 6241083483, 6241359504, 6247126535, 6247290530, 6247503183, 6247752807, 6248004117, 6248188858, 6248331602, 6248523476, 6248712582, 6248807405, 6248931469, 6249171400, 6249439524, 6249558267, 6249773884, 6249958912, 6250180809, 6250397089, 6250568776, 6250728381, 6250863085, 6251038941, 6251283889, 6251771521, 6252055822, 6252385785, 6253915975, 6254498312, 6254948626, 6255417359, 6256041346, 6256531848, 6257011588, 6257506817, 6258004355, 6258594075, 6259122149, 6259586398, 6260160206]   # round 52: handoff 51 added; round 50: handoff 49 added; round 49: handoff 48 added; round 48: handoff 47 added; round 47: handoff 46 added; round 46: handoff 45 added; round 45: handoff 44 added; round 44: handoff 43 added; round 43: handoff 42 added; round 42: handoff 41 added; round 41: handoff 40 added; round 40: the six handoffs of rounds 34 to 39 added; they were missing from this list since round 34 (record lag, no content)
-  pr4_comments: [6218467449, 6236238443, 6236863824, 6237340628, 6241076464]   # the owner's @codex review request, the owner's directive, the owner's progress request, the routine's one progress update, the status note on the failed round-12 dispatch that requested review 5560119353
+  pr4_comments: [6218467449, 6236238443, 6236863824, 6237340628, 6241076464, 6283736614]   # the owner's @codex review request, the owner's directive, the owner's progress request, the routine's one progress update, the status note on the failed round-12 dispatch that requested review 5560119353
   pr4_reviews:
     - review_id: 5548201046
       commit: 10d1581595b2d1ea6a8689e0f94b33bd68a59d66
@@ -2999,13 +3001,19 @@ next_execution:
 disagreements_open: [RC-20-timing]   # both positions recorded; settled by OD6, not by a further round
 disagreements_resolved_pending_codex_review: [RC-01-scope]
 owner_decision_items: ["RC-20-timing (OD6)", "RC-07-retention (owner may strike)", "RC-28 (OD9b)", "RC-84 (OD9b)", "RC-81-commit-identity (OD9b)", "RC-106-agents-2-item-1 (OD9b)", "version-5, version-6 and version-7 diffs (OD10)", "RC-94-null-class-and-power-floor and RC-97-G_min and RC-101-dependence-or-frechet (OD4)", "RC-88-defect-rate-bound and RC-105-observation-duty (OD5)", "RC-98-cutoff-duty (OD8)", "RC-56-early-confirmation-option (OD4)", "RC-85-void-cap (OD4)", "RC-85-source-failure-condition (OD5)", "RC-68-H_max and RC-69-estimand-naming and RC-215-registration-time-or-all-member-estimand and RC-219-enrolment-end-T_E and RC-70-shock-amplitude and RC-72-skew-bound and RC-83-dependence-assumption (OD4)", "RC-77-latency-windows and RC-78-inclusion-predicate (OD5)", "RC-74-external-store (OD6)", "RC-76-cohort-start (OD1)", "RC-129-block-timestamp (OD4)", "RC-132-keep-members-alternative (OD10)", "RC-126-commit-identity (OD9b)", "RC-175-commit-identity-and-RC-176-squash-hypothesis (OD9b)", "RC-135-end-the-claim-alternative (OD10)", "RC-138-falsifier_observable_from (OD5)", "RC-140-commit-identity (OD9b)", "RC-148-end-the-claim-alternative (OD10)", "RC-149-eta_max (OD4) and D_s (OD5)", "RC-150-pre-forecast-withdrawal-and-keep-members-alternatives (OD10)", "RC-151-commit-identity (OD9b)", "RC-162-commit-identity (OD9b)", "RC-164-eta_max-cohort-feasibility (OD4, OD5)", "RC-165-commit-identity (OD9b)", "RC-168-non-confirmatory-alternative (OD10)", "RC-169-withdrawal-scope (OD5, OD10)", "RC-171-ceiling-or-uniform-sampling-alternative (OD10) and planned-supply (OD5)", "RC-172-commit-identity (OD9b)", "RC-173-gamma_cal (OD4) and size-certificate-wording-alternative (OD10)", "RC-177-commit-identity (OD9b)", "RC-178-squash-hypothesis (OD9b)", "RC-179-seed-value-source (OD4) and attempt-budget-alternative (OD10)", "RC-180-S_max (OD4) and summable-allocation-alternative (OD10)", "RC-181-K_max (OD4)", "RC-182-beacon (OD4) and auditable-protocol-or-non-confirmatory-alternative (OD10)", "RC-195-cluster-rule (OD5)", "RC-199-provenance-references-in-17 (OD9b)", "RC-200-batch-calendar-and-Delta_reg (OD5)", "RC-202-membership-by-t_reg-alternative (OD10)", "RC-203-commit-identity (OD9b)", "RC-204-separate-cap-alternative (OD10)", "RC-208-fallback-beacon (OD4)", "RC-209-fixed-lambda-mixture-alternative (OD10)", "RC-211-commit-identity (OD9b)", "RC-213-commit-identity (OD9b)", "RC-221-commit-identity (OD9b)", "RC-220-listing-time-linkage-alternative (OD10)", "RC-223-block-level-box-alternative (OD10)", "RC-223-no-breach-probability-floor (OD4)", "RC-223-supply-exogeneity-exclusion (OD5)", "RC-276-commit-identity-and-RC-277-squash-hypothesis-evidence (OD9b)", "RC-278-commit-identity (OD9b)", "RC-279-squash-message-repository-setting (OD9b)"]
-owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b, OD10]
+owner_decisions_open: [OD1, OD2, OD3, OD4, OD5, OD6, OD7, OD8, OD9a, OD9b, OD10, OD11]
 prerequisites_for_A0: [OD1, OD2, OD9a, OD10-for-T-34-only]
 experiments_required: ["H1", "H3", "H5", "H6", "transfer-claim", "pre-enrolment-breach-rate-per-source (RC-223; Phase 2 supply measurement, section 5)", "supply-exogeneity-per-source (RC-223; Phase 2 supply measurement, section 5)", "enrolment-supply-per-source (RC-219; Phase 2 supply measurement, section 5)", "post-registration-share-per-source (RC-215; Phase 2 supply measurement, section 5)", "persistent-regime-dependence-model (OD4/OD5)", "comparator-error-dependence (OD4; needs outcomes, not estimable from the blinded burn-in)", "late-record-delay-per-source-and-mechanism (RC-149, RC-164; sets D_s and the cohort-level eta_max as the Boole sum over the registered cohort, measured to the ledger record on the Phase 2 candidate log)", "omission-rate-per-source-against-its-reference-universe (RC-241; Phase 2 supply measurement, section 5; added in round 42, missing since round 40, record lag)", "cluster-size-under-the-union-of-universe-links (RC-248; Phase 2 supply measurement, section 5)", "late-cross-universe-link-rate-and-joined-G (RC-250, RC-255; Phase 2 supply measurement, section 5)"]
 p0_status:
   e_process_protocol: remedy proposed and now fully specified in 17 v15 (the closed-form box bound with kappa_A for unequal blocks, effective cutoffs over each arm's inputs, monitor factors committed at H_k + D; in v14 breached and defective members by a box rule dominated by the honest decision, the decision at T_D with eta_max spent from alpha, cutoff corrections after the first registration ending the claim, over-limit pairs clipped, the VOID cap as a cluster-weighted share per component; in v13 registration-breach clusters outside the scored population and late-source defects carried into the statistics; in v12 registration breaches named and entered at X = 0, the estimand gated by the earliest-knowable bound; the monitor's null stated in the record-order filtration, early-knowability breaches kept at the least favourable outcome, the earliest-knowable bound gating every registration and the cutoff check; record-order monitor, maturity-block assignment, strict rejection, cutoffs rounded upward, K over every component, post-unblinding corrections end the claim; cluster-weighted statistic over occupied blocks, critical value calibrated over a pre-registered null class stated as a committed generator family with a serial-dependence bound and a pass condition, baseline slot computed from the committed base rate with sealed submissions, model cutoff per immutable arm version with cohort withdrawal, burn-in blinding on the earliest knowable time, finality dispositions closed for the outage-plus-late-record case, monitor in pre-registered maturity order, VOID set fixed in the registration record or adjudicated by the source rule, immutable finality dispositions with an observation duty, abstention at issuance close, partial-VOID arithmetic with t*_k over all members and +/-1 imputation, accrual cut-off, (event, arm, slot) key with a primary slot, model knowledge cutoff, issuance window, eligible-population predicate, IUT power with the Frechet bound); tests T-02, T-10..T-13, T-16, T-17, T-19, T-36, T-37, T-39 specified, not implemented; the version-6 text was reviewed by Codex twice at 8af2ae9 with twenty-one findings, all applied; the version-7 text was reviewed once at 922956b with eight findings, all applied; pending OD10 and Codex review of this commit
   rare_probability_and_intervals: remedy proposed, tests T-20 (point and interval oracles)..T-22 specified, blocked on OD9a, not implemented
   enforcement_boundaries: remedy proposed and now fully specified in 17 v7 (secret confinement T-34, clock with monotonic time, boot id and drift against the epoch baseline T-35, durable nonce consumption before acknowledgement and epoch rotation on demotion T-30, full-tuple signatures T-31, action-boundary enforcement T-32, as-of interface with positive oracles T-15); tests specified, not implemented; T-34 build waits on OD10
+method_reassessment:   # owner directive 6283736614; no change to 17
+  document: research/18-method-reassessment.md
+  baseline: a22f9df2e2621df4d8b5c51c2f5e326c7504b74a
+  appendix: AW
+  recommendation: narrow_and_simplify   # PROPOSED; adoption is OD11
+  status: awaiting_codex_review_of_this_commit; owner_decision_OD11
 implementation_authorised: false
 ```
 
@@ -21836,4 +21844,457 @@ print(json.dumps(out, indent=1, ensure_ascii=False))
   "2^M_late = 64": 0.03505
  }
 }
+```
+
+## Appendix AW. Method reassessment simulations (REPRODUCED)
+
+Backs `18-method-reassessment.md` (owner directive on PR #4, comment `6283736614`). Needs no reference code, no
+network, no Git history and no fixture; it uses numpy and scipy of the pinned packages. Run from the repository root
+with `python -I research/reproduction/reassessment_sims.py` in an isolated venv built from
+`research/reproduction/requirements.txt` with `pip install --require-hashes --no-deps` (Python 3.11.17; about 13 s).
+Two consecutive runs produced byte-identical output. S1 is the forecast law of `18` F2, S2 the power and
+minimum-detectable-effect table of F1 and §3, S3 to S3c the tests of F3 and F8, S4 the selection counterexample and
+omission bounds of F4 and F6, and S5 the conjunction of F7. The output prints one JSON value per line.
+
+<!-- reassessment-script:start -->
+```python
+"""Simulations of the method reassessment in research/18-method-reassessment.md (no reference code, no network).
+
+Owner directive on PR #4, comment 6283736614 (2026-10-20): reassess whether the Phase-1 statistical proof method is
+identifiable, valid and practically useful, and compare it with fundamentally different approaches. Each section
+below backs one numbered claim of `18`:
+- S1: the paired cluster increment X = Brier(baseline) - Brier(FULL) under an explicit forecast law, giving the
+  per-cluster standard deviation sigma and the period-level standard deviation tau that a shared outcome shock adds;
+- S2: power and minimum detectable effect of the block-level test as a function of the number of independent
+  periods G, the period-level standard deviation tau and the clusters per period n (analytic, checked by simulation);
+- S3: size and power on G = 24 block means of four tests (cluster-iid t, block t, block sign-flip, betting
+  e-process) under independent, serially dependent and skewed period shocks;
+- S3b: the betting e-process against the number of independent blocks G;
+- S3c: the block t under a pre-registered persistence bound rho_max (variance-inflated critical value);
+- S4: non-identifiability of outcome-independent selection from listing metadata, and the identified set of the
+  population mean under an omitted share m;
+- S5: power of the six-comparator intersection-union conjunction against a fixed-sequence (gatekeeping) order.
+Run from the repository root in the hash-locked environment of research/reproduction/requirements.txt:
+    python research/reproduction/reassessment_sims.py
+Deterministic: every section uses its own fixed seed. The output is one JSON value per line, a table row per line.
+"""
+import json
+
+import numpy as np
+from scipy import stats
+
+ALPHA = 0.05
+
+
+def forecast_law(rng, n_periods, n_per, base_rate, skill, noise, shock, lean):
+    """Paired increments X = (b - Y)^2 - (p - Y)^2 for n_per clusters in each of n_periods periods.
+
+    True event probabilities q ~ Beta(mean base_rate, concentration 4); the FULL forecast is
+    p = clip(base_rate + lean + skill * (q - base_rate) + N(0, noise^2), 0.01, 0.99), lean a systematic offset of
+    FULL from the baseline; the baseline forecast is base_rate.
+    A period shock z ~ N(0, 1) shifts every outcome probability of the period by shock * z (clipped), so outcomes
+    of one period share a common component that no outcome cluster can absorb.
+    """
+    a, b = 4 * base_rate, 4 * (1 - base_rate)
+    q = rng.beta(a, b, size=(n_periods, n_per))
+    p = np.clip(base_rate + lean + skill * (q - base_rate) + rng.normal(0, noise, q.shape), 0.01, 0.99)
+    z = rng.normal(0, 1, (n_periods, 1))
+    q_obs = np.clip(q + shock * z, 0.0, 1.0)
+    y = (rng.random(q.shape) < q_obs).astype(float)
+    return (base_rate - y) ** 2 - (p - y) ** 2
+
+
+def s1_forecast_law():
+    rng = np.random.default_rng(20261020)
+    rows = []
+    for skill, noise, lean in [(0.0, 0.10, 0.0), (0.25, 0.10, 0.0), (0.5, 0.10, 0.0), (0.5, 0.05, 0.0),
+                               (0.5, 0.05, 0.05), (0.5, 0.05, 0.10)]:
+        for shock in [0.0, 0.03, 0.06]:
+            x = forecast_law(rng, 4000, 50, 0.3, skill, noise, shock, lean)
+            period_means = x.mean(axis=1)
+            sigma = float(x.std())
+            tau2 = max(float(period_means.var()) - sigma ** 2 / 50, 0.0)
+            rows.append({'skill': skill, 'noise': noise, 'lean': lean, 'shock': shock,
+                         'delta': round(float(x.mean()), 4), 'sigma': round(sigma, 3), 'tau': round(tau2 ** 0.5, 4),
+                         'tau_first_order_2_shock_lean': round(2 * shock * lean, 4)})
+    return rows
+
+
+def mde(g, tau, sigma, n, power=0.8):
+    """Smallest mean detected with the given power by the one-sided t test on G block means (normal block means)."""
+    se = np.sqrt((tau ** 2 + sigma ** 2 / n) / g)
+    return float((stats.t.ppf(1 - ALPHA, g - 1) + stats.t.ppf(power, g - 1)) * se)
+
+
+def s2_power_table():
+    sigma = 0.10
+    table = []
+    for tau in [0.0, 0.005, 0.01, 0.02]:
+        for g in [12, 24, 48, 104, 260]:
+            table.append({'tau': tau, 'G': g,
+                          'mde_n25': round(mde(g, tau, sigma, 25), 4),
+                          'mde_n100': round(mde(g, tau, sigma, 100), 4),
+                          'mde_n_inf': round(mde(g, tau, sigma, 10 ** 9), 4)})
+    rng = np.random.default_rng(7)
+    checks = []
+    for tau, g, n in [(0.01, 24, 25), (0.01, 104, 25), (0.005, 24, 100)]:
+        delta = mde(g, tau, sigma, n)
+        reps = 20000
+        means = delta + rng.normal(0, tau, (reps, g)) + rng.normal(0, sigma / np.sqrt(n), (reps, g))
+        t = means.mean(1) / (means.std(1, ddof=1) / np.sqrt(g))
+        checks.append({'tau': tau, 'G': g, 'n': n, 'delta': round(delta, 4),
+                       'simulated_power': round(float((t > stats.t.ppf(1 - ALPHA, g - 1)).mean()), 4)})
+    needed = []
+    for tau in [0.005, 0.01, 0.02]:
+        for delta in [0.005, 0.01, 0.02]:
+            g = 3
+            while mde(g, tau, sigma, 100) > delta and g < 100000:
+                g += 1
+            needed.append({'tau': tau, 'delta': delta, 'G_needed_n100': g})
+    return {'sigma': sigma, 'mde': table, 'simulation_check': checks, 'periods_needed_for_80pct': needed}
+
+
+def block_t_reject(means):
+    g = means.shape[1]
+    sd = means.std(1, ddof=1)
+    t = np.where(sd > 0, means.mean(1) / np.where(sd > 0, sd, 1) * np.sqrt(g), 0.0)
+    return t > stats.t.ppf(1 - ALPHA, g - 1)
+
+
+def sign_flip_reject(rng, means, flips=999):
+    """Monte Carlo sign-flip test of the block means (exact for independent, symmetric block means)."""
+    obs = means.mean(1)
+    signs = rng.choice([-1.0, 1.0], size=(flips, means.shape[1]))
+    null = means @ signs.T / means.shape[1]
+    p = (1 + (null >= obs[:, None]).sum(1)) / (flips + 1)
+    return p <= ALPHA
+
+
+def betting_reject(means, lam_cap):
+    """Predictable plug-in betting e-process on block means, rejecting when wealth reaches 1/alpha at any block.
+
+    Anytime-valid when 1 + lam * x > 0 for every possible block mean x: lam_cap = 0.5 needs |x| <= 1, the range of a
+    Brier difference; lam_cap = 2.5 needs |x| <= 0.2, which holds only if |p_FULL - p_baseline| <= 0.2 by design."""
+    reps, g = means.shape
+    log_w = np.zeros(reps)
+    crossed = np.zeros(reps, dtype=bool)
+    s1 = np.zeros(reps)
+    s2 = np.zeros(reps)
+    for b in range(g):
+        if b == 0:
+            lam = np.zeros(reps)
+        else:
+            mu = s1 / b
+            var = s2 / b - mu ** 2
+            lam = np.clip(mu / (var + mu ** 2 + 1e-12), 0.0, lam_cap)
+        x = means[:, b]
+        log_w += np.log1p(lam * x)
+        crossed |= log_w >= np.log(1 / ALPHA)
+        s1 += x
+        s2 += x ** 2
+    return crossed
+
+
+def period_shocks(rng, kind, reps, g, tau):
+    if kind == 'iid normal':
+        return rng.normal(0, tau, (reps, g))
+    if kind.startswith('AR(1)'):
+        rho = float(kind.split('=')[1])
+        e = rng.normal(0, tau * np.sqrt(1 - rho ** 2), (reps, g))
+        out = np.empty((reps, g))
+        out[:, 0] = rng.normal(0, tau, reps)
+        for b in range(1, g):
+            out[:, b] = rho * out[:, b - 1] + e[:, b]
+        return out
+    if kind == 'skewed two-point':
+        # mean zero, sd tau, a rare large negative period (probability 0.05)
+        p = 0.05
+        hi, lo = tau * np.sqrt(p / (1 - p)), -tau * np.sqrt((1 - p) / p)
+        return np.where(rng.random((reps, g)) < p, lo, hi)
+    raise ValueError(kind)
+
+
+def s3_tests():
+    rng = np.random.default_rng(11)
+    g, n, sigma, tau, reps = 24, 25, 0.10, 0.01, 20000
+    rows = []
+    for kind in ['iid normal', 'AR(1) rho=0.5', 'AR(1) rho=0.9', 'skewed two-point']:
+        for delta in [0.0, 0.01, 0.02]:
+            shocks = period_shocks(rng, kind, reps, g, tau)
+            noise = rng.normal(0, sigma, (reps, g, n))
+            x = delta + shocks[:, :, None] + noise
+            means = x.mean(2)
+            flat = x.reshape(reps, -1)
+            t_iid = flat.mean(1) / (flat.std(1, ddof=1) / np.sqrt(g * n))
+            half = reps // 4  # the sign-flip test uses a quarter of the replications to bound run time
+            rows.append({
+                'shock law': kind, 'delta': delta,
+                'cluster_iid_t': round(float((t_iid > stats.norm.ppf(1 - ALPHA)).mean()), 4),
+                'block_t': round(float(block_t_reject(means).mean()), 4),
+                'block_sign_flip': round(float(sign_flip_reject(rng, means[:half]).mean()), 4),
+                'betting_cap_0.5': round(float(betting_reject(means, 0.5).mean()), 4),
+                'betting_cap_2.5': round(float(betting_reject(means, 2.5).mean()), 4),
+            })
+    upper = {r['shock law'] + ' / ' + k: round(float(stats.beta.ppf(0.99, r[k] * reps + 1, reps - r[k] * reps)), 4)
+             for r in rows if r['delta'] == 0.0 for k in ['block_t', 'cluster_iid_t']}
+    return {'G': g, 'n': n, 'sigma': sigma, 'tau': tau, 'reps': reps, 'sign_flip_reps': reps // 4, 'rows': rows,
+            'clopper_pearson_99_upper_at_delta_0': upper}
+
+
+def s3b_betting_horizon():
+    """The betting e-process needs calendar time: crossing rate against the number of independent blocks G."""
+    rng = np.random.default_rng(12)
+    sigma_b, reps = (0.01 ** 2 + 0.10 ** 2 / 25) ** 0.5, 20000
+    rows = []
+    for g in [24, 104, 260, 520]:
+        for delta in [0.0, 0.01, 0.02]:
+            means = delta + rng.normal(0, sigma_b, (reps, g))
+            rows.append({'G': g, 'delta': delta,
+                         'betting_cap_0.5': round(float(betting_reject(means, 0.5).mean()), 4),
+                         'betting_cap_2.5': round(float(betting_reject(means, 2.5).mean()), 4),
+                         'block_t_fixed_horizon': round(float(block_t_reject(means).mean()), 4)})
+    return {'block_sd': round(sigma_b, 4), 'reps': reps, 'rows': rows}
+
+
+def s3c_bounded_persistence():
+    """Block t with its critical value inflated by sqrt((1 + rho_max) / (1 - rho_max)), the AR(1) long-run variance
+    factor of a mean, when the period shocks follow AR(1) with rho <= rho_max (rho_max pre-registered)."""
+    rng = np.random.default_rng(14)
+    g, n, sigma, tau, reps = 24, 25, 0.10, 0.01, 20000
+    rows = []
+    for rho_max in [0.5, 0.9]:
+        for rho in sorted({0.0, rho_max}):
+            for delta in [0.0, 0.01, 0.02]:
+                shocks = period_shocks(rng, f'AR(1) rho={rho}', reps, g, tau) if rho > 0 else rng.normal(0, tau, (reps, g))
+                means = delta + shocks + rng.normal(0, sigma / np.sqrt(n), (reps, g))
+                sd = means.std(1, ddof=1)
+                t = means.mean(1) / (sd / np.sqrt(g))
+                crit = stats.t.ppf(1 - ALPHA, g - 1) * np.sqrt((1 + rho_max) / (1 - rho_max))
+                rows.append({'rho_max': rho_max, 'true_rho': rho, 'delta': delta, 'critical_value': round(float(crit), 3),
+                             'rejection': round(float((t > crit).mean()), 4)})
+    return {'G': g, 'n': n, 'sigma': sigma, 'tau': tau, 'reps': reps, 'rows': rows}
+
+
+def s4_selection():
+    """World A lists a fixed count of events per period at random; world B lists the same count, chosen by a signal
+    correlated with the (unobserved at listing) paired increment. The listing metadata (count per period, timing) are
+    identical by construction; the listed-population mean differs."""
+    rng = np.random.default_rng(13)
+    periods, universe, listed, reps = 24, 30, 10, 4000
+    res = {}
+    for world in ['A random', 'B signal-selected']:
+        reject = 0
+        listed_mean = []
+        for _ in range(reps):
+            x = rng.normal(0.0, 0.10, (periods, universe)) + rng.normal(0, 0.01, (periods, 1))  # exact null
+            if world.startswith('A'):
+                idx = np.argsort(rng.random((periods, universe)), axis=1)[:, :listed]
+            else:
+                signal = x + rng.normal(0, 0.15, x.shape)
+                idx = np.argsort(-signal, axis=1)[:, :listed]
+            chosen = np.take_along_axis(x, idx, axis=1)
+            m = chosen.mean(1)
+            listed_mean.append(m.mean())
+            reject += bool(block_t_reject(m[None, :])[0])
+        res[world] = {'listed_count_per_period': listed, 'mean_listed_increment': round(float(np.mean(listed_mean)), 4),
+                      'block_t_rejection': round(reject / reps, 4)}
+    bounds = []
+    for d in [0.2, 0.5, 1.0]:
+        for theta in [0.005, 0.01, 0.02]:
+            # identified set of the population mean: (1 - m) theta_obs + m [-d, d]; sign identified iff (1-m) theta > m d
+            m_max = theta / (theta + d)
+            bounds.append({'divergence_bound_d': d, 'theta_observed': theta, 'max_omitted_share_for_sign': round(m_max, 4)})
+    return {'non_identifiability': res, 'omission_bounds': bounds}
+
+
+def s5_conjunction():
+    rng = np.random.default_rng(17)
+    reps = 200000
+    rows = []
+    for marginal in [0.8, 0.9]:
+        mu = stats.norm.ppf(1 - ALPHA) + stats.norm.ppf(marginal)
+        for r in [0.0, 0.5, 0.9]:
+            for j in [1, 3, 6]:
+                cov = np.full((j, j), r) + np.eye(j) * (1 - r)
+                z = rng.multivariate_normal(np.full(j, mu), cov, size=reps)
+                iut = (z > stats.norm.ppf(1 - ALPHA)).all(1).mean()
+                rows.append({'marginal_power': marginal, 'correlation': r, 'J': j,
+                             'iut_joint_power': round(float(iut), 4), 'fixed_sequence_first_claim_power': marginal})
+    return rows
+
+
+def emit(name, value, depth=0):
+    """One JSON line per table row, so that the committed output reads as tables."""
+    pad = ' ' * depth
+    if isinstance(value, dict) and any(isinstance(v, (list, dict)) for v in value.values()):
+        print(f'{pad}{json.dumps(name)}:')
+        for key, item in value.items():
+            emit(key, item, depth + 1)
+    elif isinstance(value, list):
+        print(f'{pad}{json.dumps(name)}:')
+        for item in value:
+            print(f'{pad} {json.dumps(item)}')
+    else:
+        print(f'{pad}{json.dumps(name)}: {json.dumps(value)}')
+
+
+def main():
+    for name, section in [('S1 forecast law', s1_forecast_law), ('S2 power', s2_power_table), ('S3 tests', s3_tests),
+                          ('S3b betting horizon', s3b_betting_horizon),
+                          ('S3c bounded persistence', s3c_bounded_persistence), ('S4 selection', s4_selection),
+                          ('S5 conjunction', s5_conjunction)]:
+        emit(name, section())
+
+
+if __name__ == '__main__':
+    main()
+```
+<!-- reassessment-script:end -->
+
+```json
+"S1 forecast law":
+ {"skill": 0.0, "noise": 0.1, "lean": 0.0, "shock": 0.0, "delta": -0.0099, "sigma": 0.093, "tau": 0.0014, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.0, "noise": 0.1, "lean": 0.0, "shock": 0.03, "delta": -0.0098, "sigma": 0.093, "tau": 0.0009, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.0, "noise": 0.1, "lean": 0.0, "shock": 0.06, "delta": -0.01, "sigma": 0.093, "tau": 0.0016, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.25, "noise": 0.1, "lean": 0.0, "shock": 0.0, "delta": 0.0087, "sigma": 0.1, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.25, "noise": 0.1, "lean": 0.0, "shock": 0.03, "delta": 0.0081, "sigma": 0.1, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.25, "noise": 0.1, "lean": 0.0, "shock": 0.06, "delta": 0.0084, "sigma": 0.1, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.1, "lean": 0.0, "shock": 0.0, "delta": 0.022, "sigma": 0.123, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.1, "lean": 0.0, "shock": 0.03, "delta": 0.0217, "sigma": 0.124, "tau": 0.0025, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.1, "lean": 0.0, "shock": 0.06, "delta": 0.0211, "sigma": 0.124, "tau": 0.0023, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.0, "shock": 0.0, "delta": 0.0287, "sigma": 0.099, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.0, "shock": 0.03, "delta": 0.0289, "sigma": 0.099, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.0, "shock": 0.06, "delta": 0.0287, "sigma": 0.099, "tau": 0.0029, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.05, "shock": 0.0, "delta": 0.0262, "sigma": 0.119, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.05, "shock": 0.03, "delta": 0.0259, "sigma": 0.119, "tau": 0.0037, "tau_first_order_2_shock_lean": 0.003}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.05, "shock": 0.06, "delta": 0.0263, "sigma": 0.119, "tau": 0.0068, "tau_first_order_2_shock_lean": 0.006}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.1, "shock": 0.0, "delta": 0.0187, "sigma": 0.15, "tau": 0.0, "tau_first_order_2_shock_lean": 0.0}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.1, "shock": 0.03, "delta": 0.0189, "sigma": 0.15, "tau": 0.0064, "tau_first_order_2_shock_lean": 0.006}
+ {"skill": 0.5, "noise": 0.05, "lean": 0.1, "shock": 0.06, "delta": 0.0192, "sigma": 0.15, "tau": 0.0117, "tau_first_order_2_shock_lean": 0.012}
+"S2 power":
+ "sigma": 0.1
+ "mde":
+  {"tau": 0.0, "G": 12, "mde_n25": 0.0154, "mde_n100": 0.0077, "mde_n_inf": 0.0}
+  {"tau": 0.0, "G": 24, "mde_n25": 0.0105, "mde_n100": 0.0052, "mde_n_inf": 0.0}
+  {"tau": 0.0, "G": 48, "mde_n25": 0.0073, "mde_n100": 0.0036, "mde_n_inf": 0.0}
+  {"tau": 0.0, "G": 104, "mde_n25": 0.0049, "mde_n100": 0.0025, "mde_n_inf": 0.0}
+  {"tau": 0.0, "G": 260, "mde_n25": 0.0031, "mde_n100": 0.0015, "mde_n_inf": 0.0}
+  {"tau": 0.005, "G": 12, "mde_n25": 0.0159, "mde_n100": 0.0086, "mde_n_inf": 0.0039}
+  {"tau": 0.005, "G": 24, "mde_n25": 0.0108, "mde_n100": 0.0059, "mde_n_inf": 0.0026}
+  {"tau": 0.005, "G": 48, "mde_n25": 0.0075, "mde_n100": 0.0041, "mde_n_inf": 0.0018}
+  {"tau": 0.005, "G": 104, "mde_n25": 0.0051, "mde_n100": 0.0027, "mde_n_inf": 0.0012}
+  {"tau": 0.005, "G": 260, "mde_n25": 0.0032, "mde_n100": 0.0017, "mde_n_inf": 0.0008}
+  {"tau": 0.01, "G": 12, "mde_n25": 0.0172, "mde_n100": 0.0109, "mde_n_inf": 0.0077}
+  {"tau": 0.01, "G": 24, "mde_n25": 0.0117, "mde_n100": 0.0074, "mde_n_inf": 0.0052}
+  {"tau": 0.01, "G": 48, "mde_n25": 0.0082, "mde_n100": 0.0052, "mde_n_inf": 0.0036}
+  {"tau": 0.01, "G": 104, "mde_n25": 0.0055, "mde_n100": 0.0035, "mde_n_inf": 0.0025}
+  {"tau": 0.01, "G": 260, "mde_n25": 0.0035, "mde_n100": 0.0022, "mde_n_inf": 0.0015}
+  {"tau": 0.02, "G": 12, "mde_n25": 0.0218, "mde_n100": 0.0172, "mde_n_inf": 0.0154}
+  {"tau": 0.02, "G": 24, "mde_n25": 0.0148, "mde_n100": 0.0117, "mde_n_inf": 0.0105}
+  {"tau": 0.02, "G": 48, "mde_n25": 0.0103, "mde_n100": 0.0082, "mde_n_inf": 0.0073}
+  {"tau": 0.02, "G": 104, "mde_n25": 0.0069, "mde_n100": 0.0055, "mde_n_inf": 0.0049}
+  {"tau": 0.02, "G": 260, "mde_n25": 0.0044, "mde_n100": 0.0035, "mde_n_inf": 0.0031}
+ "simulation_check":
+  {"tau": 0.01, "G": 24, "n": 25, "delta": 0.0117, "simulated_power": 0.8037}
+  {"tau": 0.01, "G": 104, "n": 25, "delta": 0.0055, "simulated_power": 0.8033}
+  {"tau": 0.005, "G": 24, "n": 100, "delta": 0.0059, "simulated_power": 0.7975}
+ "periods_needed_for_80pct":
+  {"tau": 0.005, "delta": 0.005, "G_needed_n100": 33}
+  {"tau": 0.005, "delta": 0.01, "G_needed_n100": 10}
+  {"tau": 0.005, "delta": 0.02, "G_needed_n100": 4}
+  {"tau": 0.01, "delta": 0.005, "G_needed_n100": 51}
+  {"tau": 0.01, "delta": 0.01, "G_needed_n100": 14}
+  {"tau": 0.01, "delta": 0.02, "G_needed_n100": 5}
+  {"tau": 0.02, "delta": 0.005, "G_needed_n100": 126}
+  {"tau": 0.02, "delta": 0.01, "G_needed_n100": 33}
+  {"tau": 0.02, "delta": 0.02, "G_needed_n100": 10}
+"S3 tests":
+ "G": 24
+ "n": 25
+ "sigma": 0.1
+ "tau": 0.01
+ "reps": 20000
+ "sign_flip_reps": 5000
+ "rows":
+  {"shock law": "iid normal", "delta": 0.0, "cluster_iid_t": 0.0685, "block_t": 0.0486, "block_sign_flip": 0.046, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "iid normal", "delta": 0.01, "cluster_iid_t": 0.7608, "block_t": 0.6786, "block_sign_flip": 0.6832, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "iid normal", "delta": 0.02, "cluster_iid_t": 0.9979, "block_t": 0.9953, "block_sign_flip": 0.9944, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "AR(1) rho=0.5", "delta": 0.0, "cluster_iid_t": 0.1003, "block_t": 0.0759, "block_sign_flip": 0.0758, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "AR(1) rho=0.5", "delta": 0.01, "cluster_iid_t": 0.7256, "block_t": 0.6636, "block_sign_flip": 0.6618, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "AR(1) rho=0.5", "delta": 0.02, "cluster_iid_t": 0.9921, "block_t": 0.9878, "block_sign_flip": 0.9862, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "AR(1) rho=0.9", "delta": 0.0, "cluster_iid_t": 0.2052, "block_t": 0.1868, "block_sign_flip": 0.19, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "AR(1) rho=0.9", "delta": 0.01, "cluster_iid_t": 0.6616, "block_t": 0.6354, "block_sign_flip": 0.6292, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "AR(1) rho=0.9", "delta": 0.02, "cluster_iid_t": 0.9472, "block_t": 0.9364, "block_sign_flip": 0.9368, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "skewed two-point", "delta": 0.0, "cluster_iid_t": 0.0721, "block_t": 0.0616, "block_sign_flip": 0.0616, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "skewed two-point", "delta": 0.01, "cluster_iid_t": 0.7662, "block_t": 0.6856, "block_sign_flip": 0.6806, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+  {"shock law": "skewed two-point", "delta": 0.02, "cluster_iid_t": 0.9971, "block_t": 0.9902, "block_sign_flip": 0.9888, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0}
+ "clopper_pearson_99_upper_at_delta_0": {"iid normal / block_t": 0.0523, "iid normal / cluster_iid_t": 0.0728, "AR(1) rho=0.5 / block_t": 0.0804, "AR(1) rho=0.5 / cluster_iid_t": 0.1053, "AR(1) rho=0.9 / block_t": 0.1933, "AR(1) rho=0.9 / cluster_iid_t": 0.2119, "skewed two-point / block_t": 0.0657, "skewed two-point / cluster_iid_t": 0.0765}
+"S3b betting horizon":
+ "block_sd": 0.0224
+ "reps": 20000
+ "rows":
+  {"G": 24, "delta": 0.0, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0, "block_t_fixed_horizon": 0.0508}
+  {"G": 24, "delta": 0.01, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0, "block_t_fixed_horizon": 0.6867}
+  {"G": 24, "delta": 0.02, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0, "block_t_fixed_horizon": 0.9954}
+  {"G": 104, "delta": 0.0, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0, "block_t_fixed_horizon": 0.0496}
+  {"G": 104, "delta": 0.01, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.1314, "block_t_fixed_horizon": 0.9982}
+  {"G": 104, "delta": 0.02, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.9998, "block_t_fixed_horizon": 1.0}
+  {"G": 260, "delta": 0.0, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0001, "block_t_fixed_horizon": 0.0508}
+  {"G": 260, "delta": 0.01, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.9996, "block_t_fixed_horizon": 1.0}
+  {"G": 260, "delta": 0.02, "betting_cap_0.5": 0.0066, "betting_cap_2.5": 1.0, "block_t_fixed_horizon": 1.0}
+  {"G": 520, "delta": 0.0, "betting_cap_0.5": 0.0, "betting_cap_2.5": 0.0018, "block_t_fixed_horizon": 0.0524}
+  {"G": 520, "delta": 0.01, "betting_cap_0.5": 0.0404, "betting_cap_2.5": 1.0, "block_t_fixed_horizon": 1.0}
+  {"G": 520, "delta": 0.02, "betting_cap_0.5": 1.0, "betting_cap_2.5": 1.0, "block_t_fixed_horizon": 1.0}
+"S3c bounded persistence":
+ "G": 24
+ "n": 25
+ "sigma": 0.1
+ "tau": 0.01
+ "reps": 20000
+ "rows":
+  {"rho_max": 0.5, "true_rho": 0.0, "delta": 0.0, "critical_value": 2.969, "rejection": 0.0036}
+  {"rho_max": 0.5, "true_rho": 0.0, "delta": 0.01, "critical_value": 2.969, "rejection": 0.2501}
+  {"rho_max": 0.5, "true_rho": 0.0, "delta": 0.02, "critical_value": 2.969, "rejection": 0.9046}
+  {"rho_max": 0.5, "true_rho": 0.5, "delta": 0.0, "critical_value": 2.969, "rejection": 0.0096}
+  {"rho_max": 0.5, "true_rho": 0.5, "delta": 0.01, "critical_value": 2.969, "rejection": 0.2841}
+  {"rho_max": 0.5, "true_rho": 0.5, "delta": 0.02, "critical_value": 2.969, "rejection": 0.8811}
+  {"rho_max": 0.9, "true_rho": 0.0, "delta": 0.0, "critical_value": 7.471, "rejection": 0.0}
+  {"rho_max": 0.9, "true_rho": 0.0, "delta": 0.01, "critical_value": 7.471, "rejection": 0.0001}
+  {"rho_max": 0.9, "true_rho": 0.0, "delta": 0.02, "critical_value": 7.471, "rejection": 0.019}
+  {"rho_max": 0.9, "true_rho": 0.9, "delta": 0.0, "critical_value": 7.471, "rejection": 0.0004}
+  {"rho_max": 0.9, "true_rho": 0.9, "delta": 0.01, "critical_value": 7.471, "rejection": 0.0089}
+  {"rho_max": 0.9, "true_rho": 0.9, "delta": 0.02, "critical_value": 7.471, "rejection": 0.1066}
+"S4 selection":
+ "non_identifiability":
+  "A random": {"listed_count_per_period": 10, "mean_listed_increment": -0.0, "block_t_rejection": 0.053}
+  "B signal-selected": {"listed_count_per_period": 10, "mean_listed_increment": 0.059, "block_t_rejection": 1.0}
+ "omission_bounds":
+  {"divergence_bound_d": 0.2, "theta_observed": 0.005, "max_omitted_share_for_sign": 0.0244}
+  {"divergence_bound_d": 0.2, "theta_observed": 0.01, "max_omitted_share_for_sign": 0.0476}
+  {"divergence_bound_d": 0.2, "theta_observed": 0.02, "max_omitted_share_for_sign": 0.0909}
+  {"divergence_bound_d": 0.5, "theta_observed": 0.005, "max_omitted_share_for_sign": 0.0099}
+  {"divergence_bound_d": 0.5, "theta_observed": 0.01, "max_omitted_share_for_sign": 0.0196}
+  {"divergence_bound_d": 0.5, "theta_observed": 0.02, "max_omitted_share_for_sign": 0.0385}
+  {"divergence_bound_d": 1.0, "theta_observed": 0.005, "max_omitted_share_for_sign": 0.005}
+  {"divergence_bound_d": 1.0, "theta_observed": 0.01, "max_omitted_share_for_sign": 0.0099}
+  {"divergence_bound_d": 1.0, "theta_observed": 0.02, "max_omitted_share_for_sign": 0.0196}
+"S5 conjunction":
+ {"marginal_power": 0.8, "correlation": 0.0, "J": 1, "iut_joint_power": 0.801, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.0, "J": 3, "iut_joint_power": 0.5107, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.0, "J": 6, "iut_joint_power": 0.2645, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.5, "J": 1, "iut_joint_power": 0.7996, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.5, "J": 3, "iut_joint_power": 0.6114, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.5, "J": 6, "iut_joint_power": 0.4763, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.9, "J": 1, "iut_joint_power": 0.8001, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.9, "J": 3, "iut_joint_power": 0.7217, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.8, "correlation": 0.9, "J": 6, "iut_joint_power": 0.6777, "fixed_sequence_first_claim_power": 0.8}
+ {"marginal_power": 0.9, "correlation": 0.0, "J": 1, "iut_joint_power": 0.8996, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.0, "J": 3, "iut_joint_power": 0.7286, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.0, "J": 6, "iut_joint_power": 0.531, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.5, "J": 1, "iut_joint_power": 0.8999, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.5, "J": 3, "iut_joint_power": 0.7817, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.5, "J": 6, "iut_joint_power": 0.6805, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.9, "J": 1, "iut_joint_power": 0.9007, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.9, "J": 3, "iut_joint_power": 0.851, "fixed_sequence_first_claim_power": 0.9}
+ {"marginal_power": 0.9, "correlation": 0.9, "J": 6, "iut_joint_power": 0.8181, "fixed_sequence_first_claim_power": 0.9}
 ```

@@ -38,7 +38,7 @@ MATRIX = Path('research/16-reconciliation-matrix.md')
 SPEC = Path('research/17-phase1-amended-specification.md')
 README = Path('research/README.md')
 HERE = Path(__file__).resolve().parent
-MARKERS = {'reconciliation_probes.py': 'probe'}
+MARKERS = {'reconciliation_probes.py': 'probe', 'reassessment_sims.py': 'reassessment'}
 MARKERS.update({f'round{n}_checks.py': f'round{n}' for n in range(2, 100)})
 INVENTORY = HERE / 'inventory.txt'
 
