@@ -199,6 +199,7 @@ def test_forecast_submission_refusals_rc87_rc96_rc109_rc75(registry: Registratio
     with pytest.raises(Refusal) as refusal:  # T-06 slot case: the second record for one slot is refused
         registry.submit_forecast(forecast("E-1", point=0.7))
     assert refusal.value.reason == "slot_occupied"
+    clock.set(day(41))
     stored = registry.forecasts_of("E-1")
     assert len(stored) == 1 and stored[0].forecast.point == 0.3 and stored[0].receipt == day(21)
 
@@ -253,12 +254,13 @@ def test_m1_binding_register_and_beacon_seed(registry: RegistrationRegistry, led
         registry.seed_of("cal-1")  # no draw before the round
     assert registry.claim_status("claim-1") == "exploratory"
     registry.anchor_confirmatory_register(ConfirmatoryRegister("reg-1", 1, ("claim-1",)))
-    assert registry.claim_status("claim-1") == "confirmatory"
+    assert registry.claim_status("claim-1") == "exploratory"  # listed, but the register is not anchored yet
     with pytest.raises(Refusal) as refusal:
         registry.anchor_confirmatory_register(ConfirmatoryRegister("reg-2", 2, ("claim-1",)))
     assert refusal.value.reason == "register_immutable"
     clock.set(day(11))
     ledger.anchor()
+    assert registry.claim_status("claim-1") == "confirmatory"
     with pytest.raises(Refusal) as early:  # the named round published before the anchor
         registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(10.5)))
     assert early.value.reason == "round_before_anchor"

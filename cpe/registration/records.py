@@ -57,6 +57,7 @@ class CandidateEntry:
 
 
 _CLUSTER_KEYS = frozenset({"cluster", "events", "arm_versions", "baseline_arm_id"})
+FULL_ARM_ID = "FULL"  # the composite arm every registration pre-registers (``17`` arms; the FULL slot is never absent)
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,8 @@ class ClusterRegistration:
                 raise Refusal("invalid_cluster", f"{spec.event_id} names cluster {spec.cluster_id}")
         if self.baseline_arm_id not in self.arm_versions:
             raise Refusal("invalid_cluster", "the baseline arm must be among the pre-registered arms")
+        if FULL_ARM_ID not in self.arm_versions:
+            raise Refusal("invalid_cluster", f"the {FULL_ARM_ID} arm is mandatory in every registration")
 
     @classmethod
     def from_payload(cls, payload: object) -> ClusterRegistration:
@@ -192,6 +195,8 @@ class ClaimPreregistration:
     def __post_init__(self) -> None:
         if self.period_start >= self.period_end:
             raise Refusal("invalid_window", "period_start must precede period_end")
+        if self.question_set_fixed_at >= self.period_start:
+            raise Refusal("invalid_window", "the question set is fixed before the evaluation period starts")
         if len(self.validity_class_ids) != len(self.family_order):
             raise Refusal("invalid_family", "one validity class per fixed-sequence component (RC-295)")
 

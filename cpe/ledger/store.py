@@ -77,8 +77,14 @@ class Ledger:
         return replace(self._state, kinds=dict(self._state.kinds))
 
     def now(self) -> datetime:
-        """The server clock, the only time a registry may persist as its own (RC-02)."""
-        return self._clock.now()
+        """The server clock, the only time a registry may persist as its own (RC-02); refused, like a receipt,
+        when it is below the high-water mark of receipts and anchors, so a read gate never moves backwards."""
+        moment = self._clock.now()
+        stamp = format_timestamp(moment)
+        high_water = max(self._state.high_water, self._anchor_high_water)
+        if stamp < high_water:
+            raise Refusal("clock_rollback", f"server clock {stamp} is below the high-water mark {high_water}")
+        return moment
 
     def state_digest(self) -> str:
         return self._state.digest()

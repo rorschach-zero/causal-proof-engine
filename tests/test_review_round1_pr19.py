@@ -136,27 +136,31 @@ def test_4329369281_an_early_forecast_does_not_occupy_the_slot(tmp_path: Path) -
     r.submit_forecast(forecast("E-1", point=0.1))
     clock.set(day(21))
     r.submit_forecast(forecast("E-1", point=0.3))
-    states = {s.arm_id: s for s in r.slot_states("E-1")}
-    assert states["FULL"].status == "filled" and states["FULL"].value == 0.3
-    assert [f.forecast.point for f in r.forecasts_of("E-1")] == [0.1, 0.3]
+    assert {s.arm_id: s.status for s in r.slot_states("E-1")}["FULL"] == "filled"
     with pytest.raises(Refusal) as refused:
         r.submit_forecast(forecast("E-1", point=0.5))
     assert refused.value.reason == "slot_occupied"
+    clock.set(day(41))
+    states = {s.arm_id: s for s in r.slot_states("E-1")}
+    assert states["FULL"].status == "filled" and states["FULL"].value == 0.3
+    assert [f.forecast.point for f in r.forecasts_of("E-1")] == [0.1, 0.3]
 
 
 def test_4329369319_colons_in_identifiers_do_not_collide(tmp_path: Path) -> None:
     clock = ManualClock(day(1))
     r = RegistrationRegistry(Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore()))
-    for version, cutoff in (("A:B-1", "2026-01-05"), ("A-1", "2026-01-05"), ("DESIGN_C-1", "2026-01-01")):
+    for version, cutoff in (("A:B-1", "2026-01-05"), ("A-1", "2026-01-05"), ("DESIGN_C-1", "2026-01-01"),
+                            ("FULL-1", "2026-01-03")):
         r.register_arm_version(arm(version, cutoff))
     r.commit_base_rate(BaseRate("RC-1", 0.2))
     r.log_candidate(CandidateEntry("cand-E-7", "E-7", "src", day(1), "registered", "ok"))
     clock.set(day(10))
     r.register_cluster(registration([spec("E-7", "C-7", slots=["C", "B:C"])], "C-7",
-                                    arms={"A:B": "A:B-1", "A": "A-1", "DESIGN_C": "DESIGN_C-1"}))
+                                    arms={"A:B": "A:B-1", "A": "A-1", "DESIGN_C": "DESIGN_C-1", "FULL": "FULL-1"}))
     clock.set(day(21))
     r.submit_forecast(forecast("E-7", arm_id="A:B", version="A:B-1", slot="C"))
     r.submit_forecast(forecast("E-7", arm_id="A", version="A-1", slot="B:C"))
+    clock.set(day(41))
     assert len(r.forecasts_of("E-7")) == 2
 
 

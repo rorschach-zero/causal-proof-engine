@@ -1,5 +1,6 @@
 """The pre-registration registry on the ledger. State is rebuilt from the ledger on every operation; every time
-comes from the ledger's clock; every read-decide-write runs under one lock."""
+comes from the ledger's clock; every write names the chain head it was decided on, so a decision no longer valid
+against a record another writer admitted in between is recomputed, never committed."""
 from __future__ import annotations
 
 import threading
@@ -8,10 +9,11 @@ from dataclasses import dataclass, field, replace
 from datetime import datetime
 from typing import Literal
 
-from cpe.canonical import digest_of
+from cpe.canonical import JsonValue, digest_of
 from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
+from cpe.ledger.record import GENESIS_HASH
 from cpe.registration.records import (
     BaseRate,
     BeaconOutput,
@@ -40,6 +42,7 @@ KIND_CALIBRATION = "calibration_record"
 KIND_BEACON = "beacon_output"
 
 SlotStatus = Literal["filled", "open", "abstention", "baseline"]
+Write = tuple[str, str, JsonValue]
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -68,7 +71,7 @@ class ReceivedForecast:
 
 @dataclass
 class _State:
-    head: str = ""
+    head: str = GENESIS_HASH
     arm_versions: dict[str, ArmVersion] = field(default_factory=dict)
     withdrawn: set[str] = field(default_factory=set)
     registrations_under: dict[str, int] = field(default_factory=dict)
@@ -156,28 +159,42 @@ class RegistrationRegistry:
     def __init__(self, ledger: Ledger) -> None:
         self._ledger = ledger
         self._lock = threading.RLock()
-        self.before_write: Callable[[], None] | None = None  # test hook, run between the snapshot and the write
+        self.before_write: Callable[[], None] | None = None  # test hook, run between the decision and the write
 
     def state(self) -> _State:
         return replay_state(self._ledger.records())
 
-    def _run_hook(self) -> None:
-        if self.before_write is not None:
-            hook, self.before_write = self.before_write, None
-            hook()
+    def _write(self, decide: Callable[[_State, datetime], Write]) -> Record:
+        """One read-decide-write: ``decide`` validates against a snapshot and names the record to append; the
+        append is made against the snapshot's chain head, and a head that moved (another writer on the same
+        ledger, this registry or another) refuses the append, so the decision is recomputed on the new state."""
+        with self._lock:
+            for _ in range(8):
+                state = self.state()
+                now = self._ledger.now()
+                kind, record_id, payload = decide(state, now)
+                if self.before_write is not None:
+                    hook, self.before_write = self.before_write, None
+                    hook()
+                try:
+                    return self._ledger.append(kind, record_id, payload, expected_head=state.head)
+                except Refusal as refusal:
+                    if refusal.reason != "stale_head":
+                        raise
+            raise Refusal("contended", "the ledger kept advancing while the record was being decided")
 
     # arm versions -------------------------------------------------------------------------------------------
 
     def register_arm_version(self, version: ArmVersion) -> Record:
-        with self._lock:
-            state = self.state()
+        def decide(state: _State, now: datetime) -> Write:
             if version.arm_version_id in state.arm_versions:
                 raise Refusal("arm_version_immutable", f"{version.arm_version_id} is already registered")
             for consumed in version.consumes:
                 if consumed not in state.arm_versions:
                     raise Refusal("unknown_arm_version", f"{version.arm_version_id} consumes unregistered {consumed}")
-            return self._ledger.append(KIND_ARM_VERSION, _ledger_id("arm-version", version.arm_version_id),
-                                       version.to_payload())
+            return KIND_ARM_VERSION, _ledger_id("arm-version", version.arm_version_id), version.to_payload()
+
+        return self._write(decide)
 
     def arm_version(self, version_id: str) -> ArmVersion:
         """The version as registered, with any correction made before its first registration applied."""
@@ -191,29 +208,33 @@ class RegistrationRegistry:
         version: before the first registration the correction amends the version's declared cutoff and evidence
         in place; after it, the version is withdrawn from further registrations and the claim consequence
         (RC-150) is item 3's."""
-        with self._lock:
-            state = self.state()
+        registered_under = False
+
+        def decide(state: _State, now: datetime) -> Write:
+            nonlocal registered_under
             if correction.arm_version_id not in state.arm_versions:
                 raise Refusal("unknown_arm_version", correction.arm_version_id)
             if correction.arm_version_id in state.withdrawn:
                 raise Refusal("arm_version_withdrawn", f"{correction.arm_version_id} is already withdrawn")
             registered_under = state.registrations_under.get(correction.arm_version_id, 0) > 0
-            record = self._ledger.append(
-                KIND_CUTOFF_CORRECTION,
-                _ledger_id("cutoff-correction", correction.arm_version_id, correction.evidence_id),
-                correction.to_payload())
-            return record, registered_under
+            return (KIND_CUTOFF_CORRECTION,
+                    _ledger_id("cutoff-correction", correction.arm_version_id, correction.evidence_id),
+                    correction.to_payload())
+
+        record = self._write(decide)
+        return record, registered_under
 
     # candidate log ------------------------------------------------------------------------------------------
 
     def log_candidate(self, entry: CandidateEntry) -> Record:
-        with self._lock:
-            state = self.state()
+        def decide(state: _State, now: datetime) -> Write:
             if entry.event_id in state.forecasts_by_event:
                 raise Refusal("candidate_after_forecast", f"a forecast on {entry.event_id} already exists (RC-78)")
             if entry.event_id in state.candidate_by_event:
                 raise Refusal("candidate_exists", f"{entry.event_id} is already in the candidate log")
-            return self._ledger.append(KIND_CANDIDATE, _ledger_id("candidate", entry.candidate_id), entry.to_payload())
+            return KIND_CANDIDATE, _ledger_id("candidate", entry.candidate_id), entry.to_payload()
+
+        return self._write(decide)
 
     def candidate_counts(self) -> dict[str, dict[str, int]]:
         counts: dict[str, dict[str, int]] = {}
@@ -225,51 +246,50 @@ class RegistrationRegistry:
     # clusters and events ------------------------------------------------------------------------------------
 
     def commit_base_rate(self, rate: BaseRate) -> Record:
-        with self._lock:
-            if rate.reference_class_id in self.state().base_rates:
+        def decide(state: _State, now: datetime) -> Write:
+            if rate.reference_class_id in state.base_rates:
                 raise Refusal("base_rate_immutable", f"{rate.reference_class_id} already has a committed base rate")
-            return self._ledger.append(KIND_BASE_RATE, _ledger_id("base-rate", rate.reference_class_id), rate.to_payload())
+            return KIND_BASE_RATE, _ledger_id("base-rate", rate.reference_class_id), rate.to_payload()
+
+        return self._write(decide)
 
     def register_cluster(self, registration: ClusterRegistration) -> Record:
         """Write the registration record, admitted against the ledger clock: the same server time becomes the
         record's receipt (RC-87, RC-138)."""
-        with self._lock:
-            return self._register_cluster(registration)
-
-    def _register_cluster(self, registration: ClusterRegistration) -> Record:
-        state = self.state()
-        now = self._ledger.now()
-        cluster_id = registration.cluster.cluster_id
-        if cluster_id in state.clusters:
-            raise Refusal("cluster_immutable", f"{cluster_id} is already registered (RC-66)")
-        for spec in registration.events:
-            candidate = state.candidate_by_event.get(spec.event_id)
-            if candidate is None:
-                raise Refusal("no_candidate_entry", f"{spec.event_id} has no prior candidate entry (RC-78)")
-            if candidate.decision != "registered":
-                raise Refusal("candidate_not_registered", f"{spec.event_id} was {candidate.decision}")
-            if spec.event_id in state.events:
-                raise Refusal("event_registered", f"{spec.event_id} is already a member of {state.event_cluster[spec.event_id]}")
-            if now >= spec.earliest_knowable_bound:
-                raise Refusal("registration_after_e_i", f"the registration record would follow e_i of {spec.event_id} (RC-138)")
-            if spec.issuance_open < now:
-                raise Refusal("issuance_before_registration", f"{spec.event_id}'s issuance window opens before the registration record (RC-87)")
-            if spec.reference_class_id not in state.base_rates:
-                raise Refusal("no_base_rate", f"{spec.event_id}'s reference class has no committed base rate (RC-109)")
-        for arm_id, version_id in registration.arm_versions.items():
-            version = state.arm_versions.get(version_id)
-            if version is None:
-                raise Refusal("unknown_arm_version", f"arm {arm_id} names unregistered {version_id}")
-            if version.arm_id != arm_id:
-                raise Refusal("arm_mismatch", f"{version_id} is a version of arm {version.arm_id}, not of {arm_id}")
-            if version_id in state.withdrawn:
-                raise Refusal("arm_version_withdrawn", f"{version_id} is withdrawn from registrations (RC-150)")
-            cutoff = effective_cutoff(version_id, state.arm_versions)
+        def decide(state: _State, now: datetime) -> Write:
+            cluster_id = registration.cluster.cluster_id
+            if cluster_id in state.clusters:
+                raise Refusal("cluster_immutable", f"{cluster_id} is already registered (RC-66)")
             for spec in registration.events:
-                if spec.earliest_knowable_bound.date() <= cutoff:
-                    raise Refusal("cutoff_after_e_i", f"{spec.event_id}: e_i is not after the effective cutoff "
-                                  f"{cutoff.isoformat()} of arm {arm_id} (RC-138)")
-        return self._ledger.append(KIND_CLUSTER, _ledger_id("cluster", cluster_id), registration.to_payload())
+                candidate = state.candidate_by_event.get(spec.event_id)
+                if candidate is None:
+                    raise Refusal("no_candidate_entry", f"{spec.event_id} has no prior candidate entry (RC-78)")
+                if candidate.decision != "registered":
+                    raise Refusal("candidate_not_registered", f"{spec.event_id} was {candidate.decision}")
+                if spec.event_id in state.events:
+                    raise Refusal("event_registered", f"{spec.event_id} is already a member of {state.event_cluster[spec.event_id]}")
+                if now >= spec.earliest_knowable_bound:
+                    raise Refusal("registration_after_e_i", f"the registration record would follow e_i of {spec.event_id} (RC-138)")
+                if spec.issuance_open < now:
+                    raise Refusal("issuance_before_registration", f"{spec.event_id}'s issuance window opens before the registration record (RC-87)")
+                if spec.reference_class_id not in state.base_rates:
+                    raise Refusal("no_base_rate", f"{spec.event_id}'s reference class has no committed base rate (RC-109)")
+            for arm_id, version_id in registration.arm_versions.items():
+                version = state.arm_versions.get(version_id)
+                if version is None:
+                    raise Refusal("unknown_arm_version", f"arm {arm_id} names unregistered {version_id}")
+                if version.arm_id != arm_id:
+                    raise Refusal("arm_mismatch", f"{version_id} is a version of arm {version.arm_id}, not of {arm_id}")
+                if version_id in state.withdrawn:
+                    raise Refusal("arm_version_withdrawn", f"{version_id} is withdrawn from registrations (RC-150)")
+                cutoff = effective_cutoff(version_id, state.arm_versions)
+                for spec in registration.events:
+                    if spec.earliest_knowable_bound.date() <= cutoff:
+                        raise Refusal("cutoff_after_e_i", f"{spec.event_id}: e_i is not after the effective cutoff "
+                                      f"{cutoff.isoformat()} of arm {arm_id} (RC-138)")
+            return KIND_CLUSTER, _ledger_id("cluster", cluster_id), registration.to_payload()
+
+        return self._write(decide)
 
     def event(self, event_id: str) -> EventSpec:
         spec = self.state().events.get(event_id)
@@ -279,61 +299,74 @@ class RegistrationRegistry:
 
     def request_void(self, request: VoidRequest) -> Record:
         """Logged with its receipt time; it changes no state (RC-85, RC-87)."""
-        with self._lock:
-            if request.event_id not in self.state().events:
+        def decide(state: _State, now: datetime) -> Write:
+            if request.event_id not in state.events:
                 raise Refusal("unknown_event", f"{request.event_id} is not registered")
-            return self._ledger.append(KIND_VOID_REQUEST, _ledger_id("void-request", request.request_id),
-                                       request.to_payload())
+            return KIND_VOID_REQUEST, _ledger_id("void-request", request.request_id), request.to_payload()
+
+        return self._write(decide)
 
     # forecasts ----------------------------------------------------------------------------------------------
 
     def submit_forecast(self, forecast: Forecast) -> Record:
-        """Admit a forecast. A receipt inside the issuance window fills its (event, arm, slot); one outside the
-        window is kept, labelled by its receipt, and fills nothing (RC-75, RC-87)."""
-        with self._lock:
-            return self._submit_forecast(forecast)
+        """Admit a forecast, validated in full as its payload will be replayed. A receipt inside the issuance
+        window fills its (event, arm, slot); one outside the window is kept, labelled by its receipt, and fills
+        nothing (RC-75, RC-87)."""
+        forecast = Forecast.from_payload(forecast.to_payload())
 
-    def _submit_forecast(self, forecast: Forecast) -> Record:
-        state = self.state()
-        spec = state.events.get(forecast.event_id)
-        if spec is None:
-            raise Refusal("before_registration", f"{forecast.event_id} has no registration record (RC-87)")
-        registration = state.clusters[state.event_cluster[forecast.event_id]]
-        if forecast.arm_id == registration.baseline_arm_id:
-            raise Refusal("baseline_not_submittable", "the baseline slot is computed from the committed base rate (RC-109)")
-        expected_version = registration.arm_versions.get(forecast.arm_id)
-        if expected_version is None:
-            raise Refusal("unknown_arm", f"arm {forecast.arm_id} is not pre-registered for {forecast.event_id}")
-        if forecast.arm_version_id != expected_version:
-            raise Refusal("wrong_arm_version", f"{forecast.arm_id} is pre-registered as {expected_version} (RC-96)")
-        if forecast.slot_id not in spec.scoring_slots:
-            raise Refusal("unknown_slot", f"{forecast.slot_id} is not a slot of {forecast.event_id} (RC-89)")
-        key = (forecast.event_id, forecast.arm_id, forecast.slot_id)
-        if key in state.forecasts:
-            raise Refusal("slot_occupied", f"slot {forecast.slot_id} of {forecast.arm_id} on {forecast.event_id} is filled (RC-75)")
-        record_id = _ledger_id("forecast", forecast.event_id, forecast.arm_id, forecast.slot_id,
-                               str(state.submissions.get(key, 0) + 1))
-        return self._ledger.append(KIND_FORECAST, record_id, forecast.to_payload())
+        def decide(state: _State, now: datetime) -> Write:
+            spec = state.events.get(forecast.event_id)
+            if spec is None:
+                raise Refusal("before_registration", f"{forecast.event_id} has no registration record (RC-87)")
+            registration = state.clusters[state.event_cluster[forecast.event_id]]
+            if forecast.arm_id == registration.baseline_arm_id:
+                raise Refusal("baseline_not_submittable", "the baseline slot is computed from the committed base rate (RC-109)")
+            expected_version = registration.arm_versions.get(forecast.arm_id)
+            if expected_version is None:
+                raise Refusal("unknown_arm", f"arm {forecast.arm_id} is not pre-registered for {forecast.event_id}")
+            if forecast.arm_version_id != expected_version:
+                raise Refusal("wrong_arm_version", f"{forecast.arm_id} is pre-registered as {expected_version} (RC-96)")
+            if forecast.slot_id not in spec.scoring_slots:
+                raise Refusal("unknown_slot", f"{forecast.slot_id} is not a slot of {forecast.event_id} (RC-89)")
+            key = (forecast.event_id, forecast.arm_id, forecast.slot_id)
+            if key in state.forecasts:
+                raise Refusal("slot_occupied", f"slot {forecast.slot_id} of {forecast.arm_id} on {forecast.event_id} is filled (RC-75)")
+            record_id = _ledger_id("forecast", forecast.event_id, forecast.arm_id, forecast.slot_id,
+                                   str(state.submissions.get(key, 0) + 1))
+            return KIND_FORECAST, record_id, forecast.to_payload()
+
+        return self._write(decide)
+
+    def _closed(self, spec: EventSpec, now: datetime) -> bool:
+        """Submissions are eligible up to and including the close; reads open strictly after it, so no read can
+        precede a submission at the same server time."""
+        return now > spec.issuance_close
 
     def forecasts_of(self, event_id: str) -> tuple[ReceivedForecast, ...]:
-        return tuple(self.state().forecasts_by_event.get(event_id, ()))
+        """The event's forecasts, every one with its receipt; sealed until the issuance window has closed, so that
+        no arm reads another's forecast while it can still submit (RC-109)."""
+        state = self.state()
+        spec = state.events.get(event_id)
+        if spec is None:
+            raise Refusal("unknown_event", f"{event_id} is not registered")
+        if not self._closed(spec, self._ledger.now()):
+            raise Refusal("read_before_close", "forecasts are sealed until the issuance window has closed (RC-109)")
+        return tuple(state.forecasts_by_event.get(event_id, ()))
 
     def forecasts_for_baseline(self, event_id: str) -> tuple[ReceivedForecast, ...]:
         """The baseline process may read the arms' forecasts only after the issuance close (RC-109)."""
-        spec = self.event(event_id)
-        if self._ledger.now() < spec.issuance_close:
-            raise Refusal("read_before_close", "the baseline process reads no forecast before the issuance close (RC-109)")
         return self.forecasts_of(event_id)
 
     def slot_states(self, event_id: str) -> tuple[SlotState, ...]:
         """Every (arm, slot) of the event at the ledger clock: filled, open, or, after the issuance close, an
-        abstention; the baseline slot carries the committed base rate (RC-109; ``18`` M-5 slot state)."""
+        abstention; a filled slot's value is shown only after the close; the baseline slot carries the committed
+        base rate (RC-109; ``18`` M-5 slot state)."""
         state = self.state()
         spec = state.events.get(event_id)
         if spec is None:
             raise Refusal("unknown_event", f"{event_id} is not registered")
         registration = state.clusters[state.event_cluster[event_id]]
-        closed = self._ledger.now() >= spec.issuance_close
+        closed = self._closed(spec, self._ledger.now())
         states: list[SlotState] = []
         for arm_id in sorted(registration.arm_versions):
             for slot_id in spec.scoring_slots:
@@ -342,7 +375,8 @@ class RegistrationRegistry:
                     continue
                 received = state.forecasts.get((event_id, arm_id, slot_id))
                 if received is not None:
-                    states.append(SlotState(event_id, arm_id, slot_id, "filled", received.record_id, received.forecast.point))
+                    states.append(SlotState(event_id, arm_id, slot_id, "filled", received.record_id,
+                                            received.forecast.point if closed else None))
                 else:  # a submission outside the window never fills the slot; it is kept as a labelled forecast
                     states.append(SlotState(event_id, arm_id, slot_id, "abstention" if closed else "open"))
         return tuple(states)
@@ -350,52 +384,59 @@ class RegistrationRegistry:
     # claims, register, calibration --------------------------------------------------------------------------
 
     def register_claim(self, claim: ClaimPreregistration) -> Record:
-        """A claim is recorded before its evaluation period begins; its fields are then fixed (``18`` M-8)."""
-        with self._lock:
-            state = self.state()
+        """A claim is recorded after its question set is fixed and before its evaluation period begins; its
+        fields are then fixed (``18`` M-8)."""
+        def decide(state: _State, now: datetime) -> Write:
             if claim.population_kind != "fixed_question_set":
                 raise Refusal("non_confirmatory_population", "a population that is a source listing is not Q (18 M-8)")
             if claim.claim_id in state.claims:
                 raise Refusal("claim_immutable", f"{claim.claim_id} is already registered")
-            if self._ledger.now() >= claim.period_start:
+            if now >= claim.period_start:
                 raise Refusal("late_claim", f"{claim.claim_id}: the claim must be recorded before its period starts")
-            return self._ledger.append(KIND_CLAIM, _ledger_id("claim", claim.claim_id), claim.to_payload())
+            if claim.question_set_fixed_at > now:
+                raise Refusal("question_set_not_fixed", f"{claim.claim_id}: the question set is fixed before the claim is recorded")
+            return KIND_CLAIM, _ledger_id("claim", claim.claim_id), claim.to_payload()
+
+        return self._write(decide)
 
     def anchor_confirmatory_register(self, register: ConfirmatoryRegister) -> Record:
-        """Phase 1's one register, written once, before any beacon output exists, naming registered claims only
-        (RC-311, RC-315). The write names the chain head it was decided on, so two concurrent writers cannot
-        both succeed."""
-        with self._lock:
-            for _ in range(8):
-                state = self.state()
-                if state.register is not None:
-                    raise Refusal("register_immutable", "Phase 1 has one confirmatory register; a second or an amendment confers nothing")
-                if state.beacon_outputs:
-                    raise Refusal("register_after_beacon", "the register must be anchored before the beacon round of any calibration record")
-                for claim_id in register.confirmatory_claim_ids:
-                    if claim_id not in state.claims:
-                        raise Refusal("unknown_claim", f"the register names {claim_id}, which has no pre-registration")
-                self._run_hook()
-                try:
-                    return self._ledger.append(KIND_REGISTER, _ledger_id("register"), register.to_payload(),
-                                               expected_head=state.head)
-                except Refusal as refusal:
-                    if refusal.reason not in ("stale_head", "duplicate_record_id"):
-                        raise
-            raise Refusal("contended", "the ledger kept advancing while the register was being written")
+        """Phase 1's one register, written once, before any beacon output exists and before the evaluation period
+        of every claim it lists, naming registered claims only (RC-311, RC-315)."""
+        def decide(state: _State, now: datetime) -> Write:
+            if state.register is not None:
+                raise Refusal("register_immutable", "Phase 1 has one confirmatory register; a second or an amendment confers nothing")
+            if state.beacon_outputs:
+                raise Refusal("register_after_beacon", "the register must be anchored before the beacon round of any calibration record")
+            for claim_id in register.confirmatory_claim_ids:
+                claim = state.claims.get(claim_id)
+                if claim is None:
+                    raise Refusal("unknown_claim", f"the register names {claim_id}, which has no pre-registration")
+                if now >= claim.period_start:
+                    raise Refusal("register_after_period_start", f"the register must precede the evaluation period of {claim_id}")
+            return KIND_REGISTER, _ledger_id("register"), register.to_payload()
+
+        try:
+            return self._write(decide)
+        except Refusal as refusal:
+            if refusal.reason == "duplicate_record_id":
+                raise Refusal("register_immutable", "Phase 1 has one confirmatory register") from None
+            raise
 
     def claim_status(self, claim_id: str) -> Literal["confirmatory", "exploratory"]:
+        """Confirmatory once the one register lists the claim and an anchor covers the register's record."""
         state = self.state()
         if claim_id not in state.claims:
             raise Refusal("unknown_claim", claim_id)
-        if state.register is not None and claim_id in state.register.confirmatory_claim_ids:
+        if (state.register is not None and state.register_seq is not None
+                and claim_id in state.register.confirmatory_claim_ids
+                and self._anchor_time_covering(state.register_seq) is not None):
             return "confirmatory"
         return "exploratory"
 
     def record_calibration(self, calibration: CalibrationRecord) -> Record:
-        """One record per claim, bound both ways before any beacon round (RC-304, RC-309)."""
-        with self._lock:
-            state = self.state()
+        """One record per claim, bound both ways, recorded before the claim's evaluation period and before any
+        beacon round (RC-304, RC-309)."""
+        def decide(state: _State, now: datetime) -> Write:
             claim = state.claims.get(calibration.claim_id)
             if claim is None:
                 raise Refusal("unknown_claim", f"{calibration.claim_id} has no pre-registration")
@@ -406,8 +447,12 @@ class RegistrationRegistry:
                 raise Refusal("second_calibration_record", f"{calibration.claim_id} already has its one calibration record")
             if calibration.calibration_record_id in state.calibrations:
                 raise Refusal("calibration_record_exists", calibration.calibration_record_id)
-            return self._ledger.append(KIND_CALIBRATION, _ledger_id("calibration", calibration.calibration_record_id),
-                                       calibration.to_payload())
+            if now >= claim.period_start:
+                raise Refusal("late_calibration", f"{calibration.calibration_record_id}: the calibration is recorded "
+                              "before the claim's evaluation period")
+            return KIND_CALIBRATION, _ledger_id("calibration", calibration.calibration_record_id), calibration.to_payload()
+
+        return self._write(decide)
 
     def _anchor_time_covering(self, seq: int) -> datetime | None:
         for anchor in self._ledger.local_anchors():
@@ -423,8 +468,10 @@ class RegistrationRegistry:
         for the record is refused; the seed is SHA-256(record ‖ value), derived here and never supplied
         (RC-187, RC-304, RC-311).
         """
-        with self._lock:
-            state = self.state()
+        seed = ""
+
+        def decide(state: _State, now: datetime) -> Write:
+            nonlocal seed
             calibration = state.calibrations.get(output.calibration_record_id)
             if calibration is None:
                 raise Refusal("unknown_calibration_record", output.calibration_record_id)
@@ -434,7 +481,7 @@ class RegistrationRegistry:
                 raise Refusal("wrong_beacon", f"the record names beacon {calibration.beacon_id}")
             if calibration.round_id != output.round_id:
                 raise Refusal("wrong_round", f"the record names round {calibration.round_id} of {calibration.beacon_id}")
-            if output.published_at > self._ledger.now():
+            if output.published_at > now:
                 raise Refusal("future_round", "a round is supplied after its publication, never before")
             anchored_at = self._anchor_time_covering(state.calibration_seq[output.calibration_record_id])
             if anchored_at is None or anchored_at >= output.published_at:
@@ -445,8 +492,10 @@ class RegistrationRegistry:
                     raise Refusal("register_not_anchored", "the confirmatory register must be anchored before the round (RC-311)")
             seed = derive_seed(calibration.to_payload(), output.value)
             payload: Payload = {"output": output.to_payload(), "seed": seed}
-            record = self._ledger.append(KIND_BEACON, _ledger_id("beacon", output.calibration_record_id), payload)
-            return record, seed
+            return KIND_BEACON, _ledger_id("beacon", output.calibration_record_id), payload
+
+        record = self._write(decide)
+        return record, seed
 
     def seed_of(self, calibration_record_id: str) -> str:
         seed = self.state().seeds.get(calibration_record_id)
