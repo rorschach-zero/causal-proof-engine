@@ -91,6 +91,10 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 12. `reproduction/`: the reproduction scripts of `16`, one committed file per appendix, with pinned requirements
     and `check_appendix_scripts.py`, which verifies each file byte for byte against its appendix block; evidence
     scripts, not project code.
+13. `19-phase1-handoff.md`: the Phase 1 hand-off written on the delegated decisions of issue #3 comment
+    `6297828986` (OD11 (b), OD1, OD2, OD9a, OD10): exact source SHAs, the requirements of `17` §3 items 1, 2 and 4 to 8
+    retained or retired, the surviving tests and fixtures mapped to `17` and to `18` M-1 to M-9, the open owner
+    fields, the reproduction commands and the no-execution boundary; `PROPOSED`, no code.
 
 Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
 2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.
