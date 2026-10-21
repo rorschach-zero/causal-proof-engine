@@ -457,3 +457,12 @@ One hardening pass, three PRs against `main` at `2122567`, one Codex review each
 
 Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appended below.
 
+### 9.9 Hardening PRs (H1 to H3)
+
+- H1 (PR #27, `dd8af3f`): Codex's review had not returned when this section was written (requested 2026-10-21
+  07:02 UTC, still running at 07:39 UTC). Its findings are listed in PR #27's description and appended here.
+- H2 (PR #28, `336b970`), `4333981363` (P1): remove the reviewer's name from the docstring of
+  `tests/test_hardening_h2.py` as an AI marking. **Not a defect**: naming the review a regression test answers is
+  the provenance `AGENTS.md` §7 requires ("which finding it addresses"); the owner confirmed this reading for the
+  same finding on PR #16 (`4329259263`) and PR #18 (`4329442698`).
+
