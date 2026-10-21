@@ -267,15 +267,19 @@ def _contradicts(received: ReceivedRecord, spec: EventSpec, disposition: Disposi
 
 def earliest_public_occurrence(spec: EventSpec, rule: SourceRule,
                                records: Sequence[ReceivedRecord]) -> tuple[datetime, str] | None:
-    """The earliest occurrence, with its record id, that a record of a public act evidences within the predicate's
-    bounds (from its lower bound to the deadline), timely or late; None when the source's occurrences are not public
-    acts or no record evidences one. An occurrence after the deadline decides nothing and makes nothing knowable
-    (H1 review 4334622008)."""
+    """The earliest occurrence, with its record id, that a record of a public act evidences and that bears on the
+    registered predicate, timely or late; None when the source's occurrences are not public acts or no record
+    evidences one. An occurrence before the predicate's lower bound bears on nothing. On a terminal-falsifier
+    predicate a falsifier after the deadline falsifies nothing and makes nothing knowable (H1 review 4334622008); on
+    a milestone predicate an occurrence after the deadline is itself the evidence of expiry and counts (PR #32 review
+    4335130169)."""
     if not rule.occurrence_is_public_act:
         return None
+    upper = spec.deadline if spec.predicate_kind == "terminal-falsifier" else None
     public = [(r.record.occurrence_time, r.record.record_id) for r in records
               if r.claim(spec) == "occurred" and r.record.occurrence_time is not None
-              and _lower_bound(spec) <= r.record.occurrence_time <= spec.deadline]
+              and _lower_bound(spec) <= r.record.occurrence_time
+              and (upper is None or r.record.occurrence_time <= upper)]
     return min(public) if public else None
 
 
@@ -293,9 +297,9 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     Each receipt lies at or after the time it evidences and at or before ``now``.
 
     ``knowable_at`` is the earliest of the deciding evidence's knowable time and the occurrence time of any record
-    of a public act within the predicate's bounds, timely or late (RC-146 read with RC-88, decided 2026-10-21 on
-    4330044547): the publication partition decides the disposition, which stays immutable, while a public
-    occurrence makes the outcome determinable whenever its record is published."""
+    of a public act that bears on the predicate (``earliest_public_occurrence``), timely or late (RC-146 read with
+    RC-88, decided 2026-10-21 on 4330044547): the publication partition decides the disposition, which stays
+    immutable, while a public occurrence makes the outcome determinable whenever its record is published."""
     receipts = observation_receipts or {}
     held_statuses = status_receipts or {}
     for observation in observations:

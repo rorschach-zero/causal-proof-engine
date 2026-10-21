@@ -120,4 +120,9 @@ def evaluate(predicate: ResolutionPredicate, content: ArchivedContent) -> Claim 
         raise Refusal("invalid_content_structure", f"the record {predicate.record_selector!r} is not a JSON object")
     if predicate.field not in selected:
         return None
-    return "occurred" if comparator(selected[predicate.field], predicate.value) else "not-occurred"
+    try:
+        holds = comparator(selected[predicate.field], predicate.value)
+    except RecursionError:  # values nested deeper than the comparison can walk (4335130178)
+        raise Refusal("nesting_too_deep", f"the values compared under {predicate.record_selector!r}."
+                      f"{predicate.field!r} are nested too deeply to evaluate") from None
+    return "occurred" if holds else "not-occurred"
