@@ -2,7 +2,8 @@
 # in a virtual environment outside the repository, with hash enforcement:
 #   pip install --require-hashes --no-deps -r requirements/dev.txt -r requirements/mutation.txt
 # Every direct and transitive package mutmut needs beyond dev.txt is pinned with every artifact PyPI serves for the
-# pinned version. libcst reads YAML through PyYAML before Python 3.13 and PyYAML-ft on 3.13.
+# pinned version. libcst reads YAML through PyYAML outside the 3.13 series and through PyYAML-ft on 3.13 (its metadata:
+# pyyaml before 3.13, pyyaml-ft on 3.13, pyyaml>=6.0.3 from 3.14).
 # The hashes were read from https://pypi.org/pypi/<name>/<version>/json on 2026-10-21.
 click==8.5.0 \
     --hash=sha256:255bc9599cf7748b4b1a446ccc735421bd08a2ae529a8b88597d3de5664ee360 \
@@ -212,7 +213,7 @@ mutmut==3.8.0 \
 platformdirs==4.13.5 \
     --hash=sha256:05831adf87d392760f4b5c3a0a95579ab5a10b18b9b9bd43680dcb47544788a0 \
     --hash=sha256:53d3ec4280b815c1e0b02edad7f9ee8fda1ba9c0865dd9c2e6e63849ce82fc1e
-PyYAML==6.0.3 ; python_version < "3.13" \
+PyYAML==6.0.3 ; python_version != "3.13" \
     --hash=sha256:00c4bdeba853cc34e7dd471f16b4114f4162dc03e6b7afcc2128711f0eca823c \
     --hash=sha256:0150219816b6a1fa26fb4699fb7daa9caf09eb1999f3b70fb6e786805e80375a \
     --hash=sha256:02893d100e99e03eda1c8fd5c441d8c60103fd175728e23e431db1b589cf5ab3 \
