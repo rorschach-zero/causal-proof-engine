@@ -19,7 +19,9 @@ SHA256_HEX_LENGTH = 64
 ZERO_DIGEST = "0" * SHA256_HEX_LENGTH
 
 
-def _check_json(value: object, path: str) -> None:
+def _check_json(value: object, path: str, active: frozenset[int] = frozenset()) -> None:
+    """Refuse anything that is not plain, finite, acyclic JSON data; ``active`` holds the containers on the current
+    path, so a value that contains itself is a typed refusal rather than a RecursionError."""
     if value is None or isinstance(value, (bool, str)):
         return
     if isinstance(value, int):
@@ -28,15 +30,18 @@ def _check_json(value: object, path: str) -> None:
         if not math.isfinite(value):
             raise Refusal("non_finite_number", f"{path} is {value!r}")
         return
-    if isinstance(value, list):
-        for i, item in enumerate(value):
-            _check_json(item, f"{path}[{i}]")
-        return
-    if isinstance(value, dict):
+    if isinstance(value, (list, dict)):
+        if id(value) in active:
+            raise Refusal("cyclic_value", f"{path} contains itself")
+        inner = active | {id(value)}
+        if isinstance(value, list):
+            for i, item in enumerate(value):
+                _check_json(item, f"{path}[{i}]", inner)
+            return
         for key, item in value.items():
             if not isinstance(key, str):
                 raise Refusal("non_string_key", f"{path} has key {key!r}")
-            _check_json(item, f"{path}.{key}")
+            _check_json(item, f"{path}.{key}", inner)
         return
     raise Refusal("not_json", f"{path} is of type {type(value).__name__}")
 

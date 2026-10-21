@@ -234,14 +234,34 @@ def _contradicts(record: ResolutionRecord, spec: EventSpec, disposition: Disposi
 
 def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedRecord],
                observations: Sequence[AbsenceObservation], statuses: Sequence[SourceStatus], now: datetime,
-               observation_receipts: Mapping[str, datetime] | None = None) -> Adjudication:
+               observation_receipts: Mapping[str, datetime] | None = None,
+               status_receipts: Mapping[SourceStatus, datetime] | None = None) -> Adjudication:
     """Adjudicate one event at ``now`` from what the registry holds. Deterministic in its inputs.
 
     ``statuses`` is the declared status history of the source as the registry held it by finality; the
     declaration in force at logical finality decides whether the failure condition holds (RC-88: a later
     declaration changes nothing). ``observation_receipts`` gives the registry receipt of each observation by id,
-    so that an absence-based disposition records when its deciding evidence entered the registry."""
+    so that an absence-based disposition records when its deciding evidence entered the registry, and
+    ``status_receipts`` does the same for each status, so that a status-decided VOID records the status's receipt.
+    Each receipt lies at or after the time it evidences and at or before ``now``.
+
+    ``knowable_at`` is the earliest of the deciding evidence's knowable time and the occurrence time of any record
+    of a public act within the predicate's bounds, timely or late (RC-146 read with RC-88, decided 2026-10-21 on
+    4330044547): the publication partition decides the disposition, which stays immutable, while a public
+    occurrence makes the outcome determinable whenever its record is published."""
     receipts = observation_receipts or {}
+    held_statuses = status_receipts or {}
+    for observation in observations:
+        receipt = receipts.get(observation.observation_id)
+        if receipt is not None:
+            if receipt < observation.observed_at:
+                raise Refusal("evidence_after_receipt", f"observation {observation.observation_id} received before it was made")
+            if receipt > now:
+                raise Refusal("receipt_after_now", f"observation {observation.observation_id} is received after the adjudication time")
+    for status, receipt in held_statuses.items():
+        if receipt < status.declared_at or receipt > now:
+            raise Refusal("evidence_after_receipt" if receipt < status.declared_at else "receipt_after_now",
+                          f"the status of {status.source_id} declared at {timestamp_payload(status.declared_at)}")
     if rule.source_id != spec.predicate.source:
         raise Refusal("wrong_source", "the rule does not belong to the event's resolution source")
     finality = spec.logical_finality
@@ -272,12 +292,10 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     evidence_receipt = now  # the receipt of the deciding evidence; the adjudication time when none decides
     deciding: ReceivedRecord | None = None
     incidents: list[Incident] = []
-    for received in timely:
-        decision = _decide(received, spec, rule)
-        if decision is not None:
-            disposition, knowable, basis = decision
-            deciding = received
-            break
+    decided = [(decision, received) for received in timely if (decision := _decide(received, spec, rule)) is not None]
+    if decided:  # among timely deciding records, the one that made the outcome determinable first (RC-146)
+        (disposition, knowable, basis), deciding = min(
+            decided, key=lambda d: (d[0][1], d[1].publication(rule), d[1].record.record_id))
 
     if deciding is not None:
         if deciding.receipt > finality or deciding.record.first_observed_at > finality:
@@ -308,6 +326,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
                     break
         if status_at_finality is not None and status_at_finality.failed:
             disposition, knowable, basis = "VOID", finality, "source rule failure condition met"
+            evidence_receipt = held_statuses.get(status_at_finality, now)
         elif absence_at is not None:
             disposition = "RESOLVED_NO" if spec.predicate_kind == "milestone-deadline" else "RESOLVED_YES"
             knowable, basis = finality, absence_basis
@@ -333,6 +352,11 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     if disposition not in FINAL:
         return Adjudication(spec.event_id, "OPEN", None, None, basis, None)
     assert knowable is not None
+    if rule.occurrence_is_public_act:
+        public = [r.record.occurrence_time for r in records
+                  if r.record.claim == "occurred" and r.record.occurrence_time is not None
+                  and r.record.occurrence_time >= _lower_bound(spec)]
+        knowable = min([knowable, *[t for t in public if t is not None]])
     timestamps = ResolutionTimestamps(
         receipt=deciding.receipt if deciding is not None else evidence_receipt,
         occurrence=deciding.record.occurrence_time if deciding is not None else None,

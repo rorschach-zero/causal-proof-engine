@@ -187,7 +187,8 @@ class RegistrationRegistry:
     def state(self) -> _State:
         return replay_state(self._ledger.records())
 
-    def _write(self, decide: Callable[[_State, datetime], Write]) -> Record:
+    def _write(self, decide: Callable[[_State, datetime], Write],
+               admit: Callable[[datetime], None] | None = None) -> Record:
         """One read-decide-write: ``decide`` validates against a snapshot and names the record to append; the
         append is made against the snapshot's chain head, and a head that moved (another writer on the same
         ledger, this registry or another) refuses the append, so the decision is recomputed on the new state."""
@@ -200,7 +201,7 @@ class RegistrationRegistry:
                     hook, self.before_write = self.before_write, None
                     hook()
                 try:
-                    return self._ledger.append(kind, record_id, payload, expected_head=state.head)
+                    return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit)
                 except Refusal as refusal:
                     if refusal.reason != "stale_head":
                         raise
@@ -254,17 +255,22 @@ class RegistrationRegistry:
     # candidate log ------------------------------------------------------------------------------------------
 
     def log_candidate(self, entry: CandidateEntry) -> Record:
+        entry = CandidateEntry.from_payload(entry.to_payload())  # validated in full, a naive time is a Refusal
+
         def decide(state: _State, now: datetime) -> Write:
             if entry.event_id in state.forecasts_by_event:
                 raise Refusal("candidate_after_forecast", f"a forecast on {entry.event_id} already exists (RC-78)")
             if entry.event_id in state.candidate_by_event:
                 raise Refusal("candidate_exists", f"{entry.event_id} is already in the candidate log")
-            if entry.listed_at > now:
-                raise Refusal("future_listing", f"{entry.candidate_id} is listed after the ledger clock; a listing "
-                              "time is at or before the entry's receipt (RC-78)")
+            future(now)
             return KIND_CANDIDATE, _ledger_id("candidate", entry.candidate_id), entry.to_payload()
 
-        return self._write(decide)
+        def future(receipt: datetime) -> None:
+            if entry.listed_at > receipt:
+                raise Refusal("future_listing", f"{entry.candidate_id} is listed after its receipt; a listing time is "
+                              "at or before the entry's receipt (RC-78)")
+
+        return self._write(decide, admit=future)  # checked again against the receipt the append assigns
 
     def candidate_counts(self) -> dict[str, dict[str, int]]:
         counts: dict[str, dict[str, int]] = {}

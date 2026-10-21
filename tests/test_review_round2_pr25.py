@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from cpe.capability import CapabilityGate, ManualTimeSource
-from cpe.capability.records import KIND_ABORT
+from cpe.capability.records import KIND_CHECK
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from tests.test_capability import ENV, OWNER, RELEASE, TOLERANCE, Rig, issue
@@ -72,5 +72,6 @@ def test_4333434011_expiry_is_checked_against_the_appended_receipt_time(rig: Rig
     time.pause = timedelta(seconds=0.75)  # below the slew tolerance of 1 second
     assert rig.refused(a) == "expired"
     state = rig.gate.state()
-    assert state.level == "RESEARCH_ONLY" and not state.commits and len(state.aborted) == 1
-    assert [r.kind for r in rig.ledger.records()][-1] == KIND_ABORT
+    assert state.level == "RESEARCH_ONLY" and not state.commits and not state.intents  # refused at the receipt
+    last = rig.ledger.records()[-1]  # since H1: the ledger refuses the intent at its receipt; the check is persisted
+    assert last.kind == KIND_CHECK and isinstance(last.payload, dict) and last.payload["reason"] == "expired"
