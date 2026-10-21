@@ -72,19 +72,21 @@ class IntentRecord:
 
 @dataclass(frozen=True)
 class AbortRecord:
-    """An intent that will never take effect: its nonce stays consumed (RC-153, RC-197)."""
+    """An intent that will never take effect: its nonce stays consumed (RC-153, RC-197). An abort is a
+    clock-dependent check like any other, so it carries its reading (RC-65)."""
 
     intent_id: str
     reason: str
+    reading: ClockReading
 
     @classmethod
     def from_payload(cls, payload: object) -> AbortRecord:
         m = require_mapping(payload, "AbortRecord")
-        require_keys(m, "AbortRecord", frozenset({"intent_id", "reason"}), frozenset())
-        return cls(require_identifier(m["intent_id"], "intent_id"), str(m["reason"]))
+        require_keys(m, "AbortRecord", frozenset({"intent_id", "reason", "reading"}), frozenset())
+        return cls(require_identifier(m["intent_id"], "intent_id"), str(m["reason"]), ClockReading.from_payload(m["reading"]))
 
     def to_payload(self) -> Payload:
-        return {"intent_id": self.intent_id, "reason": self.reason}
+        return {"intent_id": self.intent_id, "reason": self.reason, "reading": self.reading.to_payload()}
 
 
 @dataclass(frozen=True)

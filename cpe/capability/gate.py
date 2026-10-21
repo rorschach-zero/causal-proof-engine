@@ -10,6 +10,7 @@ rotated at every process start, at every demotion and at every clock discontinui
 from __future__ import annotations
 
 import logging
+import math
 import secrets
 import threading
 from collections.abc import Callable
@@ -18,7 +19,7 @@ from datetime import datetime
 from typing import Literal
 
 from cpe.canonical import JsonValue, digest_of
-from cpe.capability.levels import permits, promotion_target
+from cpe.capability.levels import ACTIONS, permits, promotion_target, rank
 from cpe.capability.records import (
     KIND_ABORT,
     KIND_CHECK,
@@ -66,8 +67,8 @@ class CapabilityGate:
 
     def __init__(self, ledger: Ledger, verifier: Verifier, time_source: TimeSource, environment: str,
                  release_digest: str, slew_tolerance_seconds: float) -> None:
-        if slew_tolerance_seconds <= 0:
-            raise Refusal("invalid_tolerance", "the slew tolerance is a positive number of seconds (owner field)")
+        if not math.isfinite(slew_tolerance_seconds) or slew_tolerance_seconds <= 0:  # NaN or inf would disable RC-73, RC-100
+            raise Refusal("invalid_tolerance", "the slew tolerance is a finite positive number of seconds (owner field)")
         self._ledger = ledger
         self._verifier = verifier
         self._time = time_source
@@ -108,20 +109,26 @@ class CapabilityGate:
             raise Refusal("contended", "the ledger kept advancing while the record was being decided")
 
     def _try_anchor(self) -> Anchor | None:
+        """An anchor attempt; any failure of the store or its transport is an unconfirmed anchor (the ledger keeps
+        the attempt pending, PR #20). Only process-termination exceptions (``BaseException`` outside
+        ``Exception``) escape."""
         try:
             return self._ledger.anchor()
-        except Refusal as refusal:
-            log.warning("anchor not confirmed: %s", refusal)
+        except Exception as error:
+            log.warning("anchor not confirmed: %r", error)
             return None
 
     # clock ----------------------------------------------------------------------------------------------------
+
+    def _raw_reading(self, now: datetime) -> ClockReading:
+        return ClockReading(now, self._time.monotonic(), self._time.boot_id())
 
     def _reading(self, state: GateState, now: datetime) -> ClockReading:
         """The reading of this check. The wall time is the ledger's server clock, already refused below the
         high-water mark (RC-37, RC-65). A boot-id change, or a wall-minus-monotonic offset that differs from the
         epoch baseline by more than the tolerance, is an unverifiable discontinuity: the epoch is rotated at once,
         which invalidates every outstanding capability until the owner signs for the new epoch (RC-73, RC-100)."""
-        reading = ClockReading(now, self._time.monotonic(), self._time.boot_id())
+        reading = self._raw_reading(now)
         base = state.baseline
         if base is not None:
             detail = ""
@@ -142,7 +149,7 @@ class CapabilityGate:
         """Persist the rotation (and the floor) in one writer transaction, then anchor it; an anchor failure never
         rolls it back: the gate stays demoted-unanchored until ``anchor_epoch`` succeeds (RC-103, RC-123)."""
         def decide(state: GateState, now: datetime) -> Write:
-            reading = baseline if baseline is not None else ClockReading(now, self._time.monotonic(), self._time.boot_id())
+            reading = baseline if baseline is not None else self._raw_reading(now)
             # the identifier is random (not a secret): unique across restores, which a counter is not (RC-123)
             record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading)
             return KIND_EPOCH, _ledger_id("gate-epoch", str(record.index), str(record.epoch)), record.to_payload()
@@ -184,7 +191,9 @@ class CapabilityGate:
         def decide(state: GateState, now: datetime) -> Write:
             nonlocal verdict
             reading = self._reading(state, now)
-            if state.epoch_unanchored:
+            if action not in ACTIONS:
+                verdict = ("refused", "unknown_action")
+            elif state.epoch_unanchored:
                 verdict = ("refused", "epoch_unanchored")
             elif not permits(state.level, action):
                 verdict = ("refused", "level_insufficient")
@@ -220,6 +229,8 @@ class CapabilityGate:
             return "epoch_unanchored"
         if self._intent_id(capability) in state.intents:
             return "nonce_consumed"
+        if rank(promotion_target(capability.capability)) <= rank(state.level):
+            return "not_a_promotion"  # a lowering goes through ``demote``, which rotates the epoch (RC-103)
         return None
 
     @staticmethod
@@ -229,8 +240,12 @@ class CapabilityGate:
         return _ledger_id("gate-intent", str(capability.epoch), capability.nonce)
 
     def _abort(self, intent_id: str, reason: str) -> Record:
+        """Append the abort of a pending intent with its reading. The reading is taken without the discontinuity
+        test: an abort only settles a consumed nonce and authorises nothing, and it must be writable right after
+        a discontinuity has rotated the epoch."""
         def decide(state: GateState, now: datetime) -> Write:
-            return KIND_ABORT, _ledger_id("gate-abort", intent_id), AbortRecord(intent_id, reason).to_payload()
+            record = AbortRecord(intent_id, reason, self._raw_reading(now))
+            return KIND_ABORT, _ledger_id("gate-abort", intent_id), record.to_payload()
 
         return self._append(decide)
 
@@ -276,11 +291,17 @@ class CapabilityGate:
                 if state.epoch != stored.capability.epoch or state.epoch_seq is None \
                         or state.epoch_seq > state.intent_seq[intent_id]:
                     aborted = "epoch rotated since the intent (RC-197)"
-                    return KIND_ABORT, _ledger_id("gate-abort", intent_id), AbortRecord(intent_id, aborted).to_payload()
+                    record_abort = AbortRecord(intent_id, aborted, reading)
+                    return KIND_ABORT, _ledger_id("gate-abort", intent_id), record_abort.to_payload()
                 record = CommitRecord(intent_id, intent_anchor.prefix_length, intent_anchor.digest, reading)
                 return KIND_COMMIT, _ledger_id("gate-commit", intent_id), record.to_payload()
 
-            self._append(commit)
+            try:
+                self._append(commit)
+            except Refusal as step3:
+                if step3.reason == "clock_discontinuity":  # the epoch has rotated: settle the consumed nonce now
+                    self._abort(intent_id, f"clock discontinuity at step 3: {step3.detail}")
+                raise
             if aborted is not None:
                 raise Refusal("superseded", aborted)
             self._hook("after_commit_record")
