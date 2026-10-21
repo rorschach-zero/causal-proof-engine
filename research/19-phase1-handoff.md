@@ -81,7 +81,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Late-record budget η_max, the η close of the registration window and its replay (RC-164, RC-171, RC-188, RC-193), calibration at α − η_max, decision date T_D = T_A + D and monitor factors at H_k + D (RC-149, RC-157), the Phase 2 late-record measurement | with item 3 | the A3 calibration over N is replaced by the calibration over 𝓛 (`18` §6 "Replace" 2); what survives of T_D and D is the amendment's to state |
 | Outcome-blind enrolment T_E (RC-219, RC-220), pre-enrolment breach audit against resolution records (RC-223, RC-244, RC-246), supply-exogeneity hypothesis and screen (RC-228 to RC-241) | retired | `18` F5: the audit adds no identification once Q is the universe; `18` §6 "Replace" 1 retires the screen; Q is fixed before forecasting |
 | Resolution rules (RC-11, RC-71): occurrence-time rule, YES needs evidence of timely occurrence, VOID when a YES has no time, `EXPIRED_NO` needs evidence | retained | OD1: resolution-rule registry |
-| Point-in-time store and as-of read interface (RC-79, RC-86) | gated: OD9a | `17` A0 and item 1 ("built only after OD9a, with T-15"); the Phase 1 brief builds it after the OD9a wording is merged into `AGENTS.md` |
+| Point-in-time store and as-of read interface (RC-79, RC-86) | retained (OD9a applied 2026-10-21, PR #30) | `17` A0 and item 1 ("built only after OD9a, with T-15"); the OD9a wording was merged into `AGENTS.md` by PR #30 (issue #3 comment `6312263652`). Built by the PR "Point-in-time store and T-15" (2026-10-21): rows on the ledger, an as-of reader bound to the forecast's evidence cutoff, the RC-86 latest-vintage semantics; its readings are in §5 |
 | Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | retained: a separate component, after the hardening PRs (decided 2026-10-21) | first recorded here as gated on OD9a; PR #24 review finding `4330128184` showed that OD9a governs the as-of feature store and the leak controls, not the archive of resolution bytes. Decided by the owner's delegate on 2026-10-21 (§9.5, corrected after `4334268792`, §9.9): the resolution-content archive (the archived source bytes of each resolution record, content-addressed, with the evaluator over selector, field, comparator and value) is its own component, not gated on OD9a, and is scheduled independently of the point-in-time feature store, which stays gated on the OD9a wording. Until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it. **Built** by the PR "Resolution-content archive and predicate evaluation" (2026-10-21): every resolution record names its archived content by SHA-256, the claim is evaluated from that content and a disagreeing claim is refused; the readings it makes are listed in §5 |
 
 ### 3.2 Item 2, ledger and registry
@@ -130,7 +130,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | T-12 | A3 / A6 | retired | the calibrated c* over N, its families and controls | M-1 to M-4, M-7 |
 | T-13 | A6 | retired | the IUT | M-6 |
 | T-14 | A6 | with item 3 | α-spending ledger (item 3 lists it; OD3) | — |
-| T-15 | A6 | gated: OD9a | as-of interface cases (a) to (d), oracle (e) on F-25, leak detector | — |
+| T-15 | A6 | retained (OD9a applied, PR #30) | as-of interface cases (a) to (d), oracle (e) on F-25, the leak detector's positive control with the shuffled-label null distribution reported | — |
 | T-16 | A6 | retired | power of the retired primary and IUT | M-4 |
 | T-17 | A1 / A3 | retained in part | membership mutation refused at every stage; registration refused when the record follows e_i (RC-138); registration-breach classification (RC-139, RC-168); VOID requests after registration logged and inert (RC-57, RC-85, RC-87); t*_k over all members; replay of refusals; increment, λ, cap and emission clauses are with item 3 | — |
 | T-19 | A1 / A3 | retained in part | merge or VOID citing a dependence refused, declaration defect logged; the archive-linkage sensitivity clause (RC-216) is retired | — |
@@ -155,7 +155,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | F-02a to F-02e | retained | all five dispositions; the F-02c box-rule clause is with item 3 |
 | F-24 | retained in part | pre-declared VOID members outside the population and in the audit (A, B); adjudication from both late records with both requests in the VOID audit (C); adjudicated VOID at finality under a failed source (D, E); t*_k exclusion (F); empty FULL slot recorded as an abstention, member without a committed base rate refused, baseline submission and pre-close read refused (G); the request at 0.5 changes no state; emission, cap and imputation clauses are with item 3 |
 | F-27 | retained in part | registration refusals against the arm version record and e_i; breach classification; correction before the first registration replaces the version; own-cutoff forecast refused; composite effective cutoff (RC-156); box-rule and non-confirmatory clauses are with item 3 |
-| F-25 | gated: OD9a | as-of oracle (T-15) |
+| F-25 | retained (OD9a applied, PR #30) | as-of oracle (T-15) |
 | F-12 | gated: OD10 | error context canary (T-34) |
 | F-11 | Phase 7 | unchanged (RC-42) |
 | F-14, F-17, F-18 | open | n_eff, correlation weights, constant bias (item 4 beyond validation) |
@@ -165,7 +165,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Item 6 controls not listed as fixtures: truncated and suffix-rehashed ledgers, simultaneous ledger-and-anchor replacement, clock rollback, cluster membership mutation, concurrent submissions and concurrent presentation of one capability, replayed, forged, expired, wrong-environment and wrong-release capabilities, NaN, reversed and out-of-range inputs | retained | T-06, T-07, T-17, T-18, T-26, T-30, T-31, T-35 |
 | Partial-cluster update attempts (λ recomputed after a partial resolution) | with item 3 | T-17 increment clauses |
 | Valid-null, clustered-null and interleaved-null e-process generators | with item 3 | T-10, T-11 |
-| Forbidden-future-information leak detector | gated: OD9a | T-15 second line |
+| Forbidden-future-information leak detector | retained (OD9a applied, PR #30) | T-15 second line; its positive control (an injected-outcome feature) only |
 | Secret canaries in logs, structured errors and the reachable exception graph | gated: OD10 | T-34 |
 
 ### 4.3 `18` §7 M-1 to M-9: what of each is Phase 1
@@ -246,6 +246,18 @@ Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
     to content is the same question as PR #18's `4329838021` above.
 - **Not assigned by OD1 (§3.1 to §4.1):** the fusion pool and n_eff (T-23, T-24, F-14, F-17, F-18); the
   nested-chain identity (T-21); the source withdrawal rule of RC-169; the SIM-phase clause of T-33.
+- **Readings of the point-in-time store (PR "Point-in-time store and T-15", 2026-10-21), for the owner (none
+  chosen as specification):**
+  - *Availability is attested.* A row's `available_at` is the ingest's attestation, bounded only by the ledger
+    receipt; historical vintages ingested later keep their past `available_at`. A false attestation is the leak the
+    interface cannot see and the detector of T-15 is for.
+  - *Refusal without disclosure.* A vintage not available at the cutoff and an unknown vintage are refused with the
+    same reason, so that a refusal does not reveal a later vintage.
+  - *Ties.* Two vintages of one observation with the same `available_at` are ordered by vintage id. `17` names
+    no tie rule.
+  - *Leak detector.* The statistic is the mean shuffled-label Brier score minus the observed Brier score, flagged
+    above a bound. The bound, the permutation count and the seed are pre-registered values that no owner field
+    names yet; the T-15 test fixes 0.05, 200 and one seed for its fixture only.
 - **Branch base:** this document is written on `8d5dbb9` (R9), while the decision comment reads `62d4c2a` (R8);
   `17` is identical at both and the R9 change is carried (§1); `main` at `b2e6cbf` contains `8d5dbb9`.
 
