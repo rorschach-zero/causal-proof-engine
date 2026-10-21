@@ -13,6 +13,9 @@ Pure functions over schema objects. Assumptions, each from ``17`` section 3 item
 - Absence at finality is evidenced by an archived read at or after F showing no record, or, under the
   monotone-publication condition, by the earliest matching record published after F (RC-113). With neither, the
   member stays OPEN; under the source's failure condition it is VOID.
+- What a record claims is derived from its archived content by the registered predicate, never taken from the
+  caller: a record whose content is not the one it names, whose content holds no evidence, or whose stated claim
+  disagrees with the evaluation is refused (PR #18 finding 4329664953).
 """
 from __future__ import annotations
 
@@ -21,7 +24,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, cast
 
-from cpe.adjudication.records import AbsenceObservation, ResolutionRecord, SourceRule, SourceStatus
+from cpe.adjudication.content import ArchivedContent
+from cpe.adjudication.predicate import evaluate
+from cpe.adjudication.records import AbsenceObservation, Claim, ResolutionRecord, SourceRule, SourceStatus
 from cpe.errors import Refusal
 from cpe.schemas.common import Payload, optional_timestamp, require_identifier, require_keys, require_mapping, timestamp_payload
 from cpe.schemas.event import EventSpec, ResolutionTimestamps
@@ -34,10 +39,15 @@ INCIDENT_KINDS: tuple[str, ...] = ("receipt_lag", "observer_outage", "late_publi
 
 @dataclass(frozen=True)
 class ReceivedRecord:
-    """A source record with the registry's server receipt time."""
+    """A source record with the registry's server receipt time and the archived content it names."""
 
     record: ResolutionRecord
     receipt: datetime
+    content: ArchivedContent
+
+    def claim(self, spec: EventSpec) -> Claim:
+        """The claim the archived content supports under the event's registered predicate."""
+        return check_record_content(self, spec)
 
     def publication(self, rule: SourceRule) -> datetime:
         """The evidenced publication time, or the observer's read time for a source that evidences none."""
@@ -159,6 +169,27 @@ def check_record_is_final_enough(record: ResolutionRecord, spec: EventSpec, rule
             raise Refusal("not_final", f"{record.record_id}: a NO before the deadline is not logically final")
 
 
+def check_record_content(received: ReceivedRecord, spec: EventSpec) -> Claim:
+    """Evaluate the registered predicate over the record's archived content and return the claim it supports.
+
+    Refused: content other than the one the record names, content of another source, content holding no evidence
+    (a selector or field that matches nothing is not a NO), and a stated claim the evaluation contradicts."""
+    record, content = received.record, received.content
+    if content.sha256 != record.content_digest:
+        raise Refusal("content_mismatch", f"{record.record_id} names content {record.content_digest}, not "
+                      f"{content.sha256}")
+    if content.source_id != record.source_id:
+        raise Refusal("wrong_source", f"{record.record_id}: the content is from {content.source_id}")
+    evaluated = evaluate(spec.predicate, content)
+    if evaluated is None:
+        raise Refusal("no_evidence", f"{record.record_id}: the archived content matches no record and field of the "
+                      "registered predicate")
+    if evaluated != record.claim:
+        raise Refusal("claim_disagrees", f"{record.record_id} states {record.claim!r}, the archived content "
+                      f"evaluates to {evaluated!r}")
+    return evaluated
+
+
 def check_record_chronology(received: ReceivedRecord) -> None:
     """Evidence cannot postdate the trusted receipt of the record that carries it."""
     record = received.record
@@ -194,8 +225,9 @@ def _decide(received: ReceivedRecord, spec: EventSpec, rule: SourceRule) -> tupl
     knowable = received.knowable(rule)
     if occurrence is not None and occurrence < _lower_bound(spec):
         return None
+    claim = received.claim(spec)
     if spec.predicate_kind == "milestone-deadline":
-        if record.claim == "occurred":
+        if claim == "occurred":
             if occurrence is not None:
                 if occurrence <= spec.deadline:
                     return "RESOLVED_YES", knowable, "timely occurrence evidenced"
@@ -206,7 +238,7 @@ def _decide(received: ReceivedRecord, spec: EventSpec, rule: SourceRule) -> tupl
         if record.definitive:
             return "EXPIRED_NO", published, "definitive non-occurrence evidenced"
         return None
-    if record.claim != "occurred":
+    if claim != "occurred":
         return None
     if occurrence is None:
         if record.lateness_evidence:
@@ -217,10 +249,11 @@ def _decide(received: ReceivedRecord, spec: EventSpec, rule: SourceRule) -> tupl
     return None
 
 
-def _contradicts(record: ResolutionRecord, spec: EventSpec, disposition: Disposition) -> bool:
+def _contradicts(received: ReceivedRecord, spec: EventSpec, disposition: Disposition) -> bool:
     """A late report of a timely occurrence contradicts a final NO, EXPIRED_NO or VOID on a milestone predicate,
     and a late timely falsifier contradicts a final YES on a terminal-falsifier predicate."""
-    if record.claim != "occurred":
+    record = received.record
+    if received.claim(spec) != "occurred":
         return False
     occurrence = record.occurrence_time
     if occurrence is None:
@@ -268,6 +301,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     for received in records:
         if received.record.event_id != spec.event_id:
             raise Refusal("wrong_event", f"{received.record.record_id} concerns {received.record.event_id}")
+        check_record_content(received, spec)
         check_record_is_final_enough(received.record, spec, rule)
         check_record_chronology(received)
         if received.receipt > now:
@@ -345,7 +379,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     defects: list[Defect] = []
     if disposition in FINAL:
         for received in late:
-            if _contradicts(received.record, spec, disposition):
+            if _contradicts(received, spec, disposition):
                 defects.append(Defect(received.record.record_id, "report of timely occurrence published after "
                                                                  "finality; the disposition stands (RC-88)"))
 
@@ -354,7 +388,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     assert knowable is not None
     if rule.occurrence_is_public_act:
         public = [r.record.occurrence_time for r in records
-                  if r.record.claim == "occurred" and r.record.occurrence_time is not None
+                  if r.claim(spec) == "occurred" and r.record.occurrence_time is not None
                   and r.record.occurrence_time >= _lower_bound(spec)]
         knowable = min([knowable, *[t for t in public if t is not None]])
     timestamps = ResolutionTimestamps(

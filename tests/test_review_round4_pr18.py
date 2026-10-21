@@ -11,7 +11,7 @@ from cpe.adjudication import adjudicate
 from cpe.adjudication.registry import KIND_DEFECT
 from cpe.canonical import JsonValue
 from cpe.ledger import Ledger, Record
-from tests.test_adjudication import day, observation, record, rule, spec
+from tests.test_adjudication import day, observation, record, rule, spec, submit
 from tests.test_review_round2_pr18 import registry
 
 
@@ -36,7 +36,7 @@ def test_4329838030_a_retry_after_the_disposition_commit_adds_no_duplicate_defec
     reg, clock, ledger = registry(tmp_path, 110)
     reg.submit_observation(observation(110))
     clock.set(day(120))
-    reg.submit_record(record("late", occurrence=90, published=115, observed=115).record)
+    submit(reg, record("late", occurrence=90, published=115, observed=115))
     original = ledger.append
 
     def dies_on_the_first_defect_row(kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,

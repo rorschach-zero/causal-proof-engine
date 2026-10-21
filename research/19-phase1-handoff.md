@@ -82,7 +82,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Outcome-blind enrolment T_E (RC-219, RC-220), pre-enrolment breach audit against resolution records (RC-223, RC-244, RC-246), supply-exogeneity hypothesis and screen (RC-228 to RC-241) | retired | `18` F5: the audit adds no identification once Q is the universe; `18` §6 "Replace" 1 retires the screen; Q is fixed before forecasting |
 | Resolution rules (RC-11, RC-71): occurrence-time rule, YES needs evidence of timely occurrence, VOID when a YES has no time, `EXPIRED_NO` needs evidence | retained | OD1: resolution-rule registry |
 | Point-in-time store and as-of read interface (RC-79, RC-86) | gated: OD9a | `17` A0 and item 1 ("built only after OD9a, with T-15"); the Phase 1 brief builds it after the OD9a wording is merged into `AGENTS.md` |
-| Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | retained: a separate component, after the hardening PRs (decided 2026-10-21) | first recorded here as gated on OD9a; PR #24 review finding `4330128184` showed that OD9a governs the as-of feature store and the leak controls, not the archive of resolution bytes. Decided by the owner's delegate on 2026-10-21 (§9.5, corrected after `4334268792`, §9.9): the resolution-content archive (the archived source bytes of each resolution record, content-addressed, with the evaluator over selector, field, comparator and value) is its own component, not gated on OD9a, and is scheduled independently of the point-in-time feature store, which stays gated on the OD9a wording. Until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it |
+| Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | retained: a separate component, after the hardening PRs (decided 2026-10-21) | first recorded here as gated on OD9a; PR #24 review finding `4330128184` showed that OD9a governs the as-of feature store and the leak controls, not the archive of resolution bytes. Decided by the owner's delegate on 2026-10-21 (§9.5, corrected after `4334268792`, §9.9): the resolution-content archive (the archived source bytes of each resolution record, content-addressed, with the evaluator over selector, field, comparator and value) is its own component, not gated on OD9a, and is scheduled independently of the point-in-time feature store, which stays gated on the OD9a wording. Until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it. **Built** by the PR "Resolution-content archive and predicate evaluation" (2026-10-21): every resolution record names its archived content by SHA-256, the claim is evaluated from that content and a disagreeing claim is refused; the readings it makes are listed in §5 |
 
 ### 3.2 Item 2, ledger and registry
 
@@ -226,6 +226,24 @@ Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
     triaged, so that a stale record with the right `event_id` cannot make an issuance issuable; `17` names the
     field but not the input bundle it is taken over (the research outputs, the evidence, or the prompt). Once the
     bundle is defined, the fix in `cpe/validation/issuance.py` is one expected-digest argument and one comparison.
+- **Readings of the resolution-content archive (PR "Resolution-content archive and predicate evaluation",
+  2026-10-21), for the owner (none chosen as specification; each is what the code does until the owner says
+  otherwise):**
+  - *Content model.* Archived content is a JSON object keyed by the source's record keys; `record_selector` names
+    one key and `field` one key of the selected record. `17` §3 item 1 names the predicate's parts but no content
+    model; a per-source model is plausibly an OD5 field.
+  - *Media type and byte form.* One media type, `application/json`, in the canonical byte form of
+    `cpe/canonical.py`. A source's own bytes are rarely in that form, so the archive holds a normalisation the
+    observer attests, not the source's raw bytes; whether raw bytes must be archived beside it is open.
+  - *Claim only.* The evaluation derives the claim. The occurrence time, the evidenced publication time, lateness
+    and definitive non-occurrence stay the observer's attestation: the registered predicate names no field for
+    them.
+  - *One digest, one read.* The same bytes archived again with another source or `available_at` are refused, so two
+    reads with identical bytes cannot both be archived under one digest.
+  - *`available_at`.* It is bounded by the archive's receipt only; no order against the record's
+    `first_observed_at` or evidenced publication time is enforced.
+  - *Absence.* An `AbsenceObservation` names no archived content; `17` calls it "an archived read", and binding it
+    to content is the same question as PR #18's `4329838021` above.
 - **Not assigned by OD1 (§3.1 to §4.1):** the fusion pool and n_eff (T-23, T-24, F-14, F-17, F-18); the
   nested-chain identity (T-21); the source withdrawal rule of RC-169; the SIM-phase clause of T-33.
 - **Branch base:** this document is written on `8d5dbb9` (R9), while the decision comment reads `62d4c2a` (R8);

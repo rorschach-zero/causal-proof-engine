@@ -1,4 +1,5 @@
-"""The adjudication registry on the ledger: records in, immutable dispositions out, state by replay."""
+"""The adjudication registry on the ledger: archived content and records in, immutable dispositions out, state by
+replay."""
 from __future__ import annotations
 
 import threading
@@ -6,6 +7,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime
 
+from cpe.adjudication.content import ArchivedContent
 from cpe.adjudication.records import AbsenceObservation, ResolutionRecord, SourceRule, SourceStatus
 from cpe.adjudication.rules import (
     FINAL,
@@ -15,6 +17,7 @@ from cpe.adjudication.rules import (
     ReceivedRecord,
     adjudicate,
     check_record_chronology,
+    check_record_content,
     check_record_is_final_enough,
 )
 from cpe.canonical import digest_of
@@ -31,8 +34,9 @@ KIND_STATUS = "source_status"
 KIND_DISPOSITION = "disposition"
 KIND_DEFECT = "source_latency_defect"
 KIND_INCIDENT = "integrity_incident"
+KIND_CONTENT = "resolution_content"
 KINDS: frozenset[str] = frozenset({KIND_EVENT, KIND_RULE, KIND_RECORD, KIND_OBSERVATION, KIND_STATUS, KIND_DISPOSITION,
-                                   KIND_DEFECT, KIND_INCIDENT})
+                                   KIND_DEFECT, KIND_INCIDENT, KIND_CONTENT})
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -57,6 +61,7 @@ class _State:
     rules: dict[str, SourceRule] = field(default_factory=dict)
     status: dict[str, list[tuple[SourceStatus, datetime]]] = field(default_factory=dict)  # with the receipt
     events: dict[str, _EventState] = field(default_factory=dict)
+    contents: dict[str, tuple[ArchivedContent, datetime]] = field(default_factory=dict)  # by SHA-256, with receipt
 
     def event(self, event_id: str) -> _EventState:
         return self.events.setdefault(event_id, _EventState())
@@ -77,10 +82,17 @@ def replay_state(records: tuple[Record, ...]) -> _State:
         elif record.kind == KIND_RULE:
             rule = SourceRule.from_payload(payload)
             state.rules[rule.source_id] = rule
+        elif record.kind == KIND_CONTENT:
+            content = ArchivedContent.from_payload(payload)
+            state.contents[content.sha256] = (content, parse_timestamp(record.receipt_time, "receipt_time"))
         elif record.kind == KIND_RECORD:
             resolution = ResolutionRecord.from_payload(payload)
+            archived = state.contents.get(resolution.content_digest)
+            if archived is None:
+                raise Refusal("unknown_content", f"{resolution.record_id} names content the ledger does not hold "
+                              "before it")
             state.event(resolution.event_id).records.append(
-                ReceivedRecord(resolution, parse_timestamp(record.receipt_time, "receipt_time")))
+                ReceivedRecord(resolution, parse_timestamp(record.receipt_time, "receipt_time"), archived[0]))
         elif record.kind == KIND_OBSERVATION:
             observation = AbsenceObservation.from_payload(payload)
             event = state.event(observation.event_id)
@@ -156,17 +168,45 @@ class AdjudicationRegistry:
                 return
             self._ledger.append(KIND_RULE, _ledger_id("rule", rule.source_id), rule.to_payload())
 
+    def archive_content(self, content: ArchivedContent) -> Record:
+        """Archive source bytes under their SHA-256, with the ledger's receipt time. The content is an attested
+        input; nothing is fetched. The same bytes with the same attestation are archived once; the same bytes with
+        another attestation are refused, so that one digest names one archived read."""
+        with self._lock:
+            state = self.state()
+            if content.source_id not in state.rules:
+                raise Refusal("unknown_source", f"{content.source_id} has no registered source rule (OD5)")
+            existing = state.contents.get(content.sha256)
+            if existing is not None:
+                if existing[0] != content:
+                    raise Refusal("content_conflict", f"content {content.sha256} is archived with another "
+                                  "attestation")
+                return next(r for r in self._ledger.records() if r.record_id == _ledger_id("content", content.sha256))
+
+            def admit(receipt: datetime) -> None:
+                if content.available_at > receipt:
+                    raise Refusal("evidence_after_receipt", f"content {content.sha256} is available after its receipt")
+            return self._ledger.append(KIND_CONTENT, _ledger_id("content", content.sha256), content.to_payload(),
+                                       admit=admit)
+
     def submit_record(self, record: ResolutionRecord) -> Record:
+        """Admit a record that names archived content; the content must evaluate, under the registered predicate,
+        to the claim the record states."""
         with self._lock:
             state = self.state()
             spec = self._spec(state, record.event_id)
             rule = state.rules.get(record.source_id)
             if rule is None:
                 raise Refusal("unknown_source", f"{record.source_id} has no registered source rule (OD5)")
+            archived = state.contents.get(record.content_digest)
+            if archived is None:
+                raise Refusal("unknown_content", f"{record.record_id}: content {record.content_digest} is not archived")
+            received = ReceivedRecord(record, self._ledger.now(), archived[0])
+            check_record_content(received, spec)
             check_record_is_final_enough(record, spec, rule)
             if rule.publishes_evidenced_times and record.evidenced_publication_time is None:
                 raise Refusal("missing_publication_time", f"{record.record_id}: the source evidences publication times")
-            check_record_chronology(ReceivedRecord(record, self._ledger.now()))
+            check_record_chronology(received)
             return self._ledger.append(KIND_RECORD, _ledger_id("record", record.record_id), record.to_payload())
 
     def submit_observation(self, observation: AbsenceObservation) -> Record:

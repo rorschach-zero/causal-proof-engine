@@ -9,8 +9,10 @@ from pathlib import Path
 import pytest
 
 from cpe.adjudication import (
+    MEDIA_TYPE_JSON,
     AbsenceObservation,
     AdjudicationRegistry,
+    ArchivedContent,
     ResolutionRecord,
     SourceRule,
     SourceStatus,
@@ -20,6 +22,7 @@ from cpe.adjudication import (
     cluster_knowable_time,
 )
 from cpe.adjudication.rules import ReceivedRecord
+from cpe.canonical import canonical_bytes, sha256_hex
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
@@ -55,16 +58,30 @@ def spec(kind: str = "milestone-deadline", event_id: str = "E", deadline: float 
     return EventSpec.from_payload(payload)
 
 
+def archived(claim: str = "occurred", source: str = "src") -> ArchivedContent:
+    """Archived source content on which the predicate of ``spec`` (record ``sel``, field ``f``, ``eq`` true)
+    evaluates to ``claim``; attested available at day 0, so that it can be archived at any later receipt."""
+    content = canonical_bytes({"sel": {"f": claim == "occurred"}})
+    return ArchivedContent(content, sha256_hex(content), MEDIA_TYPE_JSON, source, day(0))
+
+
+def submit(registry: AdjudicationRegistry, received: ReceivedRecord) -> None:
+    """Archive the record's content, then submit the record, as an observer would."""
+    registry.archive_content(received.content)
+    registry.submit_record(received.record)
+
+
 def record(record_id: str, claim: str = "occurred", occurrence: float | None = None, published: float | None = None,
            observed: float | None = None, received: float | None = None, lateness: bool = False,
            definitive: bool = False, event_id: str = "E") -> ReceivedRecord:
     seen = observed if observed is not None else (published if published is not None else 0.0)
+    content = archived(claim)
     rec = ResolutionRecord(record_id, event_id, "src", claim,  # type: ignore[arg-type]
-                           first_observed_at=day(seen),
+                           first_observed_at=day(seen), content_digest=content.sha256,
                            occurrence_time=None if occurrence is None else day(occurrence),
                            evidenced_publication_time=None if published is None else day(published),
                            lateness_evidence=lateness, definitive=definitive)
-    return ReceivedRecord(rec, day(received if received is not None else seen))
+    return ReceivedRecord(rec, day(received if received is not None else seen), content)
 
 
 def observation(at: float, event_id: str = "E") -> AbsenceObservation:
@@ -100,7 +117,7 @@ def test_f03_no_before_the_deadline_is_not_final(tmp_path: Path) -> None:
     registry.register_rule(rule())
     registry.register_event(spec())
     with pytest.raises(Refusal) as refused:
-        registry.submit_record(early_no.record)
+        submit(registry, early_no)
     assert refused.value.reason == "not_final"
     definitive = adjudicate(spec(), rule(), [record("r", claim="not-occurred", published=101, definitive=True)], [], [], day(102))
     assert definitive.disposition == "EXPIRED_NO"
@@ -227,14 +244,14 @@ def test_registry_writes_the_disposition_once_and_replays_it(tmp_path: Path) -> 
     registry.register_event(spec())
     clock.set(day(105))
     with pytest.raises(Refusal):
-        registry.submit_record(record("missing-time").record)
+        submit(registry, record("missing-time"))
     assert registry.adjudicate("E").disposition == "OPEN"
     clock.set(day(111))
     registry.submit_observation(observation(110))
     first = registry.adjudicate("E")
     assert first.disposition == "RESOLVED_NO" and first.adjudicated_at == day(111) and first.defects == ()
     clock.set(day(113))
-    registry.submit_record(record("late", occurrence=95, published=112).record)
+    submit(registry, record("late", occurrence=95, published=112))
     again = registry.adjudicate("E")
     assert replace(again, defects=()) == first and [d.record_id for d in again.defects] == ["late"]
     kinds = [r.kind for r in ledger.records()]
@@ -253,6 +270,7 @@ def test_registry_refuses_the_wrong_source_and_event() -> None:
         adjudicate(other, rule(), [], [], [], day(1))
     assert refusal.value.reason == "wrong_source"
     with pytest.raises(Refusal) as from_other:
-        adjudicate(spec(), rule(), [ReceivedRecord(ResolutionRecord("x", "E", "other", "occurred", day(1)), day(1))], [],
-                   [], day(1))
+        content = archived()
+        adjudicate(spec(), rule(), [ReceivedRecord(ResolutionRecord("x", "E", "other", "occurred", day(1), content.sha256),
+                                                   day(1), content)], [], [], day(1))
     assert from_other.value.reason == "wrong_source"

@@ -13,7 +13,7 @@ from cpe.adjudication import AdjudicationRegistry, ResolutionRecord, SourceStatu
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
-from tests.test_adjudication import day, observation, record, rule, spec
+from tests.test_adjudication import day, observation, record, rule, spec, submit
 
 
 def registry(tmp_path: Path, at: float) -> tuple[AdjudicationRegistry, ManualClock, Ledger]:
@@ -42,7 +42,7 @@ def test_4329442661_an_incident_found_after_the_disposition_is_persisted_and_rep
     first = reg.adjudicate("E")
     assert first.disposition == "RESOLVED_NO" and first.incidents == ()
     clock.set(day(113))
-    reg.submit_record(record("r", occurrence=95, published=105).record)
+    submit(reg, record("r", occurrence=95, published=105))
     again = reg.adjudicate("E")
     assert again.disposition == "RESOLVED_NO"
     assert [(i.kind, i.reference_id) for i in again.incidents] == [("receipt_lag", "r")]
@@ -59,7 +59,7 @@ def test_4329442606_an_occurrence_after_the_receipt_is_refused(tmp_path: Path) -
     assert pure.value.reason == "evidence_after_receipt"
     reg, _, _ = registry(tmp_path, 110)
     with pytest.raises(Refusal) as refused:
-        reg.submit_record(record("r", occurrence=120, published=105).record)
+        submit(reg, record("r", occurrence=120, published=105))
     assert refused.value.reason == "evidence_after_receipt"
 
 
@@ -72,7 +72,7 @@ def test_4329442625_a_record_received_after_now_is_refused() -> None:
 def test_4329442739_a_record_id_at_the_identifier_limit_is_admitted(tmp_path: Path) -> None:
     reg, _, ledger = registry(tmp_path, 106)
     long_id = "r" * 256
-    reg.submit_record(record(long_id, occurrence=95, published=105).record)
+    submit(reg, record(long_id, occurrence=95, published=105))
     assert reg.adjudicate("E").deciding_record_id == long_id
     assert all(len(r.record_id) <= 256 for r in ledger.records())
 
@@ -116,13 +116,14 @@ STAMP = day(95).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 ])
 def test_4329442770_an_internally_contradictory_record_is_refused(payload_fields: dict[str, object],
                                                                   fields: dict[str, object]) -> None:
-    payload = {"record_id": "r", "event_id": "E", "source_id": "src",
+    payload = {"record_id": "r", "event_id": "E", "source_id": "src", "content_digest": "0" * 64,
                "first_observed_at": day(1).strftime("%Y-%m-%dT%H:%M:%S.%fZ"), **payload_fields}
     with pytest.raises(Refusal) as refused:
         ResolutionRecord.from_payload(payload)
     assert refused.value.reason == "inconsistent_record"
     with pytest.raises(Refusal):
-        ResolutionRecord("r", "E", "src", first_observed_at=day(1), **fields)  # type: ignore[arg-type]
+        ResolutionRecord("r", "E", "src", first_observed_at=day(1), content_digest="0" * 64,
+                         **fields)  # type: ignore[arg-type]
 
 
 def test_4329442675_the_status_in_force_at_finality_decides(tmp_path: Path) -> None:
