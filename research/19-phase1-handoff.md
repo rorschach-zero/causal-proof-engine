@@ -491,15 +491,20 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
 
 - H1 (PR #27, `dd8af3f`, merged at `5c0cbf6` on green CI and the parent session's verification): Codex's review
   never returned (requested 2026-10-21 07:02 UTC, still "running" at 08:02 UTC). It was not re-requested (one
-  review per hardening PR); a late finding is appended here by whoever reads it.
+  review per hardening PR); a late finding is appended here by whoever reads it. Its review landed at 08:28 UTC on `5c0cbf6`, after the
+  merge (issue #3 comment `6312263652` records the merge before the review as a lapse); its five findings are
+  listed below, assessed 2026-10-21 under the P1 rule of that comment (a P1 is a defect only when reproduced as a
+  failing test). Each reproduction ran on `main` at `8ae935a` from a scratch test outside the repository; none is
+  fixed here.
 - H2 (PR #28, `336b970`), `4333981363` (P1): remove the reviewer's name from the docstring of
   `tests/test_hardening_h2.py` as an AI marking. **Not a defect**: naming the review a regression test answers is
   the provenance `AGENTS.md` §7 requires ("which finding it addresses"); the owner confirmed this reading for the
   same finding on PR #16 (`4329259263`) and PR #18 (`4329442698`).
-- H3 (PR #29, `898ec19`), `4334268788` (P2): the trailer parse requires whitespace after the colon, while git
-  accepts `Tested:Bob` as a trailer, so a prohibited key written without the space passes. **Defect**: accept the
-  form without whitespace (`[ \t]*`), or delegate to `git interpret-trailers --parse`. Not fixed (no fix rounds on
-  the hardening PRs).
+- H3 (PR #29, `898ec19`), `4334268788` (P1; first recorded here as P2, a slip against Codex's badge, corrected
+  2026-10-21): the trailer parse requires whitespace after the colon, while git accepts `Tested:Bob` as a trailer, so
+  a prohibited key written without the space passes. **Defect**. Not fixed in H3 (no fix rounds on the hardening
+  PRs); **fixed** by the follow-up PR "Provenance trailer: whitespace after the colon", which accepts `[ \t]*` before
+  and after the colon, as `git interpret-trailers --parse` does, with `tests/test_review_pr29.py`.
 - H3 (PR #29, `898ec19`), `4334268792` (P1): §3.1 says predicate evaluation is not gated on OD9a but is built
   "together with the point-in-time store", which stays gated on OD9a until its `AGENTS.md` wording is merged; read
   literally, the decision re-gates it. **Specification question for the owner's delegate**: whether the archive of
@@ -507,5 +512,35 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
   scheduled on its own. **Decided by the owner's delegate on 2026-10-21: separable.** The resolution-content
   archive and its evaluator are their own component, not gated on OD9a, scheduled independently of the
   point-in-time feature store, which stays gated on the OD9a wording. §3.1 and §9.8 are corrected accordingly
-  (a correction of the decision text, not a fix round). `4334268788` stays listed for the next code PR that
-  touches `tools/check_provenance.py`.
+  (a correction of the decision text, not a fix round). `4334268788` was listed for the next code PR that
+  touches `tools/check_provenance.py` and is fixed there (above).
+- H1 (PR #27, review on `5c0cbf6`), `4334622008` (P1): the public-act reduction of `knowable_at` takes every
+  public occurrence at or after the predicate's lower bound, including one after the deadline that decides
+  nothing. **Defect, reproduced**: terminal falsifier, deadline 100, finality 110, a public falsifier occurring at
+  105 and published at 106, absence observed at 110: `RESOLVED_YES` with `knowable_at` 105, where the outcome was
+  determinable only at 110. The decision of §9.2 reads "within the predicate's bounds"; the fix bounds the set
+  by the deadline as well. Assigned to the resolution-content PR (PR #32), which changes the same function.
+- H1 (PR #27), `4334622042` (P1): when the absence disposition is written before a late record of a public
+  occurrence arrives, the stored disposition keeps `knowable_at` at finality while a fresh adjudication of the
+  same records gives the occurrence. **Defect, reproduced**: absence observed at 110 and adjudicated at 111, then
+  a public-act record of occurrence 90 published at 118: the registry returns `knowable_at` 110, the pure
+  function over the same records 90. Under the §9.2 reading the disposition stays immutable but `knowable_at`
+  follows the public occurrence, so the correction needs a replay-visible side record like the defect's.
+  Assigned to PR #32.
+- H1 (PR #27), `4334622048` (P1): `submit_observation` and `declare_source_status` compare the evidence time with
+  a `ledger.now()` sample taken before the append, not with the append's receipt. **Defect, reproduced**: the
+  sample reads 111, the append's clock 109 (above the high-water mark), an observation made at 110 is admitted
+  with receipt 109, and every later adjudication raises `evidence_after_receipt`. The fix is the `admit` hook of
+  H1 on these appends. Assigned to PR #32.
+- H1 (PR #27), `4334622032` (P1): after an intent refused as `expired_at_receipt`, the persisted check takes a
+  fresh clock sample, so a wall-clock rollback inside the slew tolerance records the refusal before the expiry and
+  leaves the nonce unconsumed. **Defect, reproduced**: expiry at +0.5 s, a read that advances 0.75 s, a rollback of
+  0.5 s, and the second presentation of the same capability is acknowledged. The fix persists the refusal at the
+  observed receipt or consumes the nonce with it; `cpe/capability/gate.py` is outside the archive component, so
+  this is left for the next hardening pass.
+- H1 (PR #27), `4334622022` (P2): a local anchor row written with the retry's time by the code before H1 keeps
+  that time, because the settlement inserts with `INSERT OR IGNORE`. **Not worth its code**: it needs a ledger
+  written by the release before H1 with a store that timed out after committing; no such ledger exists outside
+  the tests, as for `4330096680` (§9.4).
+- H3 (PR #29, review on `8ae935a`), `4334560228` (P2): the same bypass as `4334268788`, confirmed on the merged
+  commit. Same root; fixed by the same change (above).
