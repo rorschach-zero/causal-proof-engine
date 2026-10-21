@@ -91,11 +91,14 @@ def parse_content(content: ArchivedContent) -> dict[str, JsonValue]:
     try:
         parsed: JsonValue = json.loads(content.content.decode("ascii"), object_pairs_hook=_no_duplicate_keys,
                                        parse_constant=_refuse_constant)
+        canonical = canonical_bytes(parsed)
     except Refusal:
         raise
     except ValueError:  # UnicodeDecodeError and JSONDecodeError both
         raise Refusal("non_canonical_content", "the content is not ASCII JSON") from None
-    if canonical_bytes(parsed) != content.content:
+    except RecursionError:  # nesting deeper than the interpreter can parse or walk (4335042318)
+        raise Refusal("non_canonical_content", "the content is nested too deeply to evaluate") from None
+    if canonical != content.content:
         raise Refusal("non_canonical_content", "the content is not in the canonical byte form of cpe.canonical")
     if not isinstance(parsed, dict):
         raise Refusal("invalid_content_structure", "the content is a JSON object keyed by record")
