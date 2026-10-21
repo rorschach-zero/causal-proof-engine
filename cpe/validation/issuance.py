@@ -5,8 +5,9 @@ record for the same event. The check never repairs, drops or merges an input and
 providers or to equal weights over what remains:
 
 - an input that is invalid (non-finite, reversed, out of range, an interval without a point, a point outside its
-  interval, a malformed digest, an object that cannot be serialised, another event, an unregistered provider, an
-  arm version other than the one registered for its provider, a provider given twice) **rejects** the issuance,
+  interval, a malformed digest, an object that cannot be serialised, another event, another scoring slot than the
+  one being issued, an unregistered provider, an arm version other than the one registered for its provider, a
+  provider given twice) **rejects** the issuance,
   with one typed reason per problem;
 - an input that is absent (a registered provider without an output, no Jev record) **holds** it;
 - otherwise the issuance is **issuable**, with the validated outputs in the registered provider order.
@@ -71,10 +72,12 @@ def _payload(value: object) -> object:
 
 
 def check_issuance(event_id: str, arm_versions: Mapping[str, str], outputs: Sequence[object],
-                   jev: object | None) -> IssuanceDecision:
-    """Decide whether an issuance on ``event_id`` has every mandatory input, each valid. ``arm_versions`` maps each
-    of the three registered providers to the arm version the event is registered under for it."""
+                   jev: object | None, *, slot_id: str) -> IssuanceDecision:
+    """Decide whether an issuance of ``slot_id`` on ``event_id`` has every mandatory input, each valid.
+    ``arm_versions`` maps each of the three registered providers to the arm version the event is registered under
+    for it; every output must be a forecast for ``slot_id`` (RC-75, RC-89)."""
     event_id = require_identifier(event_id, "event_id")
+    slot_id = require_identifier(slot_id, "slot_id")
     versions = {require_identifier(provider, "provider"): require_identifier(version, f"arm_versions[{provider}]")
                 for provider, version in arm_versions.items()}
     if len(versions) != PROVIDER_COUNT:
@@ -92,6 +95,8 @@ def check_issuance(event_id: str, arm_versions: Mapping[str, str], outputs: Sequ
             continue
         if output.event_id != event_id:
             problems.append(Problem("wrong_event", subject, f"names {output.event_id}"))
+        elif output.forecast.slot_id != slot_id:
+            problems.append(Problem("wrong_slot", subject, f"is for slot {output.forecast.slot_id}, not {slot_id}"))
         elif output.arm_id not in versions:
             problems.append(Problem("unknown_provider", subject, f"{output.arm_id} is not a registered provider"))
         elif output.forecast.arm_version_id != versions[output.arm_id]:

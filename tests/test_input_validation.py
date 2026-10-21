@@ -39,7 +39,7 @@ def complete(**changes: Any) -> list[dict[str, Any]]:
 
 
 def test_three_valid_outputs_and_a_jev_record_are_issuable_in_provider_order() -> None:
-    decision = check_issuance("E-1", VERSIONS, list(reversed(complete())), jev())
+    decision = check_issuance("E-1", VERSIONS, list(reversed(complete())), jev(), slot_id="primary")
     assert decision.status == "issuable" and decision.problems == ()
     assert [o.arm_id for o in decision.outputs] == list(PROVIDERS) and decision.jev is not None
 
@@ -54,14 +54,14 @@ def test_three_valid_outputs_and_a_jev_record_are_issuable_in_provider_order() -
     ({"model_hash": "z" * 64}, "invalid_digest"),                  # F-04 on the issuance path
 ])
 def test_t22_t26_an_invalid_output_rejects_the_issuance_with_a_typed_reason(changes: dict[str, Any], reason: str) -> None:
-    decision = check_issuance("E-1", VERSIONS, complete(**changes), jev())
+    decision = check_issuance("E-1", VERSIONS, complete(**changes), jev(), slot_id="primary")
     assert decision.status == "rejected" and decision.outputs == () and decision.jev is None
     assert [(p.reason, p.subject) for p in decision.problems] == [(reason, "outputs[1]"), ("missing_provider", "P-B")]
 
 
 def test_t26_a_duplicate_provider_rejects_and_never_overwrites() -> None:
     outputs = complete() + [output("P-B", point=0.9, low=0.9, high=0.9)]
-    decision = check_issuance("E-1", VERSIONS, outputs, jev())
+    decision = check_issuance("E-1", VERSIONS, outputs, jev(), slot_id="primary")
     assert decision.status == "rejected" and decision.outputs == ()
     assert [(p.reason, p.subject) for p in decision.problems] == [("duplicate_provider", "P-B")]
 
@@ -71,31 +71,31 @@ def test_t26_a_duplicate_provider_rejects_and_never_overwrites() -> None:
                                           {"P-A": "P-A-1", "P-B": " ", "P-C": "P-C-1"}])
 def test_the_registered_provider_set_is_three_providers_each_with_its_arm_version(provider_set: dict[str, str]) -> None:
     with pytest.raises(Refusal):
-        check_issuance("E-1", provider_set, complete(), jev())
+        check_issuance("E-1", provider_set, complete(), jev(), slot_id="primary")
 
 
 def test_t26_unknown_provider_and_another_event_reject() -> None:
     outputs = complete() + [output("P-Z")]
-    decision = check_issuance("E-1", VERSIONS, outputs, jev(event_id="E-2"))
+    decision = check_issuance("E-1", VERSIONS, outputs, jev(event_id="E-2"), slot_id="primary")
     assert decision.status == "rejected"
     assert {(p.reason, p.subject) for p in decision.problems} == {("unknown_provider", "outputs[3]"), ("wrong_event", "jev")}
     other = complete()
     other[0] = output("P-A", event_id="E-2")
-    assert {p.reason for p in check_issuance("E-1", VERSIONS, other, jev()).problems} == {"wrong_event", "missing_provider"}
+    assert {p.reason for p in check_issuance("E-1", VERSIONS, other, jev(), slot_id="primary").problems} == {"wrong_event", "missing_provider"}
 
 
 def test_t28_two_providers_or_no_jev_record_hold_the_issuance_without_fallback() -> None:
-    two = check_issuance("E-1", VERSIONS, complete()[:2], jev())
+    two = check_issuance("E-1", VERSIONS, complete()[:2], jev(), slot_id="primary")
     assert two.status == "held" and two.outputs == ()
     assert [(p.reason, p.subject) for p in two.problems] == [("missing_provider", "P-C")]
-    no_jev = check_issuance("E-1", VERSIONS, complete(), None)
+    no_jev = check_issuance("E-1", VERSIONS, complete(), None, slot_id="primary")
     assert no_jev.status == "held" and [p.reason for p in no_jev.problems] == ["missing_jev"]
-    nothing = check_issuance("E-1", VERSIONS, [], None)
+    nothing = check_issuance("E-1", VERSIONS, [], None, slot_id="primary")
     assert nothing.status == "held" and len(nothing.problems) == 4
 
 
 def test_t26_an_invalid_jev_record_rejects_and_a_rejection_outranks_a_hold() -> None:
-    decision = check_issuance("E-1", VERSIONS, complete()[:2], jev(cost=-1))
+    decision = check_issuance("E-1", VERSIONS, complete()[:2], jev(cost=-1), slot_id="primary")
     assert decision.status == "rejected"
     assert [(p.reason, p.subject) for p in decision.problems] == [("missing_provider", "P-C"), ("invalid_number", "jev")]
 
@@ -105,9 +105,9 @@ def test_a_directly_constructed_output_is_validated_through_its_payload() -> Non
     bad = ResearchOutput("P-B", "E-1", Forecast("E-1", "P-B", "primary", "P-B-1", 0.4, 0.3, 0.5, "not-hex", HEX, ()),
                          HEX, ())
     outputs: list[object] = [output("P-A"), bad, output("P-C")]
-    assert check_issuance("E-1", VERSIONS, outputs, jev()).status == "rejected"
+    assert check_issuance("E-1", VERSIONS, outputs, jev(), slot_id="primary").status == "rejected"
     outputs[1] = good
-    assert check_issuance("E-1", VERSIONS, outputs, jev()).status == "issuable"
+    assert check_issuance("E-1", VERSIONS, outputs, jev(), slot_id="primary").status == "issuable"
 
 
 _numbers = st.one_of(st.floats(allow_nan=True, allow_infinity=True), st.floats(min_value=0.0, max_value=1.0))
@@ -117,7 +117,7 @@ _numbers = st.one_of(st.floats(allow_nan=True, allow_infinity=True), st.floats(m
 def test_a4_issuable_exactly_when_three_valid_ordered_outputs_and_the_jev_record_are_given(
         triples: list[tuple[float, float, float]], with_jev: bool) -> None:
     outputs = [output(PROVIDERS[i % 3], low=low, point=point, high=high) for i, (low, point, high) in enumerate(triples)]
-    decision = check_issuance("E-1", VERSIONS, outputs, jev() if with_jev else None)
+    decision = check_issuance("E-1", VERSIONS, outputs, jev() if with_jev else None, slot_id="primary")
 
     def valid(t: tuple[float, float, float]) -> bool:
         return all(math.isfinite(x) and 0.0 <= x <= 1.0 for x in t) and t[0] <= t[1] <= t[2]
