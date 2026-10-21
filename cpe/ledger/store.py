@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS pending_anchors (
 """
 
 
+# An admission check on the receipt an append assigns: returns None to admit the record, raises a refusal to refuse
+# it, or returns another record to write in its place at that receipt.
+Admit = Callable[[datetime], "tuple[str, str, JsonValue] | None"]
+
+
 class _DuplicateKey(ValueError):
     def __init__(self, key: str) -> None:
         super().__init__(key)
@@ -163,12 +168,14 @@ class Ledger:
         return receipt_time
 
     def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
-               admit: Callable[[datetime], None] | None = None) -> Record:
+               admit: Admit | None = None) -> Record:
         """Append one record. With ``expected_head``, the append is refused unless the chain head is still that
         digest, so a decision computed from a snapshot cannot land after a record the snapshot did not hold. With
         ``admit``, the receipt time this append assigns is passed to it before the insert, and a refusal it raises
         refuses the append: a rule that bounds a time by the receipt is checked against the receipt itself, not
-        against an earlier clock sample (PR #23 4330096714, PR #25 4333434011)."""
+        against an earlier clock sample (PR #23 4330096714, PR #25 4333434011). ``admit`` may instead return another
+        record (kind, identifier, payload), which is written in place of this one at the same receipt: a refusal that
+        must be persisted keeps the time that decided it (H1 review 4334622032)."""
         require_identifier(kind, "kind")
         require_identifier(record_id, "record_id")
         with self._lock:
@@ -176,7 +183,11 @@ class Ledger:
                 raise Refusal("stale_head", "the ledger advanced since the snapshot this record was decided on")
             receipt_time = self._server_time()
             if admit is not None:
-                admit(parse_timestamp(receipt_time, "receipt_time"))
+                substitute = admit(parse_timestamp(receipt_time, "receipt_time"))
+                if substitute is not None:
+                    kind, record_id, payload = substitute
+                    require_identifier(kind, "kind")
+                    require_identifier(record_id, "record_id")
             seq = self._state.count + 1
             payload_text = canonical_bytes(payload).decode("ascii")
             canonical_payload: JsonValue = json.loads(payload_text)

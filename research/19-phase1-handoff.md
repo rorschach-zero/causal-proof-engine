@@ -185,9 +185,10 @@ The amendment of `17` §3 item 3 and §6 (OD11 (b)) carries M-1 to M-9 in full; 
 Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
 
 - **Owner actions named in comment `6297828986`:** done on 2026-10-20: the "Confirmed" reply (`6297969313`), the
-  merge of PR #4 into `research/claude-handoff` (`f68a222`) and of PR #1 into `main` (`b2e6cbf`). Remaining: the merge
-  of this document; the OD9a PR (gates the point-in-time store and T-15); OD10 (gates T-34 and the secret-handling
-  code); the amendment of `17` §3 item 3 and §6 (one document, one review).
+  merge of PR #4 into `research/claude-handoff` (`f68a222`) and of PR #1 into `main` (`b2e6cbf`); on 2026-10-21 the
+  OD9a PR, merged as PR #30 (issue #3 comment `6312263652`), so the point-in-time store and T-15 are no longer gated
+  (corrected after PR #33 review finding `4335327825`). Remaining: OD10 (gates T-34 and the secret-handling code);
+  the amendment of `17` §3 item 3 and §6 (one document, one review).
 - **OD11 (b), fields of the amendment** (`18` §6, §9; Codex `4326311683`, `4326311701`, `4326311717`): the holder
   of Q and its fixing date; period length, G and G_min; δ; the validity class 𝓛 of each fixed-sequence component
   with its generative rationale, out-of-class sensitivity analysis and refusal policy; the estimand weighting
@@ -519,7 +520,10 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
   nothing. **Defect, reproduced**: terminal falsifier, deadline 100, finality 110, a public falsifier occurring at
   105 and published at 106, absence observed at 110: `RESOLVED_YES` with `knowable_at` 105, where the outcome was
   determinable only at 110. The decision of §9.2 reads "within the predicate's bounds"; the fix bounds the set
-  by the deadline as well. Assigned to the resolution-content PR (PR #32), which changes the same function.
+  by the deadline as well. Assigned to the resolution-content PR (PR #32), which changes the same function, and
+  fixed there. Since PR #32 round 2 (finding `4335130169`) the deadline bound applies to terminal falsifiers only:
+  on a milestone-deadline predicate a public occurrence after the deadline is itself the evidence of `EXPIRED_NO`
+  and still sets `knowable_at` (`earliest_public_occurrence` in `cpe/adjudication/rules.py`).
 - H1 (PR #27), `4334622042` (P1): when the absence disposition is written before a late record of a public
   occurrence arrives, the stored disposition keeps `knowable_at` at finality while a fresh adjudication of the
   same records gives the occurrence. **Defect, reproduced**: absence observed at 110 and adjudicated at 111, then
@@ -544,3 +548,17 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
   the tests, as for `4330096680` (§9.4).
 - H3 (PR #29, review on `8ae935a`), `4334560228` (P2): the same bypass as `4334268788`, confirmed on the merged
   commit. Same root; fixed by the same change (above).
+
+### 9.10 Hardening H4
+
+Three late findings assigned by the owner's delegate on 2026-10-21 (§9.9 and the reviews of PR #32 and PR #33),
+fixed in one PR against `main` at `44aa596`, with `tests/test_hardening_h4.py` (each test fails at `44aa596`):
+
+- `4334622032` (P1, capability gate): the refusal of an intent whose receipt is at or after the expiry is now
+  written by the same append, at that receipt (the ledger's `admit` hook may return the record to write in place
+  of the refused one), so the high-water mark keeps the time that showed the expiry; a wall clock stepped back
+  inside the slew tolerance is refused as `clock_rollback`, and once past the mark the capability is `expired`.
+- `4335196673` (P2, resolution-content archive): replay refuses archived content whose `available_at` follows its
+  receipt (`evidence_after_receipt`), the bound `archive_content` enforces online.
+- `4335327806` (P2, leak detector): a seed that is not an integer (`None`, a Boolean, a float, a string) is refused
+  as `invalid_seed`, so the null distribution is never drawn from system entropy.
