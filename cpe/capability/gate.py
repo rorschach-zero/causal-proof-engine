@@ -35,7 +35,6 @@ from cpe.capability.records import (
 from cpe.capability.signing import Verifier
 from cpe.capability.state import GateState, replay_gate
 from cpe.capability.timesource import ClockReading, TimeSource
-from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.schemas import Capability
@@ -94,9 +93,10 @@ class CapabilityGate:
         if hook is not None:
             hook()
 
-    def _append(self, decide: Decide) -> Record:
+    def _append(self, decide: Decide, admit: Callable[[datetime], None] | None = None) -> Record:
         """One read-decide-write against the chain head the decision was taken on; a head that moved makes the
-        decision recompute on the new state (another writer on the same ledger, this gate or another)."""
+        decision recompute on the new state (another writer on the same ledger, this gate or another). ``admit``
+        is checked by the ledger against the receipt the append assigns."""
         with self._lock:
             for _ in range(8):
                 state = self.state()
@@ -108,8 +108,10 @@ class CapabilityGate:
                     raise
                 kind, record_id, payload = decide(state, now)
                 try:
-                    return self._ledger.append(kind, record_id, payload, expected_head=state.head)
+                    return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit)
                 except Refusal as refusal:
+                    if refusal.reason == "clock_rollback":  # the append's own clock sample (4333626183)
+                        log.warning("clock rollback refused: %s", refusal)
                     if refusal.reason != "stale_head":
                         raise
             raise Refusal("contended", "the ledger kept advancing while the record was being decided")
@@ -127,7 +129,10 @@ class CapabilityGate:
     # clock ----------------------------------------------------------------------------------------------------
 
     def _raw_reading(self, now: datetime) -> ClockReading:
-        return ClockReading(now, self._time.monotonic(), self._time.boot_id())
+        """The reading, validated as it will be replayed: a faulty time source is refused before anything is
+        appended, never written into the ledger (4333626188)."""
+        reading = ClockReading(now, self._time.monotonic(), self._time.boot_id())
+        return ClockReading.from_payload(reading.to_payload())
 
     def _reading(self, state: GateState, now: datetime) -> ClockReading:
         """The reading of this check. The wall time is the ledger's server clock, already refused below the
@@ -170,7 +175,11 @@ class CapabilityGate:
             if state.unanchored_commits:  # RC-158: anchored under its key, takes effect at its position, unacknowledged
                 self._try_anchor()
             for intent_id in state.pending_intents:  # RC-153: no state change ever takes effect from a pending intent
-                self._abort(intent_id, "aborted at process start")
+                try:
+                    self._abort(intent_id, "aborted at process start")
+                except Refusal as refusal:  # another gate settled it after the snapshot (4333626194)
+                    if refusal.reason != "intent_settled":
+                        raise
             self._rotate("start")
 
     def anchor_epoch(self) -> bool:
@@ -250,6 +259,8 @@ class CapabilityGate:
         test: an abort only settles a consumed nonce and authorises nothing, and it must be writable right after
         a discontinuity has rotated the epoch."""
         def decide(state: GateState, now: datetime) -> Write:
+            if intent_id not in state.pending_intents:  # decided against the current head, not a snapshot
+                raise Refusal("intent_settled", f"{intent_id} is already committed or aborted")
             record = AbortRecord(intent_id, reason, self._raw_reading(now))
             return KIND_ABORT, _ledger_id("gate-abort", intent_id), record.to_payload()
 
@@ -275,14 +286,25 @@ class CapabilityGate:
             record = IntentRecord(intent_id, capability, target, reading)
             return KIND_INTENT, intent_id, record.to_payload()
 
+        def unexpired_at_receipt(receipt: datetime) -> None:  # the receipt is the time that counts (4333434011)
+            if refusal is None and receipt >= capability.expiry:
+                raise Refusal("expired_at_receipt", f"capability {capability.nonce} expired before its intent was received")
+
+        def expired_check(state: GateState, now: datetime) -> Write:
+            check = CheckRecord(f"presentation:{capability.nonce}", "refused", "expired", self._reading(state, now))
+            return KIND_CHECK, _ledger_id("gate-check", state.head), check.to_payload()
+
         with self._lock:
             self._hook("before_intent")
-            appended = self._append(intent)  # step 1: the nonce is consumed from here on every branch
+            try:
+                self._append(intent, admit=unexpired_at_receipt)  # step 1: the nonce is consumed from here on
+            except Refusal as at_receipt:
+                if at_receipt.reason != "expired_at_receipt":
+                    raise
+                self._append(expired_check)  # the refused check is persisted with its reading (RC-65)
+                raise Refusal("expired", at_receipt.detail) from None
             if refusal is not None:
                 raise Refusal(refusal, f"capability {capability.nonce} refused")
-            if parse_timestamp(appended.receipt_time) >= capability.expiry:  # the receipt is the time that counts
-                self._abort(intent_id, "the intent was received at or after the capability's expiry")
-                raise Refusal("expired", f"capability {capability.nonce} expired before its intent was received")
             self._hook("after_intent")
             intent_anchor = self._try_anchor()  # step 2
             if intent_anchor is None:
@@ -301,8 +323,12 @@ class CapabilityGate:
                 if state.epoch != stored.capability.epoch or state.epoch_seq is None \
                         or state.epoch_seq > state.intent_seq[intent_id]:
                     aborted = "epoch rotated since the intent (RC-197)"
-                elif rank(stored.target_level) <= rank(state.level):
-                    aborted = f"the gate reached {state.level} since the intent; a commit never lowers it"
+                else:  # every commit of this epoch counts, anchored or not (4333626167)
+                    written = [state.intents[i].target_level for i in state.commits
+                               if state.intents[i].capability.epoch == state.epoch]
+                    reached = max([state.level, *written], key=rank)
+                    if rank(stored.target_level) <= rank(reached):
+                        aborted = f"the gate reached {reached} since the intent; a commit never lowers it"
                 if aborted is not None:
                     record_abort = AbortRecord(intent_id, aborted, reading)
                     return KIND_ABORT, _ledger_id("gate-abort", intent_id), record_abort.to_payload()
@@ -323,6 +349,16 @@ class CapabilityGate:
                 raise Refusal("commit_in_doubt", "the commit record is not anchored; nothing is acknowledged, "
                               "the next process start anchors it")
             self._hook("after_commit_anchor")
+
+            def acknowledgement(state: GateState, now: datetime) -> Write:  # a discontinuity supersedes (4333626175)
+                check = CheckRecord(f"acknowledgement:{capability.nonce}", "admitted", "", self._reading(state, now))
+                return KIND_CHECK, _ledger_id("gate-check", state.head), check.to_payload()
+
+            try:
+                self._append(acknowledgement)
+            except Refusal as at_acknowledgement:
+                if at_acknowledgement.reason != "clock_discontinuity":
+                    raise
             state = self.state()
             if intent_id not in state.effective:
                 raise Refusal("commit_in_doubt", "the commit record lies outside every local anchor")

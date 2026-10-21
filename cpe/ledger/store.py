@@ -4,13 +4,13 @@ from __future__ import annotations
 import json
 import sqlite3
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 
 from cpe.canonical import JsonValue, canonical_bytes
-from cpe.clock import Clock, format_timestamp
+from cpe.clock import Clock, format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger.anchor import Anchor, AnchorStore
 from cpe.ledger.record import Record, entry_digest
@@ -162,15 +162,21 @@ class Ledger:
             raise Refusal("clock_rollback", f"server clock {receipt_time} is below the high-water mark {high_water}")
         return receipt_time
 
-    def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None) -> Record:
+    def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
+               admit: Callable[[datetime], None] | None = None) -> Record:
         """Append one record. With ``expected_head``, the append is refused unless the chain head is still that
-        digest, so a decision computed from a snapshot cannot land after a record the snapshot did not hold."""
+        digest, so a decision computed from a snapshot cannot land after a record the snapshot did not hold. With
+        ``admit``, the receipt time this append assigns is passed to it before the insert, and a refusal it raises
+        refuses the append: a rule that bounds a time by the receipt is checked against the receipt itself, not
+        against an earlier clock sample (PR #23 4330096714, PR #25 4333434011)."""
         require_identifier(kind, "kind")
         require_identifier(record_id, "record_id")
         with self._lock:
             if expected_head is not None and self._state.head != expected_head:
                 raise Refusal("stale_head", "the ledger advanced since the snapshot this record was decided on")
             receipt_time = self._server_time()
+            if admit is not None:
+                admit(parse_timestamp(receipt_time, "receipt_time"))
             seq = self._state.count + 1
             payload_text = canonical_bytes(payload).decode("ascii")
             canonical_payload: JsonValue = json.loads(payload_text)
@@ -227,6 +233,15 @@ class Ledger:
                 report = verify(self._records_locked(), existing, external=True)
                 if not report.intact:
                     raise Refusal("anchor_conflict", f"the ledger does not verify against the external store: {report.detail}")
+            held = next((a for a in existing if a.prefix_length == self._state.count and a.digest == self._state.head),
+                        None)
+            if held is not None:  # an earlier attempt landed: settle with the time the store holds, publish nothing
+                self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                                   (held.prefix_length, held.digest, held.published_at))
+                self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
+                                   (held.prefix_length, held.digest))
+                self._anchor_high_water = self._load_anchor_high_water()
+                return held
             anchor = Anchor(self._state.count, self._state.head, published_at)
             self._conn.execute(
                 "INSERT OR REPLACE INTO pending_anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
