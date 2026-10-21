@@ -229,3 +229,39 @@ def test_replay_refuses_a_payload_that_is_not_a_mapping(tmp_path: Path) -> None:
     ledger.append(KIND_CONTENT, "forged", [1, 2])
     assert refused(replay_state, ledger.records()) == "invalid_payload"
     _ = canonical_bytes, adjudicate
+
+
+def test_t_star_takes_a_void_adjudication_time_even_before_knowable_times() -> None:
+    early_void = Adjudication("V", "VOID", day(115), day(111), "b", None)
+    yes = Adjudication("Y", "RESOLVED_YES", day(112), day(105), "b", None)  # a YES's adjudication time never counts
+    assert cluster_knowable_time([early_void, yes]) == day(111)
+    assert cluster_knowable_time([yes]) == day(112)
+
+
+def test_registration_at_the_issuance_open_is_late(tmp_path: Path) -> None:
+    reg, clock, _ = registry(tmp_path, 1)
+    clock.set(spec(event_id="E5").issuance_open)
+    assert refused(reg.register_event, spec(event_id="E5")) == "late_registration"
+
+
+def test_a_status_received_at_finality_decides(tmp_path: Path) -> None:
+    reg, clock, _ = registry(tmp_path, 110)  # finality of spec() is day 110
+    reg.declare_source_status(SourceStatus("src", True, day(110)))
+    clock.set(day(120))
+    assert reg.adjudicate("E").disposition == "VOID"
+
+
+def test_two_successive_knowable_corrections_of_one_event_are_both_kept(tmp_path: Path) -> None:
+    reg, clock, ledger = registry(tmp_path, 1)
+    reg.register_rule(SourceRule("pub", True, True, False))
+    s = spec(event_id="P")
+    reg.register_event(replace(s, predicate=replace(s.predicate, source="pub")))
+    clock.set(day(111))
+    reg.submit_observation(AbsenceObservation("o-P", "P", "pub", day(111)))
+    assert reg.adjudicate("P").knowable_at == day(110)
+    for at, (record_id, occurrence) in ((120, ("late-90", 90)), (121, ("late-80", 80))):
+        clock.set(day(at))
+        late = record(record_id, occurrence=occurrence, published=at - 1, event_id="P")
+        submit(reg, replace(late, record=replace(late.record, source_id="pub"), content=archived(source="pub")))
+        assert reg.adjudicate("P").knowable_at == day(occurrence)
+    assert [r.kind for r in ledger.records()].count("knowable_correction") == 2

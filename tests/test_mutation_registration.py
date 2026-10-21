@@ -250,3 +250,49 @@ def test_a_correction_after_registration_withdraws_every_consumer_of_a_shared_in
     for version in ("BASE-1", "LEFT-1", "RIGHT-1", "FULL-1", "OTHER-1"):  # both withdrawals hold
         assert refused(registry.register_arm_version, arm(f"NEW{version}", "2026-01-01", [version])) \
             == "arm_version_withdrawn"
+
+
+def test_registration_bounds_are_exact(registry: RegistrationRegistry, clock: ManualClock) -> None:
+    for event_id in ("B-1", "B-2", "B-3"):
+        registry.log_candidate(CandidateEntry(f"cand-{event_id}", event_id, "src", day(1), "registered", "ok"))
+    registry.register_arm_version(arm("EDGE-1", "2026-02-20"))  # e_i of an event with not_before 50 is 2026-02-20
+    edge = spec("B-3", "C-B3", not_before=50)
+    assert refused(registry.register_cluster, registration([edge], "C-B3", arms={"FULL": "FULL-1", "EDGE": "EDGE-1",
+                                                                                 "DESIGN_C": "DESIGN_C-1"})) \
+        == "cutoff_after_e_i"  # an effective cutoff on the day of e_i
+    clock.set(day(20))  # the record lands at the issuance open: admitted (RC-87 refuses only an earlier open)
+    registry.register_cluster(registration([spec("B-1", "C-B1", issuance=(20, 40))], "C-B1"))
+    clock.set(day(50))  # at e_i itself: refused (RC-138)
+    late = spec("B-2", "C-B2", not_before=50, issuance=(45, 50))
+    assert refused(registry.register_cluster, registration([late], "C-B2")) == "registration_after_e_i"
+
+
+def test_a_beacon_round_published_at_an_anchor_time_is_before_it(registry: RegistrationRegistry, ledger: Ledger,
+                                                                 clock: ManualClock) -> None:
+    registry.register_claim(claim())
+    registry.record_calibration(calibration())
+    clock.set(day(11))
+    ledger.anchor()  # covers the calibration record, published at day 11
+    clock.set(day(12))
+    assert refused(registry.supply_beacon_output, BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(11))) \
+        == "round_before_anchor"
+    registry.anchor_confirmatory_register(ConfirmatoryRegister("reg", 1, ("claim-1",)))
+    clock.set(day(13))
+    ledger.anchor()  # covers the register, published at day 13
+    clock.set(day(14))
+    assert refused(registry.supply_beacon_output, BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(13))) \
+        == "register_not_anchored"
+
+
+def test_the_closure_reaches_an_input_listed_before_a_shared_one(ledger: Ledger, clock: ManualClock) -> None:
+    registry = RegistrationRegistry(ledger)
+    for version, consumes in (("C-1", []), ("SHARED-1", []), ("MID-1", ["SHARED-1"])):
+        registry.register_arm_version(arm(version, "2026-01-01", consumes))
+    registry.register_arm_version(arm("FULL-1", "2026-01-01", ["C-1", "SHARED-1", "MID-1"]))
+    registry.register_arm_version(arm("DESIGN_C-1", "2026-01-01"))
+    registry.commit_base_rate(BaseRate("RC-1", 0.2))
+    registry.log_candidate(CandidateEntry("cand", "E-1", "src", day(1), "registered", "ok"))
+    clock.set(day(10))
+    registry.register_cluster(registration([spec("E-1")], arms={"FULL": "FULL-1", "DESIGN_C": "DESIGN_C-1"}))
+    _, registered = registry.correct_cutoff(CutoffCorrection("C-1", date(2026, 1, 2), "ev"))
+    assert registered is True  # C-1 is an input of the registered FULL-1, popped after SHARED-1 was seen twice

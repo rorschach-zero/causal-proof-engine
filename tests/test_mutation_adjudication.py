@@ -157,3 +157,8 @@ def test_a_stored_adjudication_round_trips_with_defects_incidents_and_without_ti
     assert refused(Adjudication.from_payload, {**payload, "incidents": {}}) == "invalid_list"
     assert refused(Adjudication.from_payload, {**payload, "defects": {}}) == "invalid_list"
     assert refused(Incident.from_payload, {"kind": "flood", "reference_id": "r", "detail": ""}) == "invalid_choice"
+
+
+def test_a_late_report_of_occurrence_without_a_time_or_lateness_is_a_defect() -> None:
+    out = adjudicate(spec(), rule(), [record("untimed", published=115)], [observation(110)], [], day(116))
+    assert out.disposition == "RESOLVED_NO" and [d.record_id for d in out.defects] == ["untimed"]

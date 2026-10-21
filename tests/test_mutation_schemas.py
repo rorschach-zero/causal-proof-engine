@@ -181,3 +181,23 @@ def test_every_issuance_decision_names_its_event_and_each_problem_its_subject() 
     bad = check_issuance("E-1", VERSIONS, [{"arm_id": 1}], {"jev_record_id": 1}, slot_id="primary")
     assert all(p.detail for p in bad.problems if p.subject in ("outputs[0]", "jev"))
     assert refused(check_issuance, "E-1", {"P-A": "v"}, outputs, jev(), slot_id="primary") == "invalid_provider_set"
+
+
+def test_duplicate_scoring_slots_are_refused_on_direct_construction() -> None:
+    assert refused(replace, spec_from(), scoring_slots=("a", "a"), primary_slot="a") == "invalid_slots"
+
+
+def test_times_are_converted_to_utc_whatever_the_host_zone(monkeypatch: pytest.MonkeyPatch) -> None:
+    import time
+    monkeypatch.setenv("TZ", "Asia/Tokyo")
+    time.tzset()
+    try:
+        local = datetime(2026, 1, 1, 12, tzinfo=PLUS_TWO)
+        assert format_timestamp(local) == "2026-01-01T10:00:00.000000Z"
+        clock = ManualClock(local)
+        assert clock.now().tzinfo is timezone.utc
+        clock.set(local)
+        assert clock.now().tzinfo is timezone.utc
+    finally:
+        monkeypatch.undo()
+        time.tzset()

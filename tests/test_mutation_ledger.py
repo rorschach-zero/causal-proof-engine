@@ -14,6 +14,7 @@ from cpe.errors import Refusal
 from cpe.ledger import Anchor, FaultInjector, HarnessAnchorStore, Ledger, Record, VerificationReport, replay, verify
 from cpe.ledger.anchor import UnavailableAnchorStore
 from cpe.ledger.store import records_from_jsonl
+from tests.test_hardening_h1 import LandedThenTimeoutStore
 from tests.test_ledger import fill, rehash
 
 
@@ -158,3 +159,23 @@ def test_an_export_with_a_blank_line_keeps_every_record_after_it(ledger: Ledger,
 def test_the_system_clock_reads_aware_utc_time() -> None:
     now = SystemClock().now()
     assert now.tzinfo is timezone.utc
+
+
+def test_a_record_whose_only_defect_is_its_link_breaks_the_chain(ledger: Ledger, clock: ManualClock) -> None:
+    records = records_of(ledger, clock, 2)
+    wrong_link = replace(records[1], prev_hash="1" * 64)
+    wrong_link = replace(wrong_link, entry_hash=wrong_link.expected_hash())  # its own hash is right, its link is not
+    assert verify([records[0], wrong_link], [], external=False).status == "tampered"
+
+
+def test_an_anchor_settled_from_the_store_keeps_the_clock_bound(tmp_path: Path, clock: ManualClock) -> None:
+    store = LandedThenTimeoutStore()
+    ledger = Ledger(tmp_path / "l.sqlite", clock, store)
+    fill(ledger, clock, 1)
+    store.land_then_fail = True
+    with pytest.raises(Refusal):
+        ledger.anchor()
+    clock.advance(timedelta(seconds=5))
+    settled = ledger.anchor()  # the store already holds the prefix: settled, not published again
+    assert settled == store.anchors()[0]
+    assert ledger.now() == clock.now()  # the high-water mark is still a time, read back from disk

@@ -189,7 +189,8 @@ def test_a_same_level_promotion_overtaken_by_an_equal_one_is_superseded(rig: Rig
 
     rig.gate.hooks["after_intent_anchor"] = overtake
     assert rig.refused(issue(epoch, "second", level="SIM_READ_ONLY")) == "superseded"
-    assert len(rig.gate.state().aborted) == 1
+    (reason,) = rig.gate.state().aborted.values()
+    assert reason == "the gate reached SIM_READ_ONLY since the intent; a commit never lowers it"
 
 
 def test_the_highest_commit_of_the_epoch_is_compared_by_rank_not_by_name(rig: Rig) -> None:
@@ -219,10 +220,10 @@ def test_an_intent_aborted_by_another_gate_before_step_3_is_refused_by_name(rig:
 
 
 def test_a_decision_overtaken_by_a_demotion_is_taken_again(rig: Rig) -> None:
+    other = CapabilityGate(rig.ledger, OWNER, rig.time, ENV, RELEASE, TOLERANCE)  # its start rotates: before the promotion
     rig.tick()
     assert rig.promote(issue(rig.epoch(), "r", level="SIM_READ_ONLY")).status == "acknowledged"
     rig.tick()
-    other = CapabilityGate(rig.ledger, OWNER, rig.time, ENV, RELEASE, TOLERANCE)
     original = rig.ledger.append
     fired = False
 
@@ -298,3 +299,15 @@ def test_a_receipt_equal_to_the_expiry_is_expired(rig: Rig) -> None:
     time.pause = timedelta(seconds=0.5)  # the decision reads before the expiry, the receipt is exactly at it
     assert rig.refused(capability) == "expired"
     assert not rig.gate.state().intents
+    last = payloads(rig, KIND_CHECK)[-1]
+    assert (last["subject"], last["verdict"], last["reason"]) == ("presentation:edge", "refused", "expired")
+
+
+def test_an_intent_overtaken_by_a_demotion_is_aborted_as_rotated(rig: Rig) -> None:
+    rig.tick()
+    def demote() -> None:
+        rig.gate.demote("between steps 2 and 3")
+
+    rig.gate.hooks["after_intent_anchor"] = demote
+    assert rig.refused(issue(rig.epoch(), "rotated")) == "superseded"
+    assert list(rig.gate.state().aborted.values()) == ["epoch rotated since the intent (RC-197)"]
