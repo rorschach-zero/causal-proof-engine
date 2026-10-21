@@ -91,7 +91,9 @@ def commits_in_range(commit_range: str, repo: Path) -> list[Commit]:
     return commits
 
 
-TRAILER_LINE = re.compile(r"^([A-Za-z][A-Za-z0-9-]*):[ \t]+\S")
+# Git reads a trailer with or without whitespace around the colon (``Tested:Bob``, ``Tested : Bob``); Codex finding
+# ``4334268788`` on PR #29.
+TRAILER_LINE = re.compile(r"^([A-Za-z][A-Za-z0-9-]*)[ \t]*:[ \t]*\S")
 ALLOWED_TRAILER = "reviewed-by"  # the owner-requested human review line; whose name counts as human is OD9b
 
 

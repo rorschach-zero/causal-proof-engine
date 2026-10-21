@@ -466,10 +466,11 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
   `tests/test_hardening_h2.py` as an AI marking. **Not a defect**: naming the review a regression test answers is
   the provenance `AGENTS.md` §7 requires ("which finding it addresses"); the owner confirmed this reading for the
   same finding on PR #16 (`4329259263`) and PR #18 (`4329442698`).
-- H3 (PR #29, `898ec19`), `4334268788` (P2): the trailer parse requires whitespace after the colon, while git
-  accepts `Tested:Bob` as a trailer, so a prohibited key written without the space passes. **Defect**: accept the
-  form without whitespace (`[ \t]*`), or delegate to `git interpret-trailers --parse`. Not fixed (no fix rounds on
-  the hardening PRs).
+- H3 (PR #29, `898ec19`), `4334268788` (P1; first recorded here as P2, a slip against Codex's badge, corrected
+  2026-10-21): the trailer parse requires whitespace after the colon, while git accepts `Tested:Bob` as a trailer, so
+  a prohibited key written without the space passes. **Defect**. Not fixed in H3 (no fix rounds on the hardening
+  PRs); **fixed** by the follow-up PR "Provenance trailer: whitespace after the colon", which accepts `[ \t]*` before
+  and after the colon, as `git interpret-trailers --parse` does, with `tests/test_review_pr29.py`.
 - H3 (PR #29, `898ec19`), `4334268792` (P1): §3.1 says predicate evaluation is not gated on OD9a but is built
   "together with the point-in-time store", which stays gated on OD9a until its `AGENTS.md` wording is merged; read
   literally, the decision re-gates it. **Specification question for the owner's delegate**: whether the archive of
@@ -477,5 +478,5 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
   scheduled on its own. **Decided by the owner's delegate on 2026-10-21: separable.** The resolution-content
   archive and its evaluator are their own component, not gated on OD9a, scheduled independently of the
   point-in-time feature store, which stays gated on the OD9a wording. §3.1 and §9.8 are corrected accordingly
-  (a correction of the decision text, not a fix round). `4334268788` stays listed for the next code PR that
-  touches `tools/check_provenance.py`.
+  (a correction of the decision text, not a fix round). `4334268788` was listed for the next code PR that
+  touches `tools/check_provenance.py` and is fixed there (above).
