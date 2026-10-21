@@ -95,6 +95,9 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
     `6297828986` (OD11 (b), OD1, OD2, OD9a, OD10): exact source SHAs, the requirements of `17` §3 items 1, 2 and 4 to 8
     retained or retired, the surviving tests and fixtures mapped to `17` and to `18` M-1 to M-9, the open owner
     fields, the reproduction commands and the no-execution boundary; `PROPOSED`, no code.
+14. `20-phase3-readiness.md`: what the owner needs to decide and start Phase 3 (SIM read-only, executor
+    principal): scope with sources, prerequisites, decision sheets, SIM setup guide, acceptance tests, threat
+    model and build plan; `PROPOSED`, documentation only, Phase 3 not approved.
 
 Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
 2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.
