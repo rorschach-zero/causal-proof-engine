@@ -22,3 +22,6 @@ dist/
 .vscode/
 .idea/
 .DS_Store
+
+# Mutation testing (mutmut working copy)
+mutants/
