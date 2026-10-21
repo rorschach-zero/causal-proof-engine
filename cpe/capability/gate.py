@@ -35,6 +35,7 @@ from cpe.capability.records import (
 from cpe.capability.signing import Verifier
 from cpe.capability.state import GateState, replay_gate
 from cpe.capability.timesource import ClockReading, TimeSource
+from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.schemas import Capability
@@ -99,7 +100,12 @@ class CapabilityGate:
         with self._lock:
             for _ in range(8):
                 state = self.state()
-                now = self._ledger.now()
+                try:
+                    now = self._ledger.now()
+                except Refusal as refusal:
+                    if refusal.reason == "clock_rollback":  # fails closed and is logged (item 2 "Clock", RC-37)
+                        log.warning("clock rollback refused: %s", refusal)
+                    raise
                 kind, record_id, payload = decide(state, now)
                 try:
                     return self._ledger.append(kind, record_id, payload, expected_head=state.head)
@@ -271,9 +277,12 @@ class CapabilityGate:
 
         with self._lock:
             self._hook("before_intent")
-            self._append(intent)  # step 1: the nonce is consumed from here on every branch
+            appended = self._append(intent)  # step 1: the nonce is consumed from here on every branch
             if refusal is not None:
                 raise Refusal(refusal, f"capability {capability.nonce} refused")
+            if parse_timestamp(appended.receipt_time) >= capability.expiry:  # the receipt is the time that counts
+                self._abort(intent_id, "the intent was received at or after the capability's expiry")
+                raise Refusal("expired", f"capability {capability.nonce} expired before its intent was received")
             self._hook("after_intent")
             intent_anchor = self._try_anchor()  # step 2
             if intent_anchor is None:
@@ -284,6 +293,7 @@ class CapabilityGate:
 
             def commit(state: GateState, now: datetime) -> Write:  # step 3
                 nonlocal aborted
+                aborted = None  # decided afresh on every attempt against the current head
                 reading = self._reading(state, now)
                 if intent_id in state.aborted:
                     raise Refusal("intent_aborted", state.aborted[intent_id])
@@ -291,6 +301,9 @@ class CapabilityGate:
                 if state.epoch != stored.capability.epoch or state.epoch_seq is None \
                         or state.epoch_seq > state.intent_seq[intent_id]:
                     aborted = "epoch rotated since the intent (RC-197)"
+                elif rank(stored.target_level) <= rank(state.level):
+                    aborted = f"the gate reached {state.level} since the intent; a commit never lowers it"
+                if aborted is not None:
                     record_abort = AbortRecord(intent_id, aborted, reading)
                     return KIND_ABORT, _ledger_id("gate-abort", intent_id), record_abort.to_payload()
                 record = CommitRecord(intent_id, intent_anchor.prefix_length, intent_anchor.digest, reading)
