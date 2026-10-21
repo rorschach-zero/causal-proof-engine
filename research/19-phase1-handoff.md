@@ -459,10 +459,19 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
 
 ### 9.9 Hardening PRs (H1 to H3)
 
-- H1 (PR #27, `dd8af3f`): Codex's review had not returned when this section was written (requested 2026-10-21
-  07:02 UTC, still running at 07:39 UTC). Its findings are listed in PR #27's description and appended here.
+- H1 (PR #27, `dd8af3f`, merged at `5c0cbf6` on green CI and the parent session's verification): Codex's review
+  never returned (requested 2026-10-21 07:02 UTC, still "running" at 08:02 UTC). It was not re-requested (one
+  review per hardening PR); a late finding is appended here by whoever reads it.
 - H2 (PR #28, `336b970`), `4333981363` (P1): remove the reviewer's name from the docstring of
   `tests/test_hardening_h2.py` as an AI marking. **Not a defect**: naming the review a regression test answers is
   the provenance `AGENTS.md` §7 requires ("which finding it addresses"); the owner confirmed this reading for the
   same finding on PR #16 (`4329259263`) and PR #18 (`4329442698`).
-
+- H3 (PR #29, `898ec19`), `4334268788` (P2): the trailer parse requires whitespace after the colon, while git
+  accepts `Tested:Bob` as a trailer, so a prohibited key written without the space passes. **Defect**: accept the
+  form without whitespace (`[ \t]*`), or delegate to `git interpret-trailers --parse`. Not fixed (no fix rounds on
+  the hardening PRs).
+- H3 (PR #29, `898ec19`), `4334268792` (P1): §3.1 says predicate evaluation is not gated on OD9a but is built
+  "together with the point-in-time store", which stays gated on OD9a until its `AGENTS.md` wording is merged; read
+  literally, the decision re-gates it. **Specification question for the owner's delegate**: whether the archive of
+  resolution bytes is separable from the OD9a-gated as-of feature store, so that predicate evaluation can be
+  scheduled on its own.
