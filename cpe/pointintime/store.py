@@ -21,8 +21,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from types import MappingProxyType
 
-from cpe.canonical import JsonValue, digest_of
-from cpe.clock import parse_timestamp
+from cpe.canonical import JsonValue, canonical_bytes, digest_of
+from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.schemas.common import (
@@ -108,15 +108,27 @@ def _row_id(row: FeatureRow) -> str:
     return f"pit:{digest_of([row.entity, row.feature, row.vintage_id])}"
 
 
+def _same(left: FeatureRow, right: FeatureRow) -> bool:
+    """Identical persisted content: ``True`` and ``1``, or ``1`` and ``1.0``, are different values (4335189789)."""
+    return canonical_bytes(left.to_payload()) == canonical_bytes(right.to_payload())
+
+
 def replay_state(records: tuple[Record, ...]) -> _State:
+    """The rows, each from the one record that carries its vintage under its canonical id; a second record of a
+    vintage, or a row under another id, is refused rather than read as a rewrite (4335189761)."""
     state = _State()
     for record in records:
         if record.kind != KIND_ROW:
             continue  # another registry's record on the same ledger
         row = FeatureRow.from_payload(record.payload)
+        if record.record_id != _row_id(row):
+            raise Refusal("invalid_record_id", f"{record.record_id} is not the identifier of its vintage")
         if row.available_at > parse_timestamp(record.receipt_time, "receipt_time"):
             raise Refusal("evidence_after_receipt", f"{record.record_id}: available after its receipt")
-        state.rows[(row.entity, row.feature, row.vintage_id)] = row
+        key = (row.entity, row.feature, row.vintage_id)
+        if key in state.rows:
+            raise Refusal("vintage_immutable", f"{record.record_id}: a second record of one vintage")
+        state.rows[key] = row
     return state
 
 
@@ -127,25 +139,35 @@ class PointInTimeStore:
         self._ledger = ledger
         self._lock = threading.RLock()
 
-    def rows(self) -> tuple[FeatureRow, ...]:
+    def _rows(self) -> tuple[FeatureRow, ...]:
+        """Every vintage, without a cutoff: for the reader only, never public (4335189780)."""
         return tuple(replay_state(self._ledger.records()).rows.values())
 
     def ingest(self, row: FeatureRow) -> Record:
         """Append a row. A vintage is written once: the same row again returns the stored record, another row under
-        the same (entity, feature, vintage id) is refused. ``available_at`` must not follow the receipt."""
+        the same (entity, feature, vintage id) is refused. ``available_at`` must not follow the receipt. Another
+        writer on the same ledger that lands the vintage first is read back, not reported as a duplicate id
+        (4335189771)."""
         row = FeatureRow.from_payload(row.to_payload())  # validated as replay will read it
         with self._lock:
-            existing = replay_state(self._ledger.records()).rows.get((row.entity, row.feature, row.vintage_id))
-            if existing is not None:
-                if existing != row:
-                    raise Refusal("vintage_immutable", f"{row.entity}/{row.feature} vintage {row.vintage_id} is "
-                                  "already stored with other content")
-                return next(r for r in self._ledger.records() if r.record_id == _row_id(row))
+            for attempt in range(2):
+                existing = replay_state(self._ledger.records()).rows.get((row.entity, row.feature, row.vintage_id))
+                if existing is not None:
+                    if not _same(existing, row):
+                        raise Refusal("vintage_immutable", f"{row.entity}/{row.feature} vintage {row.vintage_id} is "
+                                      "already stored with other content")
+                    return next(r for r in self._ledger.records() if r.record_id == _row_id(row))
 
-            def admit(receipt: datetime) -> None:
-                if row.available_at > receipt:
-                    raise Refusal("evidence_after_receipt", f"vintage {row.vintage_id} is available after its receipt")
-            return self._ledger.append(KIND_ROW, _row_id(row), row.to_payload(), admit=admit)
+                def admit(receipt: datetime) -> None:
+                    if row.available_at > receipt:
+                        raise Refusal("evidence_after_receipt", f"vintage {row.vintage_id} is available after its "
+                                      "receipt")
+                try:
+                    return self._ledger.append(KIND_ROW, _row_id(row), row.to_payload(), admit=admit)
+                except Refusal as refusal:
+                    if refusal.reason != "duplicate_record_id" or attempt:
+                        raise
+            raise AssertionError("unreachable")
 
     def reader(self, evidence_cutoff: datetime) -> AsOfReader:
         return AsOfReader(self, evidence_cutoff)
@@ -165,6 +187,7 @@ class AsOfReader:
     def _bounded(self, as_of: datetime | None) -> datetime:
         if as_of is None:
             return self.evidence_cutoff
+        as_of = parse_timestamp(format_timestamp(as_of), "as_of")  # naive refused, UTC canonical (4335189800)
         if as_of > self.evidence_cutoff:
             raise Refusal("after_evidence_cutoff", f"as-of {timestamp_payload(as_of)} is after the evidence cutoff "
                           f"{timestamp_payload(self.evidence_cutoff)}")
@@ -174,7 +197,7 @@ class AsOfReader:
         """Per observation time, the vintage with the greatest ``available_at`` at or before the as-of time."""
         cut = self._bounded(as_of)
         latest: dict[datetime, FeatureRow] = {}
-        for row in self._store.rows():
+        for row in self._store._rows():
             if row.entity != entity or row.feature != feature or row.available_at > cut:
                 continue
             held = latest.get(row.observed_at)
@@ -186,7 +209,7 @@ class AsOfReader:
     def row(self, entity: str, feature: str, vintage_id: str, as_of: datetime | None = None) -> FeatureRow:
         """One vintage, refused unless it was available at the as-of time; an unknown vintage is refused alike."""
         cut = self._bounded(as_of)
-        for row in self._store.rows():
+        for row in self._store._rows():
             if (row.entity, row.feature, row.vintage_id) == (entity, feature, vintage_id) and row.available_at <= cut:
                 return row
         raise Refusal("not_available", f"{entity}/{feature} vintage {vintage_id} is not available at "

@@ -43,7 +43,7 @@ def detect_leak(forecasts: Sequence[float], outcomes: Sequence[int], *, bound: f
         raise Refusal("invalid_outcome", "outcomes are 0 or 1")
     if not math.isfinite(bound) or bound < 0:
         raise Refusal("invalid_bound", "the pre-registered bound is a finite non-negative number")
-    if isinstance(permutations, bool) or permutations < 1:
+    if isinstance(permutations, bool) or not isinstance(permutations, int) or permutations < 1:  # 4335189809
         raise Refusal("invalid_permutations", "at least one permutation is needed")
     observed = brier(checked, outcomes)
     generator = random.Random(seed)
