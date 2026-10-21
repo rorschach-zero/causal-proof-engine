@@ -91,6 +91,25 @@ def commits_in_range(commit_range: str, repo: Path) -> list[Commit]:
     return commits
 
 
+TRAILER_LINE = re.compile(r"^([A-Za-z][A-Za-z0-9-]*):[ \t]+\S")
+ALLOWED_TRAILER = "reviewed-by"  # the owner-requested human review line; whose name counts as human is OD9b
+
+
+def trailer_findings(message: str, where: str) -> list[str]:
+    """The git trailer block (the last paragraph of a commit message when every line of it is ``Key: value``):
+    every key but ``Reviewed-by`` is a finding (``AGENTS.md`` section 10: no trailers of any kind except an
+    owner-requested ``Reviewed-by:`` naming a human)."""
+    paragraphs = [p for p in message.strip().split("\n\n") if p.strip()]
+    if len(paragraphs) < 2:
+        return []
+    lines = [line for line in paragraphs[-1].splitlines() if line.strip()]
+    matches = [TRAILER_LINE.match(line) for line in lines]
+    if not lines or not all(matches):
+        return []
+    return [f"{where}: trailer {m.group(1)!r} (only Reviewed-by is allowed)" for m in matches
+            if m is not None and m.group(1).lower() != ALLOWED_TRAILER]
+
+
 def text_findings(text: str, where: str) -> list[str]:
     findings = []
     for label, pattern in PROHIBITED_PATTERNS:
@@ -165,6 +184,7 @@ def check(commit_range: str, repo: Path, title: str | None, body: str | None, he
     for commit in commits:
         where = f"commit {commit.sha[:10]}"
         findings += text_findings(commit.message, where)
+        findings += trailer_findings(commit.message, where)
         findings += identity_findings(commit)
         findings += label_findings(commit.message, tree_labels(commit.sha, repo), where)
     if title is not None or body is not None:

@@ -82,7 +82,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Outcome-blind enrolment T_E (RC-219, RC-220), pre-enrolment breach audit against resolution records (RC-223, RC-244, RC-246), supply-exogeneity hypothesis and screen (RC-228 to RC-241) | retired | `18` F5: the audit adds no identification once Q is the universe; `18` §6 "Replace" 1 retires the screen; Q is fixed before forecasting |
 | Resolution rules (RC-11, RC-71): occurrence-time rule, YES needs evidence of timely occurrence, VOID when a YES has no time, `EXPIRED_NO` needs evidence | retained | OD1: resolution-rule registry |
 | Point-in-time store and as-of read interface (RC-79, RC-86) | gated: OD9a | `17` A0 and item 1 ("built only after OD9a, with T-15"); the Phase 1 brief builds it after the OD9a wording is merged into `AGENTS.md` |
-| Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | gated: OD9a | evaluating the predicate needs the archived bytes of the point-in-time store; until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it |
+| Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | retained: a separate component, after the hardening PRs (decided 2026-10-21) | first recorded here as gated on OD9a; PR #24 review finding `4330128184` showed that OD9a governs the as-of feature store and the leak controls, not the archive of resolution bytes. Decided by the owner's delegate on 2026-10-21 (§9.5, corrected after `4334268792`, §9.9): the resolution-content archive (the archived source bytes of each resolution record, content-addressed, with the evaluator over selector, field, comparator and value) is its own component, not gated on OD9a, and is scheduled independently of the point-in-time feature store, which stays gated on the OD9a wording. Until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it |
 
 ### 3.2 Item 2, ledger and registry
 
@@ -222,6 +222,10 @@ Phase 1 code leaves each as a named `OWNER_DECISION` field; none is chosen here.
     those submitted is taken as proof that nothing matched at finality, while the registry holds only what was
     submitted; RC-113 makes the condition the source rule's promise (OD5), and whether an archived read must
     accompany the record is for the owner.
+  - PR #26 round-1 finding `4333446625`: the Jev record's `inputs_digest` should be bound to the inputs Jev
+    triaged, so that a stale record with the right `event_id` cannot make an issuance issuable; `17` names the
+    field but not the input bundle it is taken over (the research outputs, the evidence, or the prompt). Once the
+    bundle is defined, the fix in `cpe/validation/issuance.py` is one expected-digest argument and one comparison.
 - **Not assigned by OD1 (§3.1 to §4.1):** the fusion pool and n_eff (T-23, T-24, F-14, F-17, F-18); the
   nested-chain identity (T-21); the source withdrawal rule of RC-169; the SIM-phase clause of T-33.
 - **Branch base:** this document is written on `8d5dbb9` (R9), while the decision comment reads `62d4c2a` (R8);
@@ -316,8 +320,12 @@ PR #22 `fcffeaf`, PR #23 `2e4a72c`; later findings are appended by the PR that l
 
 - `4329707438` (P1), `4329707419` (P2), `4329707427` (P2): the pending anchor row deleted on a refused publish
   (lost publication time, replaced published row, memory and disk disagreeing). **Decided by the owner and
-  applied in `0166f6b`** (pending rows are never deleted; a separate `pending_anchors` table; the high-water mark
-  reloaded from disk after every outcome).
+  applied in `0166f6b`**: a pending row is never deleted because a publish was refused or failed, since a refusal
+  does not prove the store did not commit; open-time reconciliation against a reachable store settles it (the
+  store holds it: a local anchor) or clears it (the store provably lacks it); the attempt is staged in a separate
+  `pending_anchors` table; the high-water mark is reloaded from disk after every outcome. (Corrected 2026-10-21
+  per PR #24 review finding `4330128201`: this line first read "pending rows are never deleted", which overstated
+  the decision.)
 - `4329904090` (P2): a retry after a store that committed the anchor and then reported a timeout republishes
   and records the retry's `published_at`, while an idempotent store keeps the original, so the local copy names a
   publication time at which nothing was published externally. **Defect**: when `anchors()` already holds the
@@ -332,6 +340,11 @@ PR #22 `fcffeaf`, PR #23 `2e4a72c`; later findings are appended by the PR that l
   partition applied RC-105 and RC-88 as the owner accepted (deviation 9 of PR #18); RC-146 makes the public
   occurrence a knowable time; which of the two stamps t*_k when they disagree is not stated. A defensive reading
   (keep the disposition, take the public occurrence for the knowable time) is possible if the owner wants it.
+  **Decided 2026-10-21 by the owner's delegate** (with PR #24 review finding `4330128194`) as a reading of RC-146
+  with RC-88: the publication partition decides the disposition, which stays immutable, and `knowable_at` is the
+  earliest of the evidenced publication, the public-act occurrence and logical finality, so a public occurrence
+  sets `knowable_at` even when its record is published late. Applied in H1 (PR #27), tested on this finding's
+  case (occurrence 90, publication 118, finality 110: `RESOLVED_NO`, `knowable_at` 90).
 - `4330044561` (P1): among several timely public-act records, selection by publication order can choose a later
   occurrence's knowable time (occurrence 95 published 100 over occurrence 90 published 105), against RC-146's
   "earliest". **Defect**: partition by publication, select the deciding timely record by its knowable time.
@@ -367,5 +380,102 @@ PR #22 `fcffeaf`, PR #23 `2e4a72c`; later findings are appended by the PR that l
 
 ### 9.4 Registration follow-up (PR #23)
 
-- None at `2e4a72c`; the automatic review had not run when this section was written.
+Written 2026-10-20 as "none at `2e4a72c`"; Codex's automatic review of `2e4a72c` arrived after the stop point:
 
+- `4330096692` (P2): a directly constructed `CandidateEntry` with a naive `listed_at` raises `TypeError` in the
+  comparison with the ledger clock instead of the refusal `naive_timestamp`. **Defect**: validate the entry through
+  its payload before the decision.
+- `4330096714` (P1): `listed_at` is compared with the decision's clock sample, not with the receipt the append
+  assigns; a clock that moves back between the two, above the high-water mark, admits an entry received before
+  its listing time. **Defect**, the same root as PR #25's `4333434011`: a ledger append that checks a predicate
+  against its own receipt closes both.
+- `4330096680` (P1), `4330096701` (P1): replay of a ledger written by the release before PR #23 (a consumer
+  registered after its input's withdrawal; two claims naming one calibration record) is not repaired. **Not worth
+  its code**: both need a ledger from a release that never shipped; no such ledger exists outside the tests.
+
+### 9.5 Hand-off update (PR #24)
+
+Codex's review of `188a1e1`:
+
+- `4330128184` (P1): predicate evaluation against archived resolution content is not gated on OD9a, which
+  governs the as-of feature store keyed by `available_at`. **Specification question (the reading of a gate)**,
+  decided below.
+- `4330128194` (P1): `4330044547` is a defect, not a specification question: RC-146 defines `knowable_at` as the
+  earliest of the three times, while RC-88 keeps only the disposition immutable. Decided with `4330044547` (§9.2).
+- `4330128201` (P2): §9.1 overstated `0166f6b` as "pending rows are never deleted". **Factual correction**,
+  applied in §9.1.
+
+### 9.6 Offline capability model (PR #25)
+
+Codex's automatic review of `050ff07`, after the two fix rounds:
+
+- `4333626167` (P1): with two gates on one ledger, a lower commit can follow a higher commit that is written but
+  not yet anchored, and replay lowers the gate without a rotation. **Defect**.
+- `4333626175` (P1): a reboot or slew discontinuity between steps 3 and 4 is not seen before the acknowledgement.
+  **Defect**.
+- `4333626183` (P2): a rollback at the append's own clock sample is refused by the ledger but not logged by the
+  gate. **Defect**.
+- `4333626186` (P2): `ACTIONS` is a mutable module dictionary. **Defect**.
+- `4333626188` (P2): a faulty time source writes an unvalidated reading that replay later refuses. **Defect**.
+- `4333626194` (P1): a start-up abort decided on a snapshot can land after another gate's commit, and replay
+  refuses the ledger. **Defect**.
+
+### 9.7 Input validation (PR #26)
+
+- `4333446625` (P1, round 1): bind the Jev record to the digest of its triaged inputs. **Specification question**,
+  in §5.
+- `4333728786` (P2, review of `4c8ed14`): a cyclic JSON value raises `RecursionError` instead of a refusal; the root
+  is `cpe/canonical._check_json`, shared by every schema that accepts free JSON. **Defect**.
+- `4333728777` (P1, review of `4c8ed14`): names commit `ee355e5` with Codex's identity; the object is not in this
+  repository and the PR's commits carry the designated identity. **Not a defect**: the review-checkout identity,
+  the OD9b pattern of PR #17's `4329073542`.
+
+### 9.8 Decisions of 2026-10-21
+
+The owner's delegate (the parent session of the Phase 1 work) triaged §9.1 to §9.7 on 2026-10-21, after PR #26.
+One hardening pass, three PRs against `main` at `2122567`, one Codex review each and no fix rounds:
+
+| Finding | Decision | Where |
+|---|---|---|
+| `4329904090` | fix: settle a retried anchor from the store's existing anchor | H1, PR #27 |
+| `4330044561` | fix: the deciding timely record is the earliest knowable | H1, PR #27 |
+| `4330044547`, `4330128194` | fix as the reading of RC-146 with RC-88 recorded in §9.2 | H1, PR #27 |
+| `4330044580` | fix: a status-decided VOID records the status receipt | H1, PR #27 |
+| `4330044588` | fix: receipts given to the pure `adjudicate` are bounded | H1, PR #27 |
+| `4333728786` | fix: `cpe/canonical` refuses cyclic values | H1, PR #27 |
+| `4330096692` | fix: a naive listing time is a refusal | H1, PR #27 |
+| `4330096714`, `4333434011` | fix: `Ledger.append` checks a predicate against its own receipt, used by the candidate log and the capability gate | H1, PR #27 |
+| `4333626167`, `4333626175`, `4333626183`, `4333626186`, `4333626188`, `4333626194` | fix | H2, PR #28 |
+| `4330035947`, `4330035940` | fix | H3 |
+| `4330035931` | fix: parse the trailer block, refuse every key but `Reviewed-by`; whose name counts as human stays OD9b | H3 |
+| `4330128201` | factual correction of §9.1 | H3 |
+| `4330128184` | predicate evaluation is not gated on OD9a; the resolution-content archive and its evaluator are a separate component, scheduled independently of the OD9a-gated point-in-time feature store (§3.1; corrected after `4334268792`) | H3 (this text) |
+| `4333446625` | specification question for the owner (§5) | H3 (this text) |
+| `4330035955`, `4330044572` | not fixed: not worth their code, as assessed in §9.2 and §9.3 | — |
+| `4330096680`, `4330096701` | not fixed: need a ledger from a release that never shipped | — |
+| `4333728777` | not fixed: the review-checkout identity, OD9b pattern | — |
+
+Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appended below.
+
+### 9.9 Hardening PRs (H1 to H3)
+
+- H1 (PR #27, `dd8af3f`, merged at `5c0cbf6` on green CI and the parent session's verification): Codex's review
+  never returned (requested 2026-10-21 07:02 UTC, still "running" at 08:02 UTC). It was not re-requested (one
+  review per hardening PR); a late finding is appended here by whoever reads it.
+- H2 (PR #28, `336b970`), `4333981363` (P1): remove the reviewer's name from the docstring of
+  `tests/test_hardening_h2.py` as an AI marking. **Not a defect**: naming the review a regression test answers is
+  the provenance `AGENTS.md` §7 requires ("which finding it addresses"); the owner confirmed this reading for the
+  same finding on PR #16 (`4329259263`) and PR #18 (`4329442698`).
+- H3 (PR #29, `898ec19`), `4334268788` (P2): the trailer parse requires whitespace after the colon, while git
+  accepts `Tested:Bob` as a trailer, so a prohibited key written without the space passes. **Defect**: accept the
+  form without whitespace (`[ \t]*`), or delegate to `git interpret-trailers --parse`. Not fixed (no fix rounds on
+  the hardening PRs).
+- H3 (PR #29, `898ec19`), `4334268792` (P1): §3.1 says predicate evaluation is not gated on OD9a but is built
+  "together with the point-in-time store", which stays gated on OD9a until its `AGENTS.md` wording is merged; read
+  literally, the decision re-gates it. **Specification question for the owner's delegate**: whether the archive of
+  resolution bytes is separable from the OD9a-gated as-of feature store, so that predicate evaluation can be
+  scheduled on its own. **Decided by the owner's delegate on 2026-10-21: separable.** The resolution-content
+  archive and its evaluator are their own component, not gated on OD9a, scheduled independently of the
+  point-in-time feature store, which stays gated on the OD9a wording. §3.1 and §9.8 are corrected accordingly
+  (a correction of the decision text, not a fix round). `4334268788` stays listed for the next code PR that
+  touches `tools/check_provenance.py`.

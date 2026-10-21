@@ -76,20 +76,24 @@ def imported_names(tree: ast.AST, module: str, is_package: bool) -> list[tuple[s
 
 
 def os_aliases(tree: ast.AST) -> set[str]:
-    """Every local name bound to the ``os`` module: ``import os``, ``import os as safe``."""
+    """Every local name bound to the ``os`` module: ``import os``, ``import os as safe``, and ``import os.path``,
+    which binds ``os`` itself (``import os.path as p`` binds ``os.path``, not ``os``)."""
     names = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 if alias.name == "os":
                     names.add(alias.asname or "os")
+                elif alias.name.startswith("os.") and alias.asname is None:
+                    names.add("os")
     return names
 
 
 def star_imports(tree: ast.AST) -> list[tuple[str, int]]:
-    """``from x import *`` forms, which bind names the static check cannot resolve."""
+    """Absolute ``from x import *`` forms, which bind names the static check cannot resolve. A relative star import
+    (``from .os import *``) names a module of this package, not the standard library."""
     return [(node.module or "", node.lineno) for node in ast.walk(tree)
-            if isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names)]
+            if isinstance(node, ast.ImportFrom) and node.level == 0 and any(alias.name == "*" for alias in node.names)]
 
 
 def process_api_uses(tree: ast.AST) -> list[tuple[str, int]]:
@@ -126,7 +130,7 @@ def findings_for_module(path: Path, source: str, package_root: Path) -> list[str
     for name, line in process_api_uses(tree):
         add(line, "process-use", f"uses {name}, a process-spawning facility outside the offline boundary")
     for module_name_, line in star_imports(tree):
-        if _root(module_name_) in FORBIDDEN_MODULES or _root(module_name_) == "os":
+        if _root(module_name_) in FORBIDDEN_MODULES or module_name_ == "os":  # ``os.path`` binds no process name
             add(line, "star", f"imports * from {module_name_}, which binds process or network facilities unseen")
     return [findings[key] for key in sorted(findings)]
 
