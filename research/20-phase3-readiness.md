@@ -303,7 +303,8 @@ LIVE credentials do not exist in Phase 3.
 
 **Logging and redaction.** Errors are typed outcomes; no request object, header or exception object is logged
 or passed upward (`08` §5; RC-15, RC-60); `Bearer ` and canary scans in CI (`12` Phase 1 tests; `14` D6);
-readback bodies are archived as bytes in the ledger, which therefore must not contain tokens (P3-10, P3-14).
+readbacks enter the ledger as digests with the `AccountKey` hashed, never as unredacted response bodies, and
+no ledger record may contain a token (P3-10, P3-14).
 
 **What a compromised agent session can reach.** The repository, its CI, and any machine where agents run:
 code, fixtures, the ledger copy it is given, PR and issue text. It can propose a malicious change, which review
