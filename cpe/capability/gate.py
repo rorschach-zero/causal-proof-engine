@@ -35,7 +35,6 @@ from cpe.capability.records import (
 from cpe.capability.signing import Verifier
 from cpe.capability.state import GateState, replay_gate
 from cpe.capability.timesource import ClockReading, TimeSource
-from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.schemas import Capability
@@ -94,9 +93,10 @@ class CapabilityGate:
         if hook is not None:
             hook()
 
-    def _append(self, decide: Decide) -> Record:
+    def _append(self, decide: Decide, admit: Callable[[datetime], None] | None = None) -> Record:
         """One read-decide-write against the chain head the decision was taken on; a head that moved makes the
-        decision recompute on the new state (another writer on the same ledger, this gate or another)."""
+        decision recompute on the new state (another writer on the same ledger, this gate or another). ``admit``
+        is checked by the ledger against the receipt the append assigns."""
         with self._lock:
             for _ in range(8):
                 state = self.state()
@@ -108,7 +108,7 @@ class CapabilityGate:
                     raise
                 kind, record_id, payload = decide(state, now)
                 try:
-                    return self._ledger.append(kind, record_id, payload, expected_head=state.head)
+                    return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit)
                 except Refusal as refusal:
                     if refusal.reason != "stale_head":
                         raise
@@ -275,14 +275,25 @@ class CapabilityGate:
             record = IntentRecord(intent_id, capability, target, reading)
             return KIND_INTENT, intent_id, record.to_payload()
 
+        def unexpired_at_receipt(receipt: datetime) -> None:  # the receipt is the time that counts (4333434011)
+            if refusal is None and receipt >= capability.expiry:
+                raise Refusal("expired_at_receipt", f"capability {capability.nonce} expired before its intent was received")
+
+        def expired_check(state: GateState, now: datetime) -> Write:
+            check = CheckRecord(f"presentation:{capability.nonce}", "refused", "expired", self._reading(state, now))
+            return KIND_CHECK, _ledger_id("gate-check", state.head), check.to_payload()
+
         with self._lock:
             self._hook("before_intent")
-            appended = self._append(intent)  # step 1: the nonce is consumed from here on every branch
+            try:
+                self._append(intent, admit=unexpired_at_receipt)  # step 1: the nonce is consumed from here on
+            except Refusal as at_receipt:
+                if at_receipt.reason != "expired_at_receipt":
+                    raise
+                self._append(expired_check)  # the refused check is persisted with its reading (RC-65)
+                raise Refusal("expired", at_receipt.detail) from None
             if refusal is not None:
                 raise Refusal(refusal, f"capability {capability.nonce} refused")
-            if parse_timestamp(appended.receipt_time) >= capability.expiry:  # the receipt is the time that counts
-                self._abort(intent_id, "the intent was received at or after the capability's expiry")
-                raise Refusal("expired", f"capability {capability.nonce} expired before its intent was received")
             self._hook("after_intent")
             intent_anchor = self._try_anchor()  # step 2
             if intent_anchor is None:

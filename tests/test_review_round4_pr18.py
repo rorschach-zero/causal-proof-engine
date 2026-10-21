@@ -3,6 +3,8 @@ the adjudication follow-up. Each test fails at 06422fa and passes after the fix.
 monotone-publication condition is the source's declared promise) is a specification question and has no test."""
 from __future__ import annotations
 
+from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 
 from cpe.adjudication import adjudicate
@@ -37,11 +39,12 @@ def test_4329838030_a_retry_after_the_disposition_commit_adds_no_duplicate_defec
     reg.submit_record(record("late", occurrence=90, published=115, observed=115).record)
     original = ledger.append
 
-    def dies_on_the_first_defect_row(kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None) -> Record:
+    def dies_on_the_first_defect_row(kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
+                                     admit: Callable[[datetime], None] | None = None) -> Record:
         if kind == KIND_DEFECT:
             ledger.append = original  # type: ignore[method-assign]
             raise RuntimeError("process died after the disposition commit")
-        return original(kind, record_id, payload, expected_head)
+        return original(kind, record_id, payload, expected_head, admit)
 
     ledger.append = dies_on_the_first_defect_row  # type: ignore[method-assign]
     try:

@@ -205,10 +205,10 @@ class AdjudicationRegistry:
                 event = state.event(event_id)
                 now = self._ledger.now()
                 # Only a status the registry held by logical finality can decide the failure condition (RC-88).
-                statuses = [status for status, receipt in state.status.get(rule.source_id, [])
-                            if receipt <= spec.logical_finality]
-                fresh = adjudicate(spec, rule, event.records, event.observations, statuses, now,
-                                   event.observation_receipts)
+                held = {status: receipt for status, receipt in state.status.get(rule.source_id, [])
+                        if receipt <= spec.logical_finality}
+                fresh = adjudicate(spec, rule, event.records, event.observations, list(held), now,
+                                   event.observation_receipts, held)
                 if self.before_write is not None:
                     hook, self.before_write = self.before_write, None
                     hook()
