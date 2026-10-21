@@ -57,6 +57,8 @@ def detect_leak(forecasts: Sequence[float], outcomes: Sequence[int], *, bound: f
         raise Refusal("invalid_bound", "the pre-registered bound is a finite non-negative number")
     if isinstance(permutations, bool) or not isinstance(permutations, int) or permutations < 1:  # 4335189809
         raise Refusal("invalid_permutations", "at least one permutation is needed")
+    if isinstance(seed, bool) or not isinstance(seed, int):  # None would seed from system entropy (4335327806)
+        raise Refusal("invalid_seed", "the pre-registered seed is an integer")
     observed = _score(checked, outcomes)
     generator = random.Random(seed)
     shuffled = list(outcomes)

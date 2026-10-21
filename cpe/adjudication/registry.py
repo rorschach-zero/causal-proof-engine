@@ -87,7 +87,10 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             state.rules[rule.source_id] = rule
         elif record.kind == KIND_CONTENT:
             content = ArchivedContent.from_payload(payload)
-            state.contents[content.sha256] = (content, parse_timestamp(record.receipt_time, "receipt_time"))
+            receipt = parse_timestamp(record.receipt_time, "receipt_time")
+            if content.available_at > receipt:  # the bound archive_content enforces online (PR #32 4335196673)
+                raise Refusal("evidence_after_receipt", f"{record.record_id}: content available after its receipt")
+            state.contents[content.sha256] = (content, receipt)
         elif record.kind == KIND_RECORD:
             resolution = ResolutionRecord.from_payload(payload)
             archived = state.contents.get(resolution.content_digest)
