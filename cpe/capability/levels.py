@@ -8,6 +8,8 @@ execution).
 """
 from __future__ import annotations
 
+from types import MappingProxyType
+
 from cpe.errors import Refusal
 
 LEVELS: tuple[str, ...] = ("RESEARCH_ONLY", "SHADOW_LIVE_QUOTES", "SIM_READ_ONLY", "SIM_EXECUTION", "LIVE_EXECUTION")
@@ -15,12 +17,13 @@ FLOOR = LEVELS[0]
 LIVE = LEVELS[-1]
 PROMOTE_PREFIX = "promote:"
 
-ACTIONS: dict[str, str] = {
+# A read-only view: the one table the gate trusts cannot be rewritten by an in-process caller (RC-46).
+ACTIONS: MappingProxyType[str, str] = MappingProxyType({
     "research": FLOOR,
     "shadow_quotes": "SHADOW_LIVE_QUOTES",
     "sim_read": "SIM_READ_ONLY",
     "sim_execution": "SIM_EXECUTION",
-}
+})
 
 
 def rank(level: str) -> int:
