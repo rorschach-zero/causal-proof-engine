@@ -19,9 +19,11 @@ from cpe.adjudication.rules import (
     check_record_chronology,
     check_record_content,
     check_record_is_final_enough,
+    earliest_public_occurrence,
 )
 from cpe.canonical import digest_of
 from cpe.clock import parse_timestamp
+from cpe.schemas.common import timestamp_payload
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.schemas.event import EventSpec
@@ -35,8 +37,9 @@ KIND_DISPOSITION = "disposition"
 KIND_DEFECT = "source_latency_defect"
 KIND_INCIDENT = "integrity_incident"
 KIND_CONTENT = "resolution_content"
+KIND_KNOWABLE = "knowable_correction"
 KINDS: frozenset[str] = frozenset({KIND_EVENT, KIND_RULE, KIND_RECORD, KIND_OBSERVATION, KIND_STATUS, KIND_DISPOSITION,
-                                   KIND_DEFECT, KIND_INCIDENT, KIND_CONTENT})
+                                   KIND_DEFECT, KIND_INCIDENT, KIND_CONTENT, KIND_KNOWABLE})
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -113,6 +116,13 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             if event.disposition is not None and defect_id not in {d.record_id for d in event.disposition.defects}:
                 event.disposition = replace(event.disposition,
                                             defects=event.disposition.defects + (Defect(defect_id, detail),))
+        elif record.kind == KIND_KNOWABLE:
+            event_id, knowable = payload["event_id"], parse_timestamp(payload["knowable_at"], "knowable_at")
+            assert isinstance(event_id, str)
+            event = state.event(event_id)
+            if event.disposition is not None and event.disposition.knowable_at is not None \
+                    and knowable < event.disposition.knowable_at:
+                event.disposition = replace(event.disposition, knowable_at=knowable)
         elif record.kind == KIND_INCIDENT:
             event_id = payload["event_id"]
             assert isinstance(event_id, str)
@@ -122,6 +132,15 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                     (i.kind, i.reference_id) for i in event.disposition.incidents}:
                 event.disposition = replace(event.disposition, incidents=event.disposition.incidents + (incident,))
     return state
+
+
+def _not_after(evidenced: datetime, what: str) -> Callable[[datetime], None]:
+    """An append's admission check: the evidence time is at or before the receipt the append assigns, not an
+    earlier clock sample (H1 review 4334622048)."""
+    def admit(receipt: datetime) -> None:
+        if evidenced > receipt:
+            raise Refusal("evidence_after_receipt", f"{what}: evidenced after its receipt")
+    return admit
 
 
 class AdjudicationRegistry:
@@ -207,7 +226,8 @@ class AdjudicationRegistry:
             if rule.publishes_evidenced_times and record.evidenced_publication_time is None:
                 raise Refusal("missing_publication_time", f"{record.record_id}: the source evidences publication times")
             check_record_chronology(received)
-            return self._ledger.append(KIND_RECORD, _ledger_id("record", record.record_id), record.to_payload())
+            return self._ledger.append(KIND_RECORD, _ledger_id("record", record.record_id), record.to_payload(),
+                                       admit=lambda receipt: check_record_chronology(replace(received, receipt=receipt)))
 
     def submit_observation(self, observation: AbsenceObservation) -> Record:
         with self._lock:
@@ -217,19 +237,17 @@ class AdjudicationRegistry:
                 raise Refusal("wrong_source", f"{observation.source_id} is not the resolution source of {spec.event_id}")
             if observation.source_id not in state.rules:
                 raise Refusal("unknown_source", f"{observation.source_id} has no registered source rule (OD5)")
-            if observation.observed_at > self._ledger.now():
-                raise Refusal("evidence_after_receipt", f"{observation.observation_id}: observed after its receipt")
             return self._ledger.append(KIND_OBSERVATION, _ledger_id("observation", observation.observation_id),
-                                       observation.to_payload())
+                                       observation.to_payload(), admit=_not_after(observation.observed_at,
+                                                                                   observation.observation_id))
 
     def declare_source_status(self, status: SourceStatus) -> Record:
         with self._lock:
             if status.source_id not in self.state().rules:
                 raise Refusal("unknown_source", f"{status.source_id} has no registered source rule (OD5)")
-            if status.declared_at > self._ledger.now():
-                raise Refusal("evidence_after_receipt", f"{status.source_id}: status declared after its receipt")
             return self._ledger.append(KIND_STATUS, _ledger_id("status", status.source_id, status.declared_at.isoformat()),
-                                       status.to_payload())
+                                       status.to_payload(), admit=_not_after(status.declared_at,
+                                                                             f"the status of {status.source_id}"))
 
     def adjudicate(self, event_id: str) -> Adjudication:
         """Adjudicate the event at the ledger's clock. A final disposition is written once, against the chain head
@@ -262,6 +280,14 @@ class AdjudicationRegistry:
                             self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
                                                 {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
                             stored = replace(stored, defects=stored.defects + (defect,))
+                    # A public occurrence that arrives after the disposition still sets knowable_at (RC-146 read
+                    # with RC-88, section 9.2); the disposition itself stays (H1 review 4334622042).
+                    public = earliest_public_occurrence(spec, rule, event.records)
+                    if public is not None and stored.knowable_at is not None and public[0] < stored.knowable_at:
+                        self._ledger.append(KIND_KNOWABLE, _ledger_id("knowable", event_id, public[1]),
+                                            {"event_id": event_id, "knowable_at": timestamp_payload(public[0]),
+                                             "record_id": public[1]})
+                        stored = replace(stored, knowable_at=public[0])
                     known = {(i.kind, i.reference_id) for i in stored.incidents}
                     for incident in fresh.incidents:
                         if (incident.kind, incident.reference_id) not in known:

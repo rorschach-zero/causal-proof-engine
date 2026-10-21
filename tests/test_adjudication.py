@@ -58,11 +58,12 @@ def spec(kind: str = "milestone-deadline", event_id: str = "E", deadline: float 
     return EventSpec.from_payload(payload)
 
 
-def archived(claim: str = "occurred", source: str = "src") -> ArchivedContent:
+def archived(claim: str = "occurred", source: str = "src", available: float = 0) -> ArchivedContent:
     """Archived source content on which the predicate of ``spec`` (record ``sel``, field ``f``, ``eq`` true)
-    evaluates to ``claim``; attested available at day 0, so that it can be archived at any later receipt."""
+    evaluates to ``claim``; attested available at day 0 by default, so that it can be archived at any later
+    receipt."""
     content = canonical_bytes({"sel": {"f": claim == "occurred"}})
-    return ArchivedContent(content, sha256_hex(content), MEDIA_TYPE_JSON, source, day(0))
+    return ArchivedContent(content, sha256_hex(content), MEDIA_TYPE_JSON, source, day(available))
 
 
 def submit(registry: AdjudicationRegistry, received: ReceivedRecord) -> None:

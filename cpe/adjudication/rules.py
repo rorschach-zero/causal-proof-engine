@@ -265,6 +265,20 @@ def _contradicts(received: ReceivedRecord, spec: EventSpec, disposition: Disposi
     return timely and disposition == "RESOLVED_YES"
 
 
+def earliest_public_occurrence(spec: EventSpec, rule: SourceRule,
+                               records: Sequence[ReceivedRecord]) -> tuple[datetime, str] | None:
+    """The earliest occurrence, with its record id, that a record of a public act evidences within the predicate's
+    bounds (from its lower bound to the deadline), timely or late; None when the source's occurrences are not public
+    acts or no record evidences one. An occurrence after the deadline decides nothing and makes nothing knowable
+    (H1 review 4334622008)."""
+    if not rule.occurrence_is_public_act:
+        return None
+    public = [(r.record.occurrence_time, r.record.record_id) for r in records
+              if r.claim(spec) == "occurred" and r.record.occurrence_time is not None
+              and _lower_bound(spec) <= r.record.occurrence_time <= spec.deadline]
+    return min(public) if public else None
+
+
 def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedRecord],
                observations: Sequence[AbsenceObservation], statuses: Sequence[SourceStatus], now: datetime,
                observation_receipts: Mapping[str, datetime] | None = None,
@@ -386,11 +400,9 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
     if disposition not in FINAL:
         return Adjudication(spec.event_id, "OPEN", None, None, basis, None)
     assert knowable is not None
-    if rule.occurrence_is_public_act:
-        public = [r.record.occurrence_time for r in records
-                  if r.claim(spec) == "occurred" and r.record.occurrence_time is not None
-                  and r.record.occurrence_time >= _lower_bound(spec)]
-        knowable = min([knowable, *[t for t in public if t is not None]])
+    public = earliest_public_occurrence(spec, rule, records)
+    if public is not None:
+        knowable = min(knowable, public[0])
     timestamps = ResolutionTimestamps(
         receipt=deciding.receipt if deciding is not None else evidence_receipt,
         occurrence=deciding.record.occurrence_time if deciding is not None else None,
