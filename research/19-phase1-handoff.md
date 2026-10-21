@@ -562,3 +562,95 @@ fixed in one PR against `main` at `44aa596`, with `tests/test_hardening_h4.py` (
   receipt (`evidence_after_receipt`), the bound `archive_content` enforces online.
 - `4335327806` (P2, leak detector): a seed that is not an integer (`None`, a Boolean, a float, a string) is refused
   as `invalid_seed`, so the null distribution is never drawn from system entropy.
+
+## 10. Mutation testing
+
+The quality gate of issue #3 comment `6312263652`, item 3 (second bullet), run 2026-10-21 on the PR "Mutation
+testing", with the reporting rules of the owner's delegate (message of 11:20 UTC): scores per module, the mutants
+without covering tests first, at least 85 % killed in the invariant cores, the other survivors by category.
+
+**Tool and command.** mutmut 3.8.0 (`requirements/mutation.txt`, hash-locked with every transitive package beside
+`requirements/dev.txt`), Python 3.13.16, four workers, in a virtual environment and a scratch copy outside the
+repository. Configuration in `pyproject.toml` (`[tool.mutmut]`, source `cpe/`); `mutants/` is ignored by Git.
+
+```sh
+pip install --require-hashes --no-deps -r requirements/dev.txt -r requirements/mutation.txt
+mutmut run --max-children 4 && mutmut results --all true
+```
+
+Runtime: 3236 s on `ac4c640` (baseline), 3393 s on `e6c3ba2` (after). Mutation testing is not added to CI: a run takes
+more than 50 minutes against the 15-minute limit. Two tests are deselected for the mutation run only, because mutmut's
+trampolines change what they observe: `test_4335189780_the_store_exposes_no_read_without_a_cutoff` (it lists the
+public attributes of `PointInTimeStore`, which the trampolines extend) and
+`test_4335130178_deep_values_in_a_comparison_are_a_typed_refusal` (it provokes a `RecursionError` at a depth the
+trampolines' extra frames shift). Both run in CI as before.
+
+**Totals.** 8387 mutants of `cpe/`.
+
+| Commit | Killed | Survived | No covering test | Timeout | Score |
+|---|---|---|---|---|---|
+| `ac4c640` (baseline) | 5526 | 2739 | 121 | 1 | 65.9 % |
+| `e6c3ba2` (with the new tests) | 6394 | 1992 | 0 | 1 | 76.2 % |
+
+The 121 mutants without covering tests (`CheckRecord.from_payload`, `VoidRequest.from_payload`,
+`BreachReport.to_payload`, `HostTimeSource`, `UnavailableAnchorStore.publish`, `SystemClock.now`) are all covered now;
+no code was dead. The timeout (`effective_cutoff`, a mutant that never ends the walk) counts as detected.
+
+**Survivors of `e6c3ba2` by category (1992).**
+
+| Category | Count | Reason |
+|---|---|---|
+| Text | 1666 | refusal detail text (721), field labels passed to validators for messages (861), adjudication basis, defect and incident text, log messages, report detail text. Killing them pins wording, not behaviour |
+| Equivalent | 302 | ledger-identifier prefixes that collide with nothing (87), SQL keyword and codec-name case (52), and 163 single mutants with their reasons in the scratch table of the PR (initial values always reassigned, `typing.cast` arguments, retry bounds of contention loops, values written and never read, guards made redundant by an earlier check, branches unreachable on a ledger the registry writes) |
+| Tool limit | 18 | 15 mutants of `_order`, a factory that runs once at import to build `COMPARATORS`, which mutmut's per-call switch cannot reach (hand-applied, its mutants are killed); 3 reason mutants of `evaluate` killed only by the deselected `test_4335130178` |
+| Real gap | 6 | killed by the last commit of the PR, after the measured run, verified by hand-applying each mutation: the reason of `check_record_chronology` for a publication after the receipt (3), a late timely report after a YES in `_contradicts` (2), the status-receipt reason in `adjudicate` (1) |
+
+No real gap is left unkilled.
+
+**Score per module at `e6c3ba2`.** Raw is killed over all mutants; adjusted excludes text, equivalent and tool-limit
+mutants and counts the six hand-verified kills.
+
+| Module | Mutants | Killed | Raw | Adjusted |
+|---|---|---|---|---|
+| `ledger.store` | 486 | 388 | 79.8 % | 100 % |
+| `ledger.replay` | 195 | 180 | 92.3 % | 100 % |
+| `ledger.record` | 136 | 105 | 77.2 % | 100 % |
+| `ledger.anchor` | 121 | 81 | 66.9 % | 100 % |
+| `capability.gate` | 572 | 452 | 79.0 % | 100 % |
+| `capability.records` | 322 | 254 | 78.9 % | 100 % |
+| `capability.state` | 74 | 62 | 83.8 % | 100 % |
+| `capability.timesource` | 78 | 59 | 75.6 % | 100 % |
+| `capability.levels` | 41 | 30 | 73.2 % | 100 % |
+| `capability.signing` | 15 | 11 | 73.3 % | 100 % |
+| `adjudication.rules` | 866 | 704 | 81.3 % | 100 % |
+| `adjudication.registry` | 614 | 488 | 79.5 % | 100 % |
+| `adjudication.records` | 406 | 292 | 71.9 % | 100 % |
+| `adjudication.predicate` | 168 | 111 | 66.1 % | 100 % |
+| `adjudication.content` | 153 | 96 | 62.7 % | 100 % |
+| `adjudication.breaches` | 37 | 37 | 100 % | 100 % |
+| `adjudication.eligibility` | 29 | 29 | 100 % | 100 % |
+| `registration.records` | 905 | 644 | 71.2 % | 100 % |
+| `registration.registry` | 864 | 644 | 74.5 % | 100 % |
+| `registration.seeds` | 6 | 5 | 83.3 % | 100 % |
+| `pointintime.store` | 262 | 198 | 75.6 % | 100 % |
+| `pointintime.leak` | 124 | 103 | 83.1 % | 100 % |
+| `canonical` | 88 | 68 | 77.3 % | 100 % |
+| `schemas.event` | 610 | 437 | 71.6 % | 100 % |
+| `schemas.forecast` | 496 | 363 | 73.2 % | 100 % |
+| `schemas.common` | 200 | 155 | 77.5 % | 100 % |
+| `schemas.capability` | 119 | 87 | 73.1 % | 100 % |
+| `schemas.research_output` | 106 | 79 | 74.5 % | 100 % |
+| `validation.issuance` | 219 | 178 | 81.3 % | 100 % |
+| `clock` | 69 | 49 | 71.0 % | 100 % |
+| `errors` | 6 | 6 | 100 % | 100 % |
+
+**The 85 % target.** Met on the adjusted score in every core module (ledger, capability, adjudication rules and
+registry, registration, point-in-time, canonical). On the raw score only `ledger.replay` meets it; in every other core
+module the remainder is text, equivalent or tool-limit mutants, and reaching 85 % raw would take tests that assert
+refusal wording and field labels, the case the delegate's rule stops at ("tests that only pin incidental
+behaviour").
+
+**Found on the way, for a later cleanup (not changed here):** `GateState.commit_seq` and the values of
+`GateState.commits`, and the registration replay's `cluster_registered_at`, are written and never read; three
+branches are unreachable on any ledger the registries write (`anchor_confirmatory_register`'s mapping of
+`duplicate_record_id`, the second `commit_in_doubt` of `promote`, `submit_observation`'s `unknown_source`).
