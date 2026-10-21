@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, cast
 
+from cpe.canonical import require_hex_digest
 from cpe.errors import Refusal
 from cpe.schemas.common import (
     Payload,
@@ -72,7 +73,7 @@ class SourceRule:
         }
 
 
-_RECORD_REQUIRED = frozenset({"record_id", "event_id", "source_id", "claim", "first_observed_at"})
+_RECORD_REQUIRED = frozenset({"record_id", "event_id", "source_id", "claim", "first_observed_at", "content_digest"})
 _RECORD_OPTIONAL = frozenset({"occurrence_time", "evidenced_publication_time", "lateness_evidence", "definitive"})
 
 
@@ -80,7 +81,9 @@ _RECORD_OPTIONAL = frozenset({"occurrence_time", "evidenced_publication_time", "
 class ResolutionRecord:
     """A record of the resolution source about the event, as the observer archived it.
 
-    ``first_observed_at`` is the observer's read time (beside the evidenced publication time, RC-105);
+    ``content_digest`` is the SHA-256 of the archived source content the record rests on; ``claim`` is the
+    observer's statement of what that content shows under the registered predicate, and adjudication refuses the
+    record when the evaluation of the content disagrees (PR #18 finding 4329664953). ``first_observed_at`` is the observer's read time (beside the evidenced publication time, RC-105);
     ``lateness_evidence`` says the record evidences that the occurrence was after the deadline, ``definitive``
     that the event had definitively not occurred by the deadline (RC-71). The registry adds the receipt time.
     """
@@ -90,12 +93,14 @@ class ResolutionRecord:
     source_id: str
     claim: Claim
     first_observed_at: datetime
+    content_digest: str
     occurrence_time: datetime | None = None
     evidenced_publication_time: datetime | None = None
     lateness_evidence: bool = False
     definitive: bool = False
 
     def __post_init__(self) -> None:
+        require_hex_digest(self.content_digest, "content_digest")
         if self.claim == "not-occurred" and (self.occurrence_time is not None or self.lateness_evidence):
             raise Refusal("inconsistent_record", f"{self.record_id}: a record of non-occurrence carries no occurrence "
                           "time and no evidence of lateness")
@@ -116,6 +121,7 @@ class ResolutionRecord:
             source_id=require_identifier(mapping["source_id"], "source_id"),
             claim=cast(Claim, claim),
             first_observed_at=require_timestamp(mapping["first_observed_at"], "first_observed_at"),
+            content_digest=require_hex_digest(mapping["content_digest"], "content_digest"),
             occurrence_time=optional_timestamp(mapping.get("occurrence_time"), "occurrence_time"),
             evidenced_publication_time=optional_timestamp(mapping.get("evidenced_publication_time"),
                                                           "evidenced_publication_time"),
@@ -130,6 +136,7 @@ class ResolutionRecord:
             "source_id": self.source_id,
             "claim": self.claim,
             "first_observed_at": timestamp_payload(self.first_observed_at),
+            "content_digest": self.content_digest,
             "occurrence_time": timestamp_payload(self.occurrence_time),
             "evidenced_publication_time": timestamp_payload(self.evidenced_publication_time),
             "lateness_evidence": self.lateness_evidence,

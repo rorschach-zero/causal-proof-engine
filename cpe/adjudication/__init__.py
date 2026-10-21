@@ -9,12 +9,17 @@
   observation shows no record at or after finality, an adjudicated VOID when the source rule's failure condition
   holds, otherwise OPEN until the observer has read the source; a later report of timely occurrence is a
   source-latency defect and changes nothing (RC-88, RC-113).
+- A resolution record names the archived source content it rests on (content-addressed by SHA-256, supplied by
+  the caller, never fetched); its claim is derived from that content by the registered predicate (PR #18
+  4329664953; hand-off section 3.1).
 - Breaches are classes of a member's ``knowable_at`` against the registration time, the arm cutoffs and the
   issuance close (RC-135, RC-139, RC-163); what they do in a statistic is item 3 and is not built here.
 """
 from cpe.adjudication.breaches import BreachReport, classify_breaches
+from cpe.adjudication.content import ArchivedContent
 from cpe.adjudication.eligibility import ForecastStatus, classify_forecast, cluster_knowable_time
 from cpe.adjudication.records import AbsenceObservation, ResolutionRecord, SourceRule, SourceStatus
+from cpe.adjudication.predicate import MEDIA_TYPE_JSON, evaluate
 from cpe.adjudication.registry import AdjudicationRegistry
 from cpe.adjudication.rules import Adjudication, Disposition, adjudicate
 
@@ -22,8 +27,10 @@ __all__ = [
     "AbsenceObservation",
     "Adjudication",
     "AdjudicationRegistry",
+    "ArchivedContent",
     "BreachReport",
     "Disposition",
+    "MEDIA_TYPE_JSON",
     "ForecastStatus",
     "ResolutionRecord",
     "SourceRule",
@@ -32,4 +39,5 @@ __all__ = [
     "classify_breaches",
     "classify_forecast",
     "cluster_knowable_time",
+    "evaluate",
 ]

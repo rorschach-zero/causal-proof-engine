@@ -15,7 +15,7 @@ from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
 from cpe.schemas import EventSpec
-from tests.test_adjudication import day, observation, record, rule, spec
+from tests.test_adjudication import day, observation, record, rule, spec, submit
 
 
 def registry(tmp_path: Path, at: float, source_rule: SourceRule | None = None,
@@ -32,10 +32,10 @@ def registry(tmp_path: Path, at: float, source_rule: SourceRule | None = None,
 def test_4329192955_evidence_dated_after_the_receipt_is_refused(tmp_path: Path) -> None:
     reg, _, _ = registry(tmp_path, 100)
     with pytest.raises(Refusal) as refused:
-        reg.submit_record(record("r", occurrence=95, published=105).record)
+        submit(reg, record("r", occurrence=95, published=105))
     assert refused.value.reason == "evidence_after_receipt"
     with pytest.raises(Refusal) as observed_late:
-        reg.submit_record(record("r", occurrence=95, published=99, observed=101).record)
+        submit(reg, record("r", occurrence=95, published=99, observed=101))
     assert observed_late.value.reason == "evidence_after_receipt"
     with pytest.raises(Refusal) as pure:
         adjudicate(spec(), rule(), [record("r", occurrence=95, published=105, received=100)], [], [], day(100))
@@ -114,7 +114,7 @@ def test_4329193031_defects_recorded_after_the_disposition_are_returned_and_repl
     first = reg.adjudicate("E")
     assert first.disposition == "RESOLVED_NO" and first.defects == ()
     clock.set(day(113))
-    reg.submit_record(record("late", occurrence=95, published=112).record)
+    submit(reg, record("late", occurrence=95, published=112))
     again = reg.adjudicate("E")
     assert [d.record_id for d in again.defects] == ["late"] and replace(again, defects=()) == first
     ledger.close()
@@ -135,7 +135,7 @@ def test_4329193050_a_record_admitted_between_snapshot_and_write_is_decided_on(t
     reg.submit_observation(observation(110))
 
     def admit_timely_yes() -> None:
-        reg.submit_record(record("r", occurrence=95, published=105).record)
+        submit(reg, record("r", occurrence=95, published=105))
 
     reg.before_write = admit_timely_yes
     out = reg.adjudicate("E")
