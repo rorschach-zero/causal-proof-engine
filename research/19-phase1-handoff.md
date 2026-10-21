@@ -82,7 +82,7 @@ named by OD1 and not retired by `18` §6; the owner names it, §5).
 | Outcome-blind enrolment T_E (RC-219, RC-220), pre-enrolment breach audit against resolution records (RC-223, RC-244, RC-246), supply-exogeneity hypothesis and screen (RC-228 to RC-241) | retired | `18` F5: the audit adds no identification once Q is the universe; `18` §6 "Replace" 1 retires the screen; Q is fixed before forecasting |
 | Resolution rules (RC-11, RC-71): occurrence-time rule, YES needs evidence of timely occurrence, VOID when a YES has no time, `EXPIRED_NO` needs evidence | retained | OD1: resolution-rule registry |
 | Point-in-time store and as-of read interface (RC-79, RC-86) | gated: OD9a | `17` A0 and item 1 ("built only after OD9a, with T-15"); the Phase 1 brief builds it after the OD9a wording is merged into `AGENTS.md` |
-| Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | retained: a separate component, after the hardening PRs (decided 2026-10-21) | first recorded here as gated on OD9a; PR #24 review finding `4330128184` showed that OD9a governs the as-of feature store and the leak controls, not the archive of resolution bytes. Decided by the owner's delegate on 2026-10-21 (§9.5): not gated on OD9a; built as its own component after the hardening PRs, together with the point-in-time store. Until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it |
+| Evaluation of the registered predicate (selector, field, comparator, value) against the archived source content at adjudication (PR #18 round-3 finding `4329664953`) | retained: a separate component, after the hardening PRs (decided 2026-10-21) | first recorded here as gated on OD9a; PR #24 review finding `4330128184` showed that OD9a governs the as-of feature store and the leak controls, not the archive of resolution bytes. Decided by the owner's delegate on 2026-10-21 (§9.5, corrected after `4334268792`, §9.9): the resolution-content archive (the archived source bytes of each resolution record, content-addressed, with the evaluator over selector, field, comparator and value) is its own component, not gated on OD9a, and is scheduled independently of the point-in-time feature store, which stays gated on the OD9a wording. Until then the record's `claim` is the observer's attestation (PR #18 deviation 2) and the adjudication registry trusts it |
 
 ### 3.2 Item 2, ledger and registry
 
@@ -449,7 +449,7 @@ One hardening pass, three PRs against `main` at `2122567`, one Codex review each
 | `4330035947`, `4330035940` | fix | H3 |
 | `4330035931` | fix: parse the trailer block, refuse every key but `Reviewed-by`; whose name counts as human stays OD9b | H3 |
 | `4330128201` | factual correction of §9.1 | H3 |
-| `4330128184` | predicate evaluation is not gated on OD9a; a separate component after the hardening PRs, with the point-in-time store (§3.1) | H3 (this text) |
+| `4330128184` | predicate evaluation is not gated on OD9a; the resolution-content archive and its evaluator are a separate component, scheduled independently of the OD9a-gated point-in-time feature store (§3.1; corrected after `4334268792`) | H3 (this text) |
 | `4333446625` | specification question for the owner (§5) | H3 (this text) |
 | `4330035955`, `4330044572` | not fixed: not worth their code, as assessed in §9.2 and §9.3 | — |
 | `4330096680`, `4330096701` | not fixed: need a ledger from a release that never shipped | — |
@@ -474,4 +474,8 @@ Findings Codex raises on H1, H2 and H3 are listed in their descriptions and appe
   "together with the point-in-time store", which stays gated on OD9a until its `AGENTS.md` wording is merged; read
   literally, the decision re-gates it. **Specification question for the owner's delegate**: whether the archive of
   resolution bytes is separable from the OD9a-gated as-of feature store, so that predicate evaluation can be
-  scheduled on its own.
+  scheduled on its own. **Decided by the owner's delegate on 2026-10-21: separable.** The resolution-content
+  archive and its evaluator are their own component, not gated on OD9a, scheduled independently of the
+  point-in-time feature store, which stays gated on the OD9a wording. §3.1 and §9.8 are corrected accordingly
+  (a correction of the decision text, not a fix round). `4334268788` stays listed for the next code PR that
+  touches `tools/check_provenance.py`.
