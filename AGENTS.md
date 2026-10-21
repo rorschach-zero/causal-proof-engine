@@ -32,13 +32,15 @@ The eventual system must provide all of the following. They are design constrain
 6. Learning from successes, failures, missed opportunities, rejected investments and counterfactual outcomes
    (shadow books: no-exit, entry-shadow, random control; late-exit and premature-exit audits).
 7. Detection and evaluation of extreme asymmetric opportunities, with rare probabilities derived by
-   decomposition and floored by cohort base rates, never elicited directly below 5 %.
+   decomposition and shrunk toward a declared reference-class rate with pre-registered weights; never floored;
+   never elicited directly below 5 %.
 8. Long-term portfolio management across relevant financial instruments, extended class by class through the
    acceptance ladder in `research/07-portfolio-and-risk.md`.
 9. Adaptive risk management without naive panic-selling: leading hazard indicators, hysteresis, throttling of
    new purchases and cash-floor changes, never forced liquidation of thesis-intact positions.
 10. Autonomous scientific improvement with independent evaluation: proposer/promoter separation, frozen
-    hash-pinned holdouts, pre-registered thresholds, canaries, time-shifted holdouts; live P&L is never a reward.
+    hash-pinned holdouts, pre-registered thresholds, canaries, forbidden-future-information negative controls;
+    live P&L is never a reward.
 11. Eventually, controlled Saxo Bank integration, beginning with simulation (SIM read-only first).
 
 ## 3. Safety boundaries (hard)
