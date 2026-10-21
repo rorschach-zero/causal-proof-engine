@@ -29,28 +29,40 @@ class LeakReport:
     flagged: bool
 
 
-def brier(forecasts: Sequence[float], outcomes: Sequence[int]) -> float:
-    return sum((p - y) ** 2 for p, y in zip(forecasts, outcomes)) / len(forecasts)
-
-
-def detect_leak(forecasts: Sequence[float], outcomes: Sequence[int], *, bound: float, permutations: int,
-                seed: int) -> LeakReport:
-    """Flag ``forecasts`` whose Brier score beats the mean of the shuffled-label null by more than ``bound``."""
+def _sample(forecasts: Sequence[float], outcomes: Sequence[int]) -> list[float]:
+    """The forecasts as checked probabilities, refused unless the sample is non-empty, of equal lengths, with 0/1
+    outcomes."""
     if not forecasts or len(forecasts) != len(outcomes):
         raise Refusal("invalid_sample", "forecasts and outcomes are non-empty and of equal length")
     checked = [require_probability(p, f"forecasts[{i}]") for i, p in enumerate(forecasts)]
     if any(isinstance(y, bool) or y not in (0, 1) for y in outcomes):
         raise Refusal("invalid_outcome", "outcomes are 0 or 1")
-    if not math.isfinite(bound) or bound < 0:
+    return checked
+
+
+def _score(forecasts: Sequence[float], outcomes: Sequence[int]) -> float:
+    return sum((p - y) ** 2 for p, y in zip(forecasts, outcomes)) / len(forecasts)
+
+
+def brier(forecasts: Sequence[float], outcomes: Sequence[int]) -> float:
+    """The Brier score of a checked sample (4335243608: no silent truncation, no division by zero)."""
+    return _score(_sample(forecasts, outcomes), outcomes)
+
+
+def detect_leak(forecasts: Sequence[float], outcomes: Sequence[int], *, bound: float, permutations: int,
+                seed: int) -> LeakReport:
+    """Flag ``forecasts`` whose Brier score beats the mean of the shuffled-label null by more than ``bound``."""
+    checked = _sample(forecasts, outcomes)
+    if isinstance(bound, bool) or not isinstance(bound, (int, float)) or not math.isfinite(bound) or bound < 0:  # 4335243616
         raise Refusal("invalid_bound", "the pre-registered bound is a finite non-negative number")
     if isinstance(permutations, bool) or not isinstance(permutations, int) or permutations < 1:  # 4335189809
         raise Refusal("invalid_permutations", "at least one permutation is needed")
-    observed = brier(checked, outcomes)
+    observed = _score(checked, outcomes)
     generator = random.Random(seed)
     shuffled = list(outcomes)
     null = []
     for _ in range(permutations):
         generator.shuffle(shuffled)
-        null.append(brier(checked, shuffled))
+        null.append(_score(checked, shuffled))
     inflation = sum(null) / len(null) - observed
     return LeakReport(observed, tuple(null), inflation, bound, inflation > bound)
