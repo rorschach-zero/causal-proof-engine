@@ -654,3 +654,16 @@ behaviour").
 `GateState.commits`, and the registration replay's `cluster_registered_at`, are written and never read; three
 branches are unreachable on any ledger the registries write (`anchor_confirmatory_register`'s mapping of
 `duplicate_record_id`, the second `commit_in_doubt` of `promote`, `submit_observation`'s `unknown_source`).
+
+**Codex's review of the PR (review `5601127550` on `0105a72`).**
+
+- `4337918314` (P1): the adjusted scores rest on a classification (a scratch classifier and a per-mutant table of
+  equivalents) that is not committed, so a reviewer cannot reproduce the category counts or the adjusted scores from
+  the repository. **Not a defect in the new tests; listed for the owner's delegate**: either commit the classifier,
+  the table and the final `mutmut results` output, or keep only the raw result as the reproducible number. The raw
+  figures above are reproducible with the command given.
+- `4337918328` (P2): `test_the_host_time_source_reads_the_kernel_boot_id_or_falls_back` asserted that two
+  `HostTimeSource` objects of one process get different fallback ids, against the documented one id per process.
+  **Defect in a new test, fixed**: the test now checks only that the fallback is a UUID. That `HostTimeSource` draws
+  a fresh UUID per object rather than per process, so a gate rebuilt in one process without `/proc` would see a
+  reboot, is a question for the whole-codebase audit, not changed here.

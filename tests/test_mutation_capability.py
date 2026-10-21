@@ -3,6 +3,7 @@ section "Mutation testing"). They pin the gate's audit records (verdict, subject
 every refusal, the boundaries of expiry and slew, the replay of a malformed gate ledger and the time sources."""
 from __future__ import annotations
 
+import uuid
 from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
@@ -93,7 +94,7 @@ def test_the_host_time_source_reads_the_kernel_boot_id_or_falls_back(monkeypatch
     assert isinstance(first, float) and host.monotonic() >= first
     monkeypatch.setattr(HostTimeSource, "_BOOT_ID_PATH", tmp_path / "absent")
     fallback = HostTimeSource().boot_id()
-    assert len(fallback) == 36 and fallback != HostTimeSource().boot_id()  # a fresh UUID per process start
+    assert str(uuid.UUID(fallback)) == fallback  # a UUID stands in for the kernel's id
     boot.write_text("", encoding="ascii")
     monkeypatch.setattr(HostTimeSource, "_BOOT_ID_PATH", boot)
     assert len(HostTimeSource().boot_id()) == 36  # an empty kernel id falls back as well
