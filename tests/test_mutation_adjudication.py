@@ -162,3 +162,21 @@ def test_a_stored_adjudication_round_trips_with_defects_incidents_and_without_ti
 def test_a_late_report_of_occurrence_without_a_time_or_lateness_is_a_defect() -> None:
     out = adjudicate(spec(), rule(), [record("untimed", published=115)], [observation(110)], [], day(116))
     assert out.disposition == "RESOLVED_NO" and [d.record_id for d in out.defects] == ["untimed"]
+
+
+def test_a_record_published_after_its_receipt_is_refused_by_name() -> None:
+    published_late = record("r", occurrence=95, published=106, observed=105, received=105)
+    assert refused(adjudicate, spec(), rule(), [published_late], [], [], day(107)) == "evidence_after_receipt"
+
+
+def test_a_late_timely_report_after_a_yes_is_no_defect() -> None:
+    timely = record("timely", occurrence=95, published=100)
+    late = record("late", occurrence=96, published=115)
+    out = adjudicate(spec(), rule(), [timely, late], [], [], day(116))
+    assert out.disposition == "RESOLVED_YES" and out.defects == ()
+
+
+def test_a_status_declared_and_received_after_now_is_received_after_now() -> None:
+    status = SourceStatus("src", True, day(125))
+    assert refused(adjudicate, spec(), rule(), [], [], [status], day(120), None, {status: day(125)}) \
+        == "receipt_after_now"
