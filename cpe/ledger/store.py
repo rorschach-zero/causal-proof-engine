@@ -282,6 +282,14 @@ class Ledger:
         with self._lock:
             return self._local_anchors_locked()
 
+    def pending_anchors(self) -> tuple[Anchor, ...]:
+        """The anchor attempts not yet confirmed: each may or may not have landed in the external store, so none
+        counts as an anchor, and none may be read as proof that a prefix is unanchored either."""
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT prefix_length, digest, published_at FROM pending_anchors ORDER BY prefix_length").fetchall()
+            return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
+
     def verify(self, external: AnchorStore | None = None) -> VerificationReport:
         """Verify against the external store when given; against the local copy, self-attested, otherwise.
 
