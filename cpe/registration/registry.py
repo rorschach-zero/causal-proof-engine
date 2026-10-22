@@ -40,6 +40,7 @@ KIND_CLAIM = "claim_preregistration"
 KIND_REGISTER = "confirmatory_register"
 KIND_CALIBRATION = "calibration_record"
 KIND_BEACON = "beacon_output"
+KIND_ROUND_REFUSED = "beacon_round_refused"
 
 SlotStatus = Literal["filled", "open", "abstention", "baseline"]
 Write = tuple[str, str, JsonValue]
@@ -93,6 +94,9 @@ class _State:
     calibration_by_claim: dict[str, str] = field(default_factory=dict)
     beacon_outputs: dict[str, BeaconOutput] = field(default_factory=dict)
     seeds: dict[str, str] = field(default_factory=dict)
+    # Beacon rounds refused because the register was not anchored before them: each one shows that a round bound to
+    # a Phase 1 calibration record was published at that time (RC-311; issue #37, pass 3 F4).
+    refused_rounds: dict[str, BeaconOutput] = field(default_factory=dict)
     local_anchors: tuple[Anchor, ...] = ()  # read with the snapshot, never by a decision under the ledger's lock
 
 
@@ -189,6 +193,12 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             output = BeaconOutput.from_payload(payload["output"])
             state.beacon_outputs[output.calibration_record_id] = output
             state.seeds[output.calibration_record_id] = str(payload["seed"])
+        elif record.kind == KIND_ROUND_REFUSED:
+            assert isinstance(payload, dict)
+            output = BeaconOutput.from_payload(payload["output"])
+            if output.calibration_record_id not in state.calibrations:
+                raise Refusal("invalid_record", f"{record.record_id} refuses a round of an unknown calibration record")
+            state.refused_rounds[output.calibration_record_id] = output
     return state
 
 
@@ -493,15 +503,23 @@ class RegistrationRegistry:
             raise
 
     def claim_status(self, claim_id: str) -> Literal["confirmatory", "exploratory"]:
-        """Confirmatory once the one register lists the claim and an anchor covers the register's record."""
+        """Confirmatory once the one register lists the claim and an anchor covers the register's record, unless a
+        recorded beacon round of a calibration record bound to a Phase 1 claim was published at or before that anchor:
+        the register was then not anchored before the round of every calibration record, and every claim is
+        exploratory (RC-311, ``18`` M-1 (i)). The status does not change: it was exploratory from the anchor on, and
+        the registry learns the round's publication time when the round is supplied (issue #37, pass 3 F4)."""
         state = self.state()
         if claim_id not in state.claims:
             raise Refusal("unknown_claim", claim_id)
-        if (state.register is not None and state.register_seq is not None
-                and claim_id in state.register.confirmatory_claim_ids
-                and self._anchor_time_covering(state, state.register_seq) is not None):
-            return "confirmatory"
-        return "exploratory"
+        register = state.register
+        if register is None or state.register_seq is None or claim_id not in register.confirmatory_claim_ids:
+            return "exploratory"
+        anchored_at = self._anchor_time_covering(state, state.register_seq)
+        if anchored_at is None:
+            return "exploratory"
+        if any(round_.published_at <= anchored_at for round_ in state.refused_rounds.values()):
+            return "exploratory"
+        return "confirmatory"
 
     def record_calibration(self, calibration: CalibrationRecord) -> Record:
         """One record per claim, bound both ways, recorded before the claim's evaluation period and before any
@@ -543,9 +561,11 @@ class RegistrationRegistry:
         """
         output = BeaconOutput.from_payload(_payload_of(output))
         seed = ""
+        refused = False
 
         def decide(state: _State, now: datetime) -> Write:
-            nonlocal seed
+            nonlocal seed, refused
+            refused = False  # decided afresh on every attempt
             calibration = state.calibrations.get(output.calibration_record_id)
             if calibration is None:
                 raise Refusal("unknown_calibration_record", output.calibration_record_id)
@@ -563,12 +583,22 @@ class RegistrationRegistry:
             if state.register_seq is not None:
                 register_anchored_at = self._anchor_time_covering(state, state.register_seq)
                 if register_anchored_at is None or register_anchored_at >= output.published_at:
-                    raise Refusal("register_not_anchored", "the confirmatory register must be anchored before the round (RC-311)")
+                    if output.calibration_record_id in state.refused_rounds:
+                        raise Refusal("register_not_anchored", "the confirmatory register must be anchored before "
+                                      "the round (RC-311)")
+                    # The refusal is written, at its receipt: the round's publication before the register's anchor
+                    # makes every claim exploratory, and claim_status must read it (issue #37, pass 3 F4).
+                    refused = True
+                    return (KIND_ROUND_REFUSED, _ledger_id("round-refused", output.calibration_record_id),
+                            {"output": output.to_payload(), "reason": "register_not_anchored"})
             seed = derive_seed(calibration.to_payload(), output.value)
             payload: Payload = {"output": output.to_payload(), "seed": seed}
             return KIND_BEACON, _ledger_id("beacon", output.calibration_record_id), payload
 
         record = self._write(decide)
+        if refused:
+            raise Refusal("register_not_anchored", "the confirmatory register must be anchored before the round "
+                          "(RC-311); the refused round is recorded and every claim is exploratory")
         return record, seed
 
     def seed_of(self, calibration_record_id: str) -> str:
