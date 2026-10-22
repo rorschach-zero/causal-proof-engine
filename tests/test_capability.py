@@ -14,6 +14,7 @@ import pytest
 from cpe.canonical import digest_of
 from cpe.capability import (
     CapabilityGate,
+    GateRules,
     GateState,
     HarnessVerifier,
     ManualTimeSource,
@@ -34,6 +35,7 @@ EVIDENCE: dict[str, Any] = {"bundle": "gate-evidence-1", "tests": 182}
 TOLERANCE = 1.0
 OWNER = HarnessVerifier("owner")
 OTHER = HarnessVerifier("not-the-owner")
+RULES = GateRules(OWNER, ENV, RELEASE)
 
 
 def at(seconds: float) -> datetime:
@@ -131,7 +133,7 @@ class Rig:
         assert all(a.prefix_length <= self.ledger.state.count for a in self.store.anchors())
         exported = records_from_jsonl(self.ledger.export_jsonl())
         prefix = max((a.prefix_length for a in self.ledger.local_anchors()), default=0)
-        assert replay_gate(exported, prefix) == state
+        assert replay_gate(exported, prefix, RULES) == state
         assert self.refused(nonce_capability) in ("stale_epoch", "nonce_consumed")
 
 
@@ -552,7 +554,7 @@ def test_state_is_replayed_byte_for_byte_from_the_ledger(rig: Rig) -> None:
     reopened = Ledger(rig.path, rig.clock, rig.store)
     assert reopened.state_digest() == digest
     prefix = max(a.prefix_length for a in reopened.local_anchors())
-    assert replay_gate(reopened.records(), prefix) == state
+    assert replay_gate(reopened.records(), prefix, RULES) == state
 
 
 def test_the_slew_tolerance_is_a_named_owner_field(rig: Rig) -> None:

@@ -11,7 +11,7 @@ from cpe.capability.records import CheckRecord
 from cpe.capability.state import replay_gate
 from cpe.clock import parse_timestamp
 from cpe.ledger import Ledger
-from tests.test_capability import ENV, OWNER, RELEASE, TOLERANCE, FlakyStore, Rig, issue
+from tests.test_capability import ENV, OWNER, RELEASE, RULES, TOLERANCE, FlakyStore, Rig, issue
 from tests.test_hardening_h4 import RollbackClock
 
 
@@ -51,7 +51,7 @@ def test_codex_1_the_observed_time_is_replayed(tmp_path: Path) -> None:
     clock.rollback = timedelta(seconds=0.5)
     rig.gate.perform("research")  # an action-boundary check observes ``start`` and is received at ``start - 0.5``
     records = tuple(rig.ledger.records())
-    assert replay_gate(records, 0).observed == start
+    assert replay_gate(records, 0, RULES).observed == start
     assert parse_timestamp(records[-1].receipt_time) < CheckRecord.from_payload(records[-1].payload).reading.wall
 
 
