@@ -20,6 +20,7 @@ from typing import Literal
 from cpe.canonical import JsonValue
 from cpe.errors import Refusal
 from cpe.schemas.common import (
+    identifier_list,
     Payload,
     optional_timestamp,
     require_date,
@@ -92,7 +93,7 @@ class Forecast:
             "high": self.high,
             "prompt_hash": self.prompt_hash,
             "model_hash": self.model_hash,
-            "evidence_ids": list(self.evidence_ids),
+            "evidence_ids": identifier_list(self.evidence_ids, "evidence_ids"),
             "claimed_issued_at": timestamp_payload(self.claimed_issued_at),
         }
 
@@ -150,7 +151,7 @@ class ArmVersion:
             "declared_cutoff": self.declared_cutoff.isoformat(),
             "cutoff_evidence_id": self.cutoff_evidence_id,
             "cutoff_claim_label": self.cutoff_claim_label,
-            "consumes": list(self.consumes),
+            "consumes": identifier_list(self.consumes, "consumes"),
         }
 
 

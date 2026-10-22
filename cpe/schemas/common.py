@@ -53,6 +53,37 @@ def require_identifier_tuple(value: object, field: str, *, allow_empty: bool) ->
     return items
 
 
+def identifier_list(value: object, field: str) -> list[JsonValue]:
+    """A tuple field as its payload writes it: a string is refused, never split into its characters (issue #37,
+    pass 3). The items are checked when the payload is read back."""
+    if not isinstance(value, (list, tuple)):
+        raise Refusal("invalid_list", f"{field} must be a list of identifiers")
+    return list(value)
+
+
+def require_text(value: object, field: str) -> str:
+    """Free text, refused rather than coerced when it is not a string (issue #37, pass 3)."""
+    if not isinstance(value, str):
+        raise Refusal("invalid_text", f"{field} must be a string")
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        raise Refusal("invalid_text", f"{field} holds a surrogate code point") from None
+    return value
+
+
+def payload_of(value: object) -> Payload:
+    """The payload a schema object would persist; an object whose fields cannot be serialised is refused, typed,
+    rather than raising whatever its fields raise (issue #37)."""
+    try:
+        payload = value.to_payload()  # type: ignore[attr-defined]
+    except Refusal:
+        raise
+    except Exception as error:
+        raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
+    return payload  # type: ignore[no-any-return]
+
+
 def require_probability(value: object, field: str) -> float:
     """A finite number in [0, 1]; booleans are not numbers here (T-26: NaN and out-of-range inputs are refused)."""
     if isinstance(value, bool) or not isinstance(value, (int, float)):
