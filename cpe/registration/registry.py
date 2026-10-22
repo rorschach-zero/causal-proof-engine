@@ -12,7 +12,7 @@ from typing import Literal
 from cpe.canonical import JsonValue, digest_of
 from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
-from cpe.ledger import Ledger, Record
+from cpe.ledger import Anchor, Ledger, Record
 from cpe.ledger.record import GENESIS_HASH
 from cpe.registration.records import (
     BaseRate,
@@ -93,6 +93,7 @@ class _State:
     calibration_by_claim: dict[str, str] = field(default_factory=dict)
     beacon_outputs: dict[str, BeaconOutput] = field(default_factory=dict)
     seeds: dict[str, str] = field(default_factory=dict)
+    local_anchors: tuple[Anchor, ...] = ()  # read with the snapshot, never by a decision under the ledger's lock
 
 
 def _consumption_closure(version_id: str, versions: dict[str, ArmVersion]) -> set[str]:
@@ -185,13 +186,17 @@ class RegistrationRegistry:
         self.before_write: Callable[[], None] | None = None  # test hook, run between the decision and the write
 
     def state(self) -> _State:
-        return replay_state(self._ledger.records())
+        state = replay_state(self._ledger.records())
+        state.local_anchors = self._ledger.local_anchors()
+        return state
 
-    def _write(self, decide: Callable[[_State, datetime], Write],
-               admit: Callable[[datetime], None] | None = None) -> Record:
+    def _write(self, decide: Callable[[_State, datetime], Write]) -> Record:
         """One read-decide-write: ``decide`` validates against a snapshot and names the record to append; the
         append is made against the snapshot's chain head, and a head that moved (another writer on the same
-        ledger, this registry or another) refuses the append, so the decision is recomputed on the new state."""
+        ledger, this registry or another) refuses the append, so the decision is recomputed on the new state.
+        ``decide`` runs on a clock sample first, to refuse early, and again on the receipt the append assigns,
+        which is the decision written: every "before" bound (e_i, the issuance open, a period start, a listing
+        time) holds for the record's own receipt, not for an earlier sample (issue #37, C1)."""
         with self._lock:
             for _ in range(8):
                 state = self.state()
@@ -201,7 +206,8 @@ class RegistrationRegistry:
                     hook, self.before_write = self.before_write, None
                     hook()
                 try:
-                    return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit)
+                    return self._ledger.append(kind, record_id, payload, expected_head=state.head,
+                                               admit=lambda receipt: decide(state, receipt))
                 except Refusal as refusal:
                     if refusal.reason != "stale_head":
                         raise
@@ -262,15 +268,12 @@ class RegistrationRegistry:
                 raise Refusal("candidate_after_forecast", f"a forecast on {entry.event_id} already exists (RC-78)")
             if entry.event_id in state.candidate_by_event:
                 raise Refusal("candidate_exists", f"{entry.event_id} is already in the candidate log")
-            future(now)
-            return KIND_CANDIDATE, _ledger_id("candidate", entry.candidate_id), entry.to_payload()
-
-        def future(receipt: datetime) -> None:
-            if entry.listed_at > receipt:
+            if entry.listed_at > now:
                 raise Refusal("future_listing", f"{entry.candidate_id} is listed after its receipt; a listing time is "
                               "at or before the entry's receipt (RC-78)")
+            return KIND_CANDIDATE, _ledger_id("candidate", entry.candidate_id), entry.to_payload()
 
-        return self._write(decide, admit=future)  # checked again against the receipt the append assigns
+        return self._write(decide)
 
     def candidate_counts(self) -> dict[str, dict[str, int]]:
         counts: dict[str, dict[str, int]] = {}
@@ -290,8 +293,7 @@ class RegistrationRegistry:
         return self._write(decide)
 
     def register_cluster(self, registration: ClusterRegistration) -> Record:
-        """Write the registration record, admitted against the ledger clock: the same server time becomes the
-        record's receipt (RC-87, RC-138)."""
+        """Write the registration record, decided against its own receipt (RC-87, RC-138)."""
         def decide(state: _State, now: datetime) -> Write:
             cluster_id = registration.cluster.cluster_id
             if cluster_id in state.clusters:
@@ -472,7 +474,7 @@ class RegistrationRegistry:
             raise Refusal("unknown_claim", claim_id)
         if (state.register is not None and state.register_seq is not None
                 and claim_id in state.register.confirmatory_claim_ids
-                and self._anchor_time_covering(state.register_seq) is not None):
+                and self._anchor_time_covering(state, state.register_seq) is not None):
             return "confirmatory"
         return "exploratory"
 
@@ -497,8 +499,9 @@ class RegistrationRegistry:
 
         return self._write(decide)
 
-    def _anchor_time_covering(self, seq: int) -> datetime | None:
-        for anchor in self._ledger.local_anchors():
+    @staticmethod
+    def _anchor_time_covering(state: _State, seq: int) -> datetime | None:
+        for anchor in state.local_anchors:
             if anchor.prefix_length >= seq:
                 return parse_timestamp(anchor.published_at)
         return None
@@ -526,11 +529,11 @@ class RegistrationRegistry:
                 raise Refusal("wrong_round", f"the record names round {calibration.round_id} of {calibration.beacon_id}")
             if output.published_at > now:
                 raise Refusal("future_round", "a round is supplied after its publication, never before")
-            anchored_at = self._anchor_time_covering(state.calibration_seq[output.calibration_record_id])
+            anchored_at = self._anchor_time_covering(state, state.calibration_seq[output.calibration_record_id])
             if anchored_at is None or anchored_at >= output.published_at:
                 raise Refusal("round_before_anchor", "the beacon round must be published after the record's anchor (RC-182, RC-304)")
             if state.register_seq is not None:
-                register_anchored_at = self._anchor_time_covering(state.register_seq)
+                register_anchored_at = self._anchor_time_covering(state, state.register_seq)
                 if register_anchored_at is None or register_anchored_at >= output.published_at:
                     raise Refusal("register_not_anchored", "the confirmatory register must be anchored before the round (RC-311)")
             seed = derive_seed(calibration.to_payload(), output.value)
