@@ -6,6 +6,7 @@ import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime
+from typing import Protocol, TypeVar
 
 from cpe.adjudication.content import ArchivedContent
 from cpe.adjudication.records import AbsenceObservation, ResolutionRecord, SourceRule, SourceStatus
@@ -24,7 +25,7 @@ from cpe.adjudication.rules import (
 )
 from cpe.canonical import digest_of
 from cpe.clock import parse_timestamp
-from cpe.schemas.common import timestamp_payload
+from cpe.schemas.common import Payload, timestamp_payload
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.schemas.event import EventSpec
@@ -41,6 +42,27 @@ KIND_CONTENT = "resolution_content"
 KIND_KNOWABLE = "knowable_correction"
 KINDS: frozenset[str] = frozenset({KIND_EVENT, KIND_RULE, KIND_RECORD, KIND_OBSERVATION, KIND_STATUS, KIND_DISPOSITION,
                                    KIND_DEFECT, KIND_INCIDENT, KIND_CONTENT, KIND_KNOWABLE})
+
+
+class _Persisted(Protocol):
+    def to_payload(self) -> Payload: ...
+
+
+_T = TypeVar("_T")
+
+
+def _as_replayed(value: _Persisted, from_payload: Callable[[object], _T]) -> _T:
+    """The value as replay will read it: every input is validated in full through its payload before anything is
+    computed or written, so that the registry never writes a row its own replay refuses, and every later reader of
+    the ledger fails (issue #37, pass 3 A2, A3; pass 4 A5). An object whose fields cannot be serialised is refused
+    alike."""
+    try:
+        payload = value.to_payload()
+    except Refusal:
+        raise
+    except Exception as error:
+        raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
+    return from_payload(payload)
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -162,6 +184,7 @@ class AdjudicationRegistry:
     def register_event(self, spec: EventSpec) -> None:
         """Pre-register the resolution criteria once: after the source rule they name, before the issuance window
         opens; a different specification under the same id is refused."""
+        spec = _as_replayed(spec, EventSpec.from_payload)
         with self._lock:
             for attempt in range(2):  # another writer on the same ledger that lands the event first is read back
                 state = self.state()
@@ -194,6 +217,7 @@ class AdjudicationRegistry:
         return spec
 
     def register_rule(self, rule: SourceRule) -> None:
+        rule = _as_replayed(rule, SourceRule.from_payload)
         with self._lock:
             for attempt in range(2):  # another writer on the same ledger that lands the rule first is read back
                 existing = self.state().rules.get(rule.source_id)
@@ -212,6 +236,7 @@ class AdjudicationRegistry:
         """Archive source bytes under their SHA-256, with the ledger's receipt time. The content is an attested
         input; nothing is fetched. The same bytes with the same attestation are archived once; the same bytes with
         another attestation are refused, so that one digest names one archived read."""
+        content = _as_replayed(content, ArchivedContent.from_payload)
         with self._lock:
             state = self.state()
             if content.source_id not in state.rules:
@@ -232,6 +257,7 @@ class AdjudicationRegistry:
     def submit_record(self, record: ResolutionRecord) -> Record:
         """Admit a record that names archived content; the content must evaluate, under the registered predicate,
         to the claim the record states."""
+        record = _as_replayed(record, ResolutionRecord.from_payload)
         with self._lock:
             state = self.state()
             spec = self._spec(state, record.event_id)
@@ -251,6 +277,7 @@ class AdjudicationRegistry:
                                        admit=lambda receipt: check_record_chronology(replace(received, receipt=receipt)))
 
     def submit_observation(self, observation: AbsenceObservation) -> Record:
+        observation = _as_replayed(observation, AbsenceObservation.from_payload)
         with self._lock:
             state = self.state()
             spec = self._spec(state, observation.event_id)
@@ -263,6 +290,10 @@ class AdjudicationRegistry:
                                                                                    observation.observation_id))
 
     def declare_source_status(self, status: SourceStatus) -> Record:
+        """One status per source and declared instant. The status is read as replay reads it, in UTC, before its
+        identifier is formed, so that one instant written in two time zones is one status, not two conflicting ones
+        (issue #37, pass 4 A6); the identifier format is unchanged."""
+        status = _as_replayed(status, SourceStatus.from_payload)
         with self._lock:
             if status.source_id not in self.state().rules:
                 raise Refusal("unknown_source", f"{status.source_id} has no registered source rule (OD5)")
@@ -293,7 +324,12 @@ class AdjudicationRegistry:
                     hook()
                 if event.disposition is not None:
                     try:
-                        return self._late_rows(event_id, spec, rule, event, fresh)
+                        self._late_rows(event_id, spec, rule, event, fresh)
+                        # The disposition the ledger holds, side rows of other writers included: the rows above were
+                        # computed on a snapshot another writer may have extended (issue #37, pass 4 A7).
+                        stored = self.state().event(event_id).disposition
+                        assert stored is not None
+                        return stored
                     except Refusal as refusal:
                         if refusal.reason != "duplicate_record_id":
                             raise
