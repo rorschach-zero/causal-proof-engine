@@ -8,14 +8,17 @@ no protected operation accepts one as authority (RC-46).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime
 
 from cpe.capability.levels import FLOOR
 from cpe.capability.records import (
     KIND_ABORT,
+    KIND_CHECK,
     KIND_COMMIT,
     KIND_EPOCH,
     KIND_INTENT,
     AbortRecord,
+    CheckRecord,
     CommitRecord,
     EpochRecord,
     IntentRecord,
@@ -42,6 +45,13 @@ class GateState:
     commit_seq: dict[str, int] = field(default_factory=dict)
     effective: set[str] = field(default_factory=set)
     superseded: set[str] = field(default_factory=set)
+    # The latest wall time any persisted reading observed. A check decided on one clock sample can be received at
+    # an earlier one after a rollback; the time it observed bounds the clock as its receipt does (RC-65, issue #37).
+    observed: datetime | None = None
+
+    def observe(self, reading: ClockReading) -> None:
+        if self.observed is None or reading.wall > self.observed:
+            self.observed = reading.wall
 
     @property
     def epoch_unanchored(self) -> bool:
@@ -70,6 +80,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int) -> GateState:
                 raise Refusal("invalid_gate_ledger", f"epoch index {epoch.index} does not follow {state.epoch_index}")
             state.epoch, state.epoch_index, state.epoch_seq = epoch.epoch, epoch.index, record.seq
             state.baseline = epoch.baseline
+            state.observe(epoch.baseline)
             state.epoch_anchored = record.seq <= anchored_prefix
             state.level = FLOOR
             state.superseded |= state.effective  # a change effective before this record is superseded by it
@@ -79,11 +90,13 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int) -> GateState:
                 raise Refusal("invalid_gate_ledger", f"intent {intent.intent_id} appears twice")
             state.intents[intent.intent_id] = intent
             state.intent_seq[intent.intent_id] = record.seq
+            state.observe(intent.reading)
         elif record.kind == KIND_ABORT:
             abort = AbortRecord.from_payload(record.payload)
             if abort.intent_id not in state.intents or abort.intent_id in state.commits:
                 raise Refusal("invalid_gate_ledger", f"abort of {abort.intent_id} without a pending intent")
             state.aborted[abort.intent_id] = abort.reason
+            state.observe(abort.reading)
         elif record.kind == KIND_COMMIT:
             commit = CommitRecord.from_payload(record.payload)
             stored = state.intents.get(commit.intent_id)
@@ -93,7 +106,10 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int) -> GateState:
                 raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} after its epoch rotated")
             state.commits[commit.intent_id] = commit
             state.commit_seq[commit.intent_id] = record.seq
+            state.observe(commit.reading)
             if record.seq <= anchored_prefix:
                 state.effective.add(commit.intent_id)
                 state.level = stored.target_level  # effective at its ledger position
+        elif record.kind == KIND_CHECK:
+            state.observe(CheckRecord.from_payload(record.payload).reading)
     return state
