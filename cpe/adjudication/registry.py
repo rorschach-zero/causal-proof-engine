@@ -327,13 +327,18 @@ class AdjudicationRegistry:
                                     {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
                 stored = replace(stored, defects=stored.defects + (defect,))
         # A public occurrence that arrives after the disposition still sets knowable_at (RC-146 read with RC-88,
-        # section 9.2); the disposition itself stays (H1 review 4334622042).
-        public = earliest_public_occurrence(spec, rule, event.records)
-        if public is not None and stored.knowable_at is not None and public[0] < stored.knowable_at:
-            self._ledger.append(KIND_KNOWABLE, _ledger_id("knowable", event_id, public[1]),
-                                {"event_id": event_id, "knowable_at": timestamp_payload(public[0]),
-                                 "record_id": public[1]})
-            stored = replace(stored, knowable_at=public[0])
+        # section 9.2); the disposition itself stays (H1 review 4334622042). So does an earlier evidenced
+        # publication of a record that decides the same disposition (issue #37, Codex 2).
+        earliest = earliest_public_occurrence(spec, rule, event.records)
+        if fresh.disposition == stored.disposition and fresh.knowable_at is not None \
+                and fresh.deciding_record_id is not None \
+                and (earliest is None or fresh.knowable_at < earliest[0]):
+            earliest = fresh.knowable_at, fresh.deciding_record_id
+        if earliest is not None and stored.knowable_at is not None and earliest[0] < stored.knowable_at:
+            self._ledger.append(KIND_KNOWABLE, _ledger_id("knowable", event_id, earliest[1]),
+                                {"event_id": event_id, "knowable_at": timestamp_payload(earliest[0]),
+                                 "record_id": earliest[1]})
+            stored = replace(stored, knowable_at=earliest[0])
         known = {(i.kind, i.reference_id) for i in stored.incidents}
         for incident in fresh.incidents:
             if (incident.kind, incident.reference_id) not in known:

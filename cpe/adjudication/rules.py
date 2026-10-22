@@ -363,11 +363,12 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
         (disposition, knowable, basis), deciding = min(
             decided, key=lambda d: (d[0][1], d[1].publication(rule), d[1].record.record_id))
 
-    if deciding is not None:
-        if deciding.receipt > finality or deciding.record.first_observed_at > finality:
-            incidents.append(Incident("receipt_lag", deciding.record.record_id,
+    # Every timely record received after finality is a receipt lag, the deciding one or not (RC-105; issue #37).
+    for received in timely:
+        if received.receipt > finality or received.record.first_observed_at > finality:
+            incidents.append(Incident("receipt_lag", received.record.record_id,
                                       "record published inside the window and received after it (RC-105)"))
-    elif now >= finality:
+    if deciding is None and now >= finality:
         absence_at: datetime | None = None
         absence_basis = ""
         reads = sorted((o.observed_at, o.observation_id) for o in observations if finality <= o.observed_at <= now)
@@ -410,12 +411,18 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
 
     defects = late_contradictions(spec, rule, records, disposition)
 
-    if disposition not in FINAL:
-        return Adjudication(spec.event_id, "OPEN", None, None, basis, None)
-    assert knowable is not None
     public = earliest_public_occurrence(spec, rule, records)
+    if disposition not in FINAL:
+        # The disposition stays OPEN, but an evidenced public occurrence already makes the outcome determinable: it
+        # is the member's knowable time, capped at logical finality (RC-146; a reading of issue #37, Codex 3).
+        knowable = None if public is None else min(public[0], finality)
+        return Adjudication(spec.event_id, "OPEN", knowable, None, basis, None)
+    assert knowable is not None
     if public is not None:
         knowable = min(knowable, public[0])
+    # min(publication, public occurrence, deadline + window): logical finality is the latest the outcome can be
+    # knowable, a late record that decides the expiry included (``17`` "Logical finality", RC-77, F-21b).
+    knowable = min(knowable, finality)
     timestamps = ResolutionTimestamps(
         receipt=deciding.receipt if deciding is not None else evidence_receipt,
         occurrence=deciding.record.occurrence_time if deciding is not None else None,
