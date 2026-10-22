@@ -93,6 +93,7 @@ class _State:
     calibration_seq: dict[str, int] = field(default_factory=dict)
     calibration_by_claim: dict[str, str] = field(default_factory=dict)
     beacon_outputs: dict[str, BeaconOutput] = field(default_factory=dict)
+    beacon_seq: dict[str, int] = field(default_factory=dict)
     seeds: dict[str, str] = field(default_factory=dict)
     # Beacon rounds refused because the register was not anchored before them: each one shows that a round bound to
     # a Phase 1 calibration record was published at that time (RC-311; issue #37, pass 3 F4).
@@ -180,27 +181,126 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                 state.forecasts[key] = received  # only a receipt inside the window fills the slot (RC-75, RC-87)
         elif record.kind == KIND_CLAIM:
             claim = ClaimPreregistration.from_payload(payload)
+            _check_claim(record, claim, state)
             state.claims[claim.claim_id] = claim
         elif record.kind == KIND_REGISTER:
-            state.register = ConfirmatoryRegister.from_payload(payload)
+            register = ConfirmatoryRegister.from_payload(payload)
+            _check_register(record, register, state)
+            state.register = register
             state.register_seq = record.seq
         elif record.kind == KIND_CALIBRATION:
             calibration = CalibrationRecord.from_payload(payload)
+            _check_calibration(record, calibration, state)
             state.calibrations[calibration.calibration_record_id] = calibration
             state.calibration_seq[calibration.calibration_record_id] = record.seq
             state.calibration_by_claim[calibration.claim_id] = calibration.calibration_record_id
         elif record.kind == KIND_BEACON:
             assert isinstance(payload, dict)
             output = BeaconOutput.from_payload(payload["output"])
+            seed = _check_beacon(record, output, payload["seed"], state)
             state.beacon_outputs[output.calibration_record_id] = output
-            state.seeds[output.calibration_record_id] = str(payload["seed"])
+            state.beacon_seq[output.calibration_record_id] = record.seq
+            state.seeds[output.calibration_record_id] = seed
         elif record.kind == KIND_ROUND_REFUSED:
             assert isinstance(payload, dict)
             output = BeaconOutput.from_payload(payload["output"])
-            if output.calibration_record_id not in state.calibrations:
-                raise Refusal("invalid_record", f"{record.record_id} refuses a round of an unknown calibration record")
+            _check_refused_round(record, output, state)
             state.refused_rounds[output.calibration_record_id] = output
     return state
+
+
+# Replay re-validates every row that bears on a claim's status or a seed as the registry validated it when it wrote
+# the row, so that a row written through the ledger by anything else (a second register, a register after a beacon
+# round, a seed not derived from its round) refuses the ledger rather than being read as authority (issue #37,
+# pass 4 W2, W3; pass 3 F5). The checks against anchor times are made with the anchors, in ``check_anchor_times``.
+
+def _invalid(record: Record, problem: str) -> Refusal:
+    return Refusal("invalid_record", f"{record.kind} {record.record_id} {problem}")
+
+
+def _check_claim(record: Record, claim: ClaimPreregistration, state: _State) -> None:
+    receipt = parse_timestamp(record.receipt_time)
+    if record.record_id != _ledger_id("claim", claim.claim_id) or claim.claim_id in state.claims:
+        raise _invalid(record, "is not the one record of its claim")
+    if claim.population_kind != "fixed_question_set":
+        raise _invalid(record, "has a population that is not a fixed question set (18 M-8)")
+    if any(other.calibration_record_id == claim.calibration_record_id for other in state.claims.values()):
+        raise _invalid(record, "names a calibration record reserved for another claim (18 M-1 (i))")
+    if receipt >= claim.period_start or claim.question_set_fixed_at > receipt:
+        raise _invalid(record, "was received outside [question set fixed, period start)")
+
+
+def _check_register(record: Record, register: ConfirmatoryRegister, state: _State) -> None:
+    receipt = parse_timestamp(record.receipt_time)
+    if record.record_id != _ledger_id("register") or state.register is not None:
+        raise _invalid(record, "is a second register, which confers nothing (18 R9)")
+    if state.beacon_outputs or state.refused_rounds:
+        raise _invalid(record, "follows a beacon round of a calibration record (RC-311)")
+    for claim_id in register.confirmatory_claim_ids:
+        claim = state.claims.get(claim_id)
+        if claim is None or receipt >= claim.period_start:
+            raise _invalid(record, f"lists {claim_id}, which is unregistered or whose period has started")
+
+
+def _check_calibration(record: Record, calibration: CalibrationRecord, state: _State) -> None:
+    claim = state.claims.get(calibration.claim_id)
+    if record.record_id != _ledger_id("calibration", calibration.calibration_record_id) \
+            or calibration.calibration_record_id in state.calibrations \
+            or calibration.claim_id in state.calibration_by_claim:
+        raise _invalid(record, "is not the one calibration record of its claim")
+    if claim is None or claim.calibration_record_id != calibration.calibration_record_id:
+        raise _invalid(record, "is not bound both ways to a registered claim (18 M-1 (i))")
+    if parse_timestamp(record.receipt_time) >= claim.period_start:
+        raise _invalid(record, "was received after its claim's period started")
+
+
+def _check_round(record: Record, output: BeaconOutput, state: _State, prefix: str) -> CalibrationRecord:
+    calibration = state.calibrations.get(output.calibration_record_id)
+    if record.record_id != _ledger_id(prefix, output.calibration_record_id) or calibration is None:
+        raise _invalid(record, "is not written for a recorded calibration record")
+    if (calibration.beacon_id, calibration.round_id) != (output.beacon_id, output.round_id):
+        raise _invalid(record, "names a round other than its calibration record's")
+    if output.calibration_record_id in state.beacon_outputs or output.calibration_record_id in state.refused_rounds:
+        raise _invalid(record, "follows a round already supplied or refused for its calibration record")
+    if output.published_at > parse_timestamp(record.receipt_time):
+        raise _invalid(record, "was received before its round was published")
+    return calibration
+
+
+def _check_beacon(record: Record, output: BeaconOutput, seed: JsonValue, state: _State) -> str:
+    calibration = _check_round(record, output, state, "beacon")
+    derived = derive_seed(calibration.to_payload(), output.value)
+    if seed != derived:
+        raise _invalid(record, "carries a seed not derived from its record and round (RC-187, RC-304)")
+    return derived
+
+
+def _check_refused_round(record: Record, output: BeaconOutput, state: _State) -> None:
+    _check_round(record, output, state, "round-refused")
+    if state.register_seq is None:
+        raise _invalid(record, "refuses a round with no register to be anchored before it (RC-311)")
+
+
+def _anchor_time_covering(anchors: tuple[Anchor, ...], seq: int) -> datetime | None:
+    for anchor in anchors:
+        if anchor.prefix_length >= seq:
+            return parse_timestamp(anchor.published_at)
+    return None
+
+
+def check_anchor_times(state: _State) -> None:
+    """Every supplied round was published after the anchor of its calibration record, and after the register's
+    anchor when the register preceded it (RC-182, RC-304, RC-311). A later anchor only covers more, so a row the
+    registry wrote stays valid as anchors settle."""
+    for calibration_id, output in state.beacon_outputs.items():
+        anchored_at = _anchor_time_covering(state.local_anchors, state.calibration_seq[calibration_id])
+        late = anchored_at is None or anchored_at >= output.published_at
+        if not late and state.register_seq is not None and state.register_seq < state.beacon_seq[calibration_id]:
+            register_anchored_at = _anchor_time_covering(state.local_anchors, state.register_seq)
+            late = register_anchored_at is None or register_anchored_at >= output.published_at
+        if late:
+            raise Refusal("invalid_record", f"the round of {calibration_id} was published before an anchor it "
+                          "must follow, and no seed is drawn from it (RC-304, RC-311)")
 
 
 class RegistrationRegistry:
@@ -213,6 +313,7 @@ class RegistrationRegistry:
         state = replay_state(self._ledger.records())
         state.local_anchors = self._ledger.local_anchors()
         state.pending_anchors = self._ledger.pending_anchors()
+        check_anchor_times(state)
         return state
 
     def _write(self, decide: Callable[[_State, datetime], Write]) -> Record:
@@ -548,10 +649,7 @@ class RegistrationRegistry:
 
     @staticmethod
     def _anchor_time_covering(state: _State, seq: int) -> datetime | None:
-        for anchor in state.local_anchors:
-            if anchor.prefix_length >= seq:
-                return parse_timestamp(anchor.published_at)
-        return None
+        return _anchor_time_covering(state.local_anchors, seq)
 
     def supply_beacon_output(self, output: BeaconOutput) -> tuple[Record, str]:
         """Record the beacon output of a calibration record and derive its seed, in one durable record.

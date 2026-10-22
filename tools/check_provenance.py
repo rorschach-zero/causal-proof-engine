@@ -66,6 +66,7 @@ class Commit:
     committer: str
     message: str
     parents: tuple[str, ...]
+    trailers: str = ""  # the trailer block as git itself reads it, unfolded (issue #37, pass 4 T2)
 
 
 @dataclass(frozen=True)
@@ -83,17 +84,20 @@ def git(*args: str, repo: Path) -> str:
 def commits_in_range(commit_range: str, repo: Path) -> list[Commit]:
     """Every commit of the range, its fields separated by NUL bytes. A commit message can hold any other control
     character, so a printable or control separator lets a message forge a record and hide text in a field no check
-    reads; git refuses a NUL byte in a message (issue #37, pass 3 T1)."""
-    out = git("log", "-z", "--format=%H%x00%an <%ae>%x00%cn <%ce>%x00%P%x00%B", commit_range, repo=repo)
+    reads; git refuses a NUL byte in a message (issue #37, pass 3 T1). The trailers are the ones git itself reads:
+    its rules (comment lines skipped, a mixed block led by a line git generates) are not re-implemented here
+    (issue #37, pass 4 T2)."""
+    out = git("log", "-z", "--format=%H%x00%an <%ae>%x00%cn <%ce>%x00%P%x00%(trailers:only,unfold)%x00%B",
+              commit_range, repo=repo)
     fields = out.split("\x00")
     if fields and fields[-1] == "":
         fields.pop()  # the terminator after the last commit
-    if len(fields) % 5:
-        raise ValueError(f"git log printed {len(fields)} fields, not five per commit")
+    if len(fields) % 6:
+        raise ValueError(f"git log printed {len(fields)} fields, not six per commit")
     commits = []
-    for i in range(0, len(fields), 5):
-        sha, author, committer, parents, message = fields[i:i + 5]
-        commits.append(Commit(sha, author, committer, message.strip("\n"), tuple(parents.split())))
+    for i in range(0, len(fields), 6):
+        sha, author, committer, parents, trailers, message = fields[i:i + 6]
+        commits.append(Commit(sha, author, committer, message.strip("\n"), tuple(parents.split()), trailers))
     return commits
 
 
@@ -123,6 +127,16 @@ def trailer_findings(message: str, where: str) -> list[str]:
         return []
     return [f"{where}: trailer {m.group(1)!r} (only Reviewed-by is allowed)" for m in matches
             if m is not None and m.group(1).lower() != ALLOWED_TRAILER]
+
+
+def git_trailer_findings(trailers: str, where: str) -> list[str]:
+    """Every trailer git reads in a commit message, whatever its block looks like, but ``Reviewed-by``."""
+    findings = []
+    for line in trailers.splitlines():
+        key = line.split(":", 1)[0].strip()
+        if line.strip() and key.lower() != ALLOWED_TRAILER:
+            findings.append(f"{where}: trailer {key!r} as git reads it (only Reviewed-by is allowed)")
+    return findings
 
 
 def text_findings(text: str, where: str) -> list[str]:
@@ -199,7 +213,8 @@ def check(commit_range: str, repo: Path, title: str | None, body: str | None, he
     for commit in commits:
         where = f"commit {commit.sha[:10]}"
         findings += text_findings(commit.message, where)
-        findings += trailer_findings(commit.message, where)
+        own = trailer_findings(commit.message, where)
+        findings += own or git_trailer_findings(commit.trailers, where)
         findings += identity_findings(commit)
         findings += label_findings(commit.message, tree_labels(commit.sha, repo), where)
     if title is not None or body is not None:
