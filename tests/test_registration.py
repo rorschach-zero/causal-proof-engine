@@ -261,9 +261,8 @@ def test_m1_binding_register_and_beacon_seed(registry: RegistrationRegistry, led
     clock.set(day(11))
     ledger.anchor()
     assert registry.claim_status("claim-1") == "confirmatory"
-    with pytest.raises(Refusal) as early:  # the named round published before the anchor
-        registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(10.5)))
-    assert early.value.reason == "round_before_anchor"
+    # A round attested as published before both anchors is recorded and binds: issue #37, PR #48 reviews
+    # 4352111655 and 4352111663 (tests/test_audit_pass3_followup.py).
     clock.set(day(12))
     with pytest.raises(Refusal) as refusal:
         registry.supply_beacon_output(BeaconOutput("cal-1", "other", "round-7", "ab" * 32, day(12)))

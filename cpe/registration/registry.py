@@ -561,11 +561,11 @@ class RegistrationRegistry:
         """
         output = BeaconOutput.from_payload(_payload_of(output))
         seed = ""
-        refused = False
+        refusal: Refusal | None = None
 
         def decide(state: _State, now: datetime) -> Write:
-            nonlocal seed, refused
-            refused = False  # decided afresh on every attempt
+            nonlocal seed, refusal
+            refusal = None  # decided afresh on every attempt
             calibration = state.calibrations.get(output.calibration_record_id)
             if calibration is None:
                 raise Refusal("unknown_calibration_record", output.calibration_record_id)
@@ -575,30 +575,42 @@ class RegistrationRegistry:
                 raise Refusal("wrong_beacon", f"the record names beacon {calibration.beacon_id}")
             if calibration.round_id != output.round_id:
                 raise Refusal("wrong_round", f"the record names round {calibration.round_id} of {calibration.beacon_id}")
+            if output.calibration_record_id in state.refused_rounds:
+                # The round is on record as published before the register's anchor; no later supply of it, whatever
+                # time or value it claims, is weighed again (PR #48 review 4352111655).
+                raise Refusal("register_not_anchored", "the round was published before the confirmatory register's "
+                              "anchor and is recorded as refused (RC-311)")
             if output.published_at > now:
                 raise Refusal("future_round", "a round is supplied after its publication, never before")
             anchored_at = self._anchor_time_covering(state, state.calibration_seq[output.calibration_record_id])
-            if anchored_at is None or anchored_at >= output.published_at:
-                raise Refusal("round_before_anchor", "the beacon round must be published after the record's anchor (RC-182, RC-304)")
+            calibration_late = anchored_at is None or anchored_at >= output.published_at
+            register_late = False
             if state.register_seq is not None:
                 register_anchored_at = self._anchor_time_covering(state, state.register_seq)
-                if register_anchored_at is None or register_anchored_at >= output.published_at:
-                    if output.calibration_record_id in state.refused_rounds:
-                        raise Refusal("register_not_anchored", "the confirmatory register must be anchored before "
-                                      "the round (RC-311)")
-                    # The refusal is written, at its receipt: the round's publication before the register's anchor
-                    # makes every claim exploratory, and claim_status must read it (issue #37, pass 3 F4).
-                    refused = True
-                    return (KIND_ROUND_REFUSED, _ledger_id("round-refused", output.calibration_record_id),
-                            {"output": output.to_payload(), "reason": "register_not_anchored"})
+                register_late = register_anchored_at is None or register_anchored_at >= output.published_at
+            if calibration_late:
+                refusal = Refusal("round_before_anchor", "the beacon round must be published after the record's "
+                                  "anchor (RC-182, RC-304)")
+            elif register_late:
+                refusal = Refusal("register_not_anchored", "the confirmatory register must be anchored before the "
+                                  "round (RC-311)")
+            if register_late:
+                # A round published before the register's anchor is written, at its receipt, whichever timing check
+                # refuses it first: it makes every claim exploratory and claim_status must read it (issue #37, pass 3
+                # F4; PR #48 review 4352111663). A round refused only for the calibration record's anchor is not
+                # written, so that a supplier's wrong time can still be corrected.
+                assert refusal is not None
+                return (KIND_ROUND_REFUSED, _ledger_id("round-refused", output.calibration_record_id),
+                        {"output": output.to_payload(), "reason": refusal.reason})
+            if refusal is not None:
+                raise refusal
             seed = derive_seed(calibration.to_payload(), output.value)
             payload: Payload = {"output": output.to_payload(), "seed": seed}
             return KIND_BEACON, _ledger_id("beacon", output.calibration_record_id), payload
 
         record = self._write(decide)
-        if refused:
-            raise Refusal("register_not_anchored", "the confirmatory register must be anchored before the round "
-                          "(RC-311); the refused round is recorded and every claim is exploratory")
+        if refusal is not None:
+            raise refusal
         return record, seed
 
     def seed_of(self, calibration_record_id: str) -> str:
