@@ -303,6 +303,8 @@ class Ledger:
         """
         ordered = tuple(records)
         replay(ordered)
+        if len({record.record_id for record in ordered}) != len(ordered):  # the writer never holds two (issue #37)
+            raise Refusal("duplicate_record_id", "the export holds a record identifier twice")
         ledger = cls(path, clock, external, faults)
         if ledger.state.count != 0:
             raise Refusal("restore_target_not_empty", "restore needs an empty ledger")
@@ -341,5 +343,7 @@ def records_from_jsonl(text: str) -> tuple[Record, ...]:
             raise Refusal("invalid_export", f"line {number}: duplicate key {error.key!r}") from None
         except ValueError as error:  # malformed JSON, or an integer beyond the digit limit (issue #37)
             raise Refusal("invalid_export", f"line {number}: {error}") from None
+        except RecursionError:  # nested deeper than the parser can walk (issue #37, pass 3)
+            raise Refusal("invalid_export", f"line {number}: nested too deeply") from None
         records.append(Record.from_payload(payload))
     return tuple(records)
