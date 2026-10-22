@@ -20,6 +20,7 @@ from cpe.adjudication.rules import (
     check_record_content,
     check_record_is_final_enough,
     earliest_public_occurrence,
+    late_contradictions,
 )
 from cpe.canonical import digest_of
 from cpe.clock import parse_timestamp
@@ -278,7 +279,7 @@ class AdjudicationRegistry:
                     # rows carry only those found later. Both sets are known, so a retry adds nothing twice.
                     stored = event.disposition
                     known_defects = event.defect_record_ids | {d.record_id for d in stored.defects}
-                    for defect in fresh.defects:
+                    for defect in late_contradictions(spec, rule, event.records, stored.disposition):
                         if defect.record_id not in known_defects:
                             self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
                                                 {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})

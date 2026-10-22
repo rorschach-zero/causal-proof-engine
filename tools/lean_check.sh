@@ -24,7 +24,15 @@ cd proofs || not_verified "proofs directory missing"
 toolchain=$(cat lean-toolchain)
 elan toolchain install "$toolchain" || not_verified "toolchain $toolchain download failed"
 lake exe cache get || not_verified "Mathlib cache unreachable"
-lake build || not_verified "the retained lemmas did not build"
+# A lemma closed by `sorry` builds with a warning and exit status 0, and `#print axioms` lists `sorryAx` for it; either
+# in the build log means a retained lemma is not proved (issue #37).
+lake build > /tmp/lean_build.log 2>&1
+built=$?
+cat /tmp/lean_build.log
+[ "$built" -eq 0 ] || not_verified "the retained lemmas did not build"
+if grep -q -e "declaration uses 'sorry'" -e "sorryAx" /tmp/lean_build.log; then
+  not_verified "a retained lemma depends on sorry"
+fi
 echo "LEAN: retained lemmas built on $toolchain"
 if lake env lean CpeProofs/Broken.lean > /tmp/broken.log 2>&1; then
   cat /tmp/broken.log

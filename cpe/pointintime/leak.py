@@ -40,6 +40,15 @@ def _sample(forecasts: Sequence[float], outcomes: Sequence[int]) -> list[float]:
     return checked
 
 
+def _finite(number: float) -> bool:
+    """Finite, and representable as a float: ``math.isfinite`` raises on an integer beyond the float range (issue
+    #37)."""
+    try:
+        return math.isfinite(number)
+    except OverflowError:
+        return False
+
+
 def _score(forecasts: Sequence[float], outcomes: Sequence[int]) -> float:
     return sum((p - y) ** 2 for p, y in zip(forecasts, outcomes)) / len(forecasts)
 
@@ -53,7 +62,7 @@ def detect_leak(forecasts: Sequence[float], outcomes: Sequence[int], *, bound: f
                 seed: int) -> LeakReport:
     """Flag ``forecasts`` whose Brier score beats the mean of the shuffled-label null by more than ``bound``."""
     checked = _sample(forecasts, outcomes)
-    if isinstance(bound, bool) or not isinstance(bound, (int, float)) or not math.isfinite(bound) or bound < 0:  # 4335243616
+    if isinstance(bound, bool) or not isinstance(bound, (int, float)) or not _finite(bound) or bound < 0:  # 4335243616
         raise Refusal("invalid_bound", "the pre-registered bound is a finite non-negative number")
     if isinstance(permutations, bool) or not isinstance(permutations, int) or permutations < 1:  # 4335189809
         raise Refusal("invalid_permutations", "at least one permutation is needed")

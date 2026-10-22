@@ -82,6 +82,12 @@ class ManualTimeSource:
         self._monotonic = monotonic
 
 
+# Drawn once at import: without a kernel boot id, a process start is the only discontinuity this source can name, so
+# every source in one process must report the same id; one drawn per object made a second gate in the same process
+# read a reboot (issue #37).
+_PROCESS_BOOT_ID = str(uuid.uuid4())
+
+
 class HostTimeSource:
     """The host's monotonic clock and boot id (Linux: the kernel's; elsewhere: one id per process)."""
 
@@ -89,9 +95,9 @@ class HostTimeSource:
 
     def __init__(self) -> None:
         try:
-            self._boot_id = self._BOOT_ID_PATH.read_text(encoding="ascii").strip() or str(uuid.uuid4())
+            self._boot_id = self._BOOT_ID_PATH.read_text(encoding="ascii").strip() or _PROCESS_BOOT_ID
         except OSError:
-            self._boot_id = str(uuid.uuid4())
+            self._boot_id = _PROCESS_BOOT_ID
 
     def monotonic(self) -> float:
         return time.monotonic()
