@@ -8,7 +8,14 @@ from cpe.canonical import digest_of, require_hex_digest
 from cpe.capability.timesource import ClockReading
 from cpe.errors import Refusal
 from cpe.schemas import Capability
-from cpe.schemas.common import Payload, require_identifier, require_keys, require_mapping, require_non_negative_int
+from cpe.schemas.common import (
+    Payload,
+    require_digest,
+    require_identifier,
+    require_keys,
+    require_mapping,
+    require_non_negative_int,
+)
 
 KIND_EPOCH = "gate_epoch"
 KIND_INTENT = "gate_intent"
@@ -39,19 +46,30 @@ class EpochRecord:
     index: int
     reason: EpochReason
     baseline: ClockReading
+    # The release the gate ran when it opened the epoch: the intents of the epoch are replayed against it, so that a
+    # later release replays a ledger an earlier one wrote (PR #51 review 4353051510). Absent on epochs written
+    # before it was recorded; those are replayed against the running release.
+    release_digest: str | None = None
 
     @classmethod
     def from_payload(cls, payload: object) -> EpochRecord:
         m = require_mapping(payload, "EpochRecord")
-        require_keys(m, "EpochRecord", frozenset({"epoch", "index", "reason", "baseline"}), frozenset())
+        require_keys(m, "EpochRecord", frozenset({"epoch", "index", "reason", "baseline"}),
+                     frozenset({"release_digest"}))
         index = require_non_negative_int(m["index"], "index")
         if index < 1:
             raise Refusal("invalid_epoch", "epoch indices start at 1")
+        release = m.get("release_digest")
         return cls(require_non_negative_int(m["epoch"], "epoch"), index, str(m["reason"]),
-                   ClockReading.from_payload(m["baseline"]))
+                   ClockReading.from_payload(m["baseline"]),
+                   None if release is None else require_digest(release, "release_digest"))
 
     def to_payload(self) -> Payload:
-        return {"epoch": self.epoch, "index": self.index, "reason": self.reason, "baseline": self.baseline.to_payload()}
+        payload: Payload = {"epoch": self.epoch, "index": self.index, "reason": self.reason,
+                            "baseline": self.baseline.to_payload()}
+        if self.release_digest is not None:
+            payload["release_digest"] = self.release_digest
+        return payload
 
 
 @dataclass(frozen=True)
