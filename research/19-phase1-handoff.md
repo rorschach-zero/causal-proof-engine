@@ -582,8 +582,9 @@ against the 15-minute job limit.
 
 **The measured tree.** Commit `aad6255283bb93f4f26fa8b5f704dab31f6683a0`, the last commit of the PR that changes
 `cpe/`, `tests/` or `pyproject.toml`; the commits after it add only the report tool, its test, the files of
-`research/mutation/` and this text, so a run on the head measures the same mutants with the same tests (the tool's own
-test does not import `cpe/`). Run 2026-10-21, 58 min 10 s.
+`research/mutation/` and this text, and the deselection of the tool's own test for the mutation run (it reads
+`research/mutation/`, which mutmut's working copy does not hold, and no `cpe/` code; PR #35 review finding
+`4347648558`). A run on the head therefore measures the same mutants with the same tests. Run 2026-10-21, 58 min 10 s.
 
 **Commands.**
 
@@ -625,6 +626,49 @@ original and the mutated function (`tools/mutation_report.py`); the hand table g
 **Adjusted score 99.95 %,** derived from the committed classification: detected (killed or timed out, 6422) over all
 mutants minus the text, equivalent and tool-limit survivors (8387 − 1962 = 6425); the three accepted survivors are the
 difference. It is not a measurement of mutmut: it rests on the classification, which a reviewer can check row by row.
+
+**Sensitivity of the adjusted score** to two readings of Codex's review `5613298276` (on `a450ee4`), which the owner's
+delegate decided to report, not to apply (the classification above is unchanged):
+
+| Reading | Survivors moved out of the excluded categories | Adjusted score |
+|---|---|---|
+| `4347648541`: a mutant that puts `None` where a message goes (a refusal's detail, record text, an assigned basis) changes the value's type, so it is not text; validator labels, which stay inside f-strings, remain text | 277 | 95.82 % |
+| `4347648529`: a changed ledger identifier is observable in the persisted record and its `entry_hash`, so it is not equivalent | 136 | 97.88 % |
+| both | 413 | 93.92 % |
+
+Each figure is reproduced from the committed files, from the repository root, by:
+
+```sh
+python3 - <<'PY'
+import ast, csv, json, sys
+sys.path.insert(0, ".")
+from tools.mutation_report import apply_changes, differences
+d = "research/mutation/"
+ev = json.load(open(d + "evidence.json", encoding="utf-8"))
+rows = {r["name"]: r for r in csv.DictReader(open(d + "classification.tsv", encoding="utf-8"), delimiter="\t")}
+def none_at_sink(e):  # a text survivor that puts None where a message goes (validator labels excepted)
+    r = rows.get(e["name"])
+    if r is None or r["category"] != "text" or r["reason"].startswith(("field label", "default label")):
+        return False
+    original = ev["functions"][e["function"]]
+    trees = ast.parse(original).body[0], ast.parse(apply_changes(original, e["changes"])).body[0]
+    return any(isinstance(x.mutated, ast.Constant) and x.mutated.value is None for x in differences(*trees))
+sink = {e["name"] for e in ev["mutants"] if none_at_sink(e)}
+ident = {n for n, r in rows.items() if r["category"] == "equivalent" and "identifier" in r["reason"]}
+excluded = sum(r["category"] in ("text", "equivalent", "tool-limit") for r in rows.values())
+for label, moved in (("4347648541", sink), ("4347648529", ident), ("both", sink | ident)):
+    print(f"{label}: {len(moved)} moved, adjusted {6422 / (8387 - excluded + len(moved)):.2%}")
+PY
+```
+
+which prints `4347648541: 277 moved, adjusted 95.82%`, `4347648529: 136 moved, adjusted 97.88%` and
+`both: 413 moved, adjusted 93.92%`. The raw score, 76.56 %, is the primary figure under every reading.
+
+**Specification question for the owner** (from `4347648529`): is the format of a ledger record identifier (a prefix
+naming the record kind and the SHA-256 of the identifying parts, `_ledger_id` in each registry) a contract under `17`?
+`17` §3 item 2 fixes a single transactional writer with a canonical JSONL export, which carries the identifier, but
+names no identifier format. If it is a contract, the 136 identifier mutants are real gaps and tests should pin the format; if not, they
+are equivalent for every registry decision, as classified.
 
 **How the run on `aad6255` was reached.** The earlier session measured `ac4c640` (5526 killed, 2739 survived, 121
 without a covering test, 1 timeout; 65.9 %) and `e6c3ba2` (6394 killed, 1992 survived, 1 timeout; 76.2 %). Those two
