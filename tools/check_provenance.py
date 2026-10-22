@@ -81,13 +81,18 @@ def git(*args: str, repo: Path) -> str:
 
 
 def commits_in_range(commit_range: str, repo: Path) -> list[Commit]:
-    separator = "\x1e"
-    out = git("log", "--format=%H%x1f%an <%ae>%x1f%cn <%ce>%x1f%P%x1f%B" + separator, commit_range, repo=repo)
+    """Every commit of the range, its fields separated by NUL bytes. A commit message can hold any other control
+    character, so a printable or control separator lets a message forge a record and hide text in a field no check
+    reads; git refuses a NUL byte in a message (issue #37, pass 3 T1)."""
+    out = git("log", "-z", "--format=%H%x00%an <%ae>%x00%cn <%ce>%x00%P%x00%B", commit_range, repo=repo)
+    fields = out.split("\x00")
+    if fields and fields[-1] == "":
+        fields.pop()  # the terminator after the last commit
+    if len(fields) % 5:
+        raise ValueError(f"git log printed {len(fields)} fields, not five per commit")
     commits = []
-    for chunk in out.split(separator):
-        if not chunk.strip():
-            continue
-        sha, author, committer, parents, message = chunk.lstrip("\n").split("\x1f", 4)
+    for i in range(0, len(fields), 5):
+        sha, author, committer, parents, message = fields[i:i + 5]
         commits.append(Commit(sha, author, committer, message.strip("\n"), tuple(parents.split())))
     return commits
 
