@@ -31,9 +31,10 @@ from cpe.capability.records import (
     CommitRecord,
     EpochRecord,
     IntentRecord,
+    intent_ledger_id,
 )
 from cpe.capability.signing import Verifier
-from cpe.capability.state import GateState, replay_gate
+from cpe.capability.state import GateRules, GateState, replay_gate
 from cpe.capability.timesource import ClockReading, TimeSource
 from cpe.clock import format_timestamp
 from cpe.errors import Refusal
@@ -81,6 +82,7 @@ class CapabilityGate:
         self._environment = environment
         self._release_digest = release_digest
         self._tolerance = slew_tolerance_seconds
+        self._rules = GateRules(verifier, environment, release_digest)
         self._lock = threading.RLock()
         self.hooks: dict[str, Callable[[], None]] = {}  # test hooks, one per point of the four-step protocol
         self._start()
@@ -88,11 +90,12 @@ class CapabilityGate:
     # state ----------------------------------------------------------------------------------------------------
 
     def state(self) -> GateState:
-        """Replayed from the ledger and its local anchor copy (self-attested; the restore path verifies)."""
+        """Replayed from the ledger and its local anchor copy (self-attested; the restore path verifies), every
+        intent and commit re-validated against this gate's verifier, environment and release (RC-43, RC-46)."""
         with self._lock:
             anchors = self._ledger.local_anchors()
             prefix = max((a.prefix_length for a in anchors), default=0)
-            return replay_gate(self._ledger.records(), prefix)
+            return replay_gate(self._ledger.records(), prefix, self._rules)
 
     def _hook(self, point: str) -> None:
         hook = self.hooks.pop(point, None)
@@ -260,9 +263,7 @@ class CapabilityGate:
 
     @staticmethod
     def _intent_id(capability: Capability) -> str:
-        """The nonce's identity in the ledger: one intent per (epoch, nonce), enforced by the ledger's unique
-        record identifier inside the writer transaction (RC-43)."""
-        return _ledger_id("gate-intent", str(capability.epoch), capability.nonce)
+        return intent_ledger_id(capability)
 
     def _abort(self, intent_id: str, reason: str) -> Record:
         """Append the abort of a pending intent with its reading. The reading is taken without the discontinuity
