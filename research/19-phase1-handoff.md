@@ -565,105 +565,139 @@ fixed in one PR against `main` at `44aa596`, with `tests/test_hardening_h4.py` (
 
 ## 10. Mutation testing
 
-The quality gate of issue #3 comment `6312263652`, item 3 (second bullet), run 2026-10-21 on the PR "Mutation
-testing", with the reporting rules of the owner's delegate (message of 11:20 UTC): scores per module, the mutants
-without covering tests first, at least 85 % killed in the invariant cores, the other survivors by category.
+The quality gate of issue #3 comment `6312263652`, item 3 (second bullet), run on the PR "Mutation testing" (PR #35),
+with the reporting rules of the owner's delegate (message of 2026-10-21 11:20 UTC): scores per module, the mutants
+without covering tests first, at least 85 % killed in the invariant cores, the other survivors by category. Every
+number below is reproduced from committed files by the commands named here; the raw score is the primary figure.
 
-**Tool and command.** mutmut 3.8.0 (`requirements/mutation.txt`, hash-locked with every transitive package beside
-`requirements/dev.txt`), Python 3.13.16, four workers, in a virtual environment and a scratch copy outside the
-repository. Configuration in `pyproject.toml` (`[tool.mutmut]`, source `cpe/`); `mutants/` is ignored by Git.
+**Tool.** mutmut 3.8.0 (`requirements/mutation.txt`, hash-locked with every transitive package beside
+`requirements/dev.txt`), Python 3.13.16, four workers, in a virtual environment and a scratch copy of the tree
+(`git archive`) outside the repository. Configuration in `pyproject.toml` (`[tool.mutmut]`, source `cpe/`);
+`mutants/` is ignored by Git. Two tests are deselected for the mutation run only, because mutmut's trampolines
+change what they observe: `test_4335189780_the_store_exposes_no_read_without_a_cutoff` (it lists the public
+attributes of `PointInTimeStore`, which the trampolines extend) and
+`test_4335130178_deep_values_in_a_comparison_are_a_typed_refusal` (it provokes a `RecursionError` at a depth the
+trampolines' extra frames shift). Both run in CI as before. Mutation testing is not in CI: a run takes about an hour
+against the 15-minute job limit.
+
+**The measured tree.** Commit `aad6255283bb93f4f26fa8b5f704dab31f6683a0`, the last commit of the PR that changes
+`cpe/`, `tests/` or `pyproject.toml`; the commits after it add only the report tool, its test, the files of
+`research/mutation/` and this text, so a run on the head measures the same mutants with the same tests (the tool's own
+test does not import `cpe/`). Run 2026-10-21, 58 min 10 s.
+
+**Commands.**
 
 ```sh
 pip install --require-hashes --no-deps -r requirements/dev.txt -r requirements/mutation.txt
-mutmut run --max-children 4 && mutmut results --all true
+# in a scratch copy of the tree:
+mutmut run --max-children 4
+mutmut results --all true > results.txt
+python tools/mutation_report.py collect --results results.txt --mutants mutants --out evidence.json
+# from the repository root, with the committed files only (no mutmut, no mutants/):
+python tools/mutation_report.py classify --results research/mutation/results.txt \
+    --evidence research/mutation/evidence.json --manual research/mutation/manual.tsv \
+    --table research/mutation/classification.tsv --check
 ```
 
-Runtime: 3236 s on `ac4c640` (baseline), 3393 s on `e6c3ba2` (after). Mutation testing is not added to CI: a run takes
-more than 50 minutes against the 15-minute limit. Two tests are deselected for the mutation run only, because mutmut's
-trampolines change what they observe: `test_4335189780_the_store_exposes_no_read_without_a_cutoff` (it lists the
-public attributes of `PointInTimeStore`, which the trampolines extend) and
-`test_4335130178_deep_values_in_a_comparison_are_a_typed_refusal` (it provokes a `RecursionError` at a depth the
-trampolines' extra frames shift). Both run in CI as before.
+The committed files (`research/mutation/`): `results.txt`, the output of `mutmut results --all true` of the run on
+`aad6255`, one line per mutant; `evidence.json`, written by `collect`: for every mutant that was not killed, its status
+and the source lines it changes against its original function, with each original function once; `manual.tsv`, the
+hand classification, one reviewed reason per survivor that no structural rule classifies; `classification.tsv`,
+written by `classify`, one row per survivor with its category, its source (rule or hand) and its reason.
+`tests/test_mutation_report.py` runs `classify --check` in CI, so the committed table always follows from the
+committed evidence.
 
-**Totals.** 8387 mutants of `cpe/`.
+**Totals of the run on `aad6255`.** 8387 mutants of `cpe/`: 6421 killed, 1965 survived, 1 timeout (`effective_cutoff`,
+a mutant that never ends the walk, detected), none without a covering test. **Raw score 76.56 %** (killed over all
+mutants).
 
-| Commit | Killed | Survived | No covering test | Timeout | Score |
-|---|---|---|---|---|---|
-| `ac4c640` (baseline) | 5526 | 2739 | 121 | 1 | 65.9 % |
-| `e6c3ba2` (with the new tests) | 6394 | 1992 | 0 | 1 | 76.2 % |
+**Survivors by category (1965),** from `classification.tsv`. The rules are structural, over the syntax trees of the
+original and the mutated function (`tools/mutation_report.py`); the hand table gives one reason per mutant.
 
-The 121 mutants without covering tests (`CheckRecord.from_payload`, `VoidRequest.from_payload`,
-`BreachReport.to_payload`, `HostTimeSource`, `UnavailableAnchorStore.publish`, `SystemClock.now`) are all covered now;
-no code was dead. The timeout (`effective_cutoff`, a mutant that never ends the walk) counts as detected.
+| Category | Count | Of which | What it is |
+|---|---|---|---|
+| text | 1660 | 1656 by rule, 4 by hand | a refusal's detail text (774), a field label passed to a validator for its messages (846 by rule, 6 as a default label), the adjudication basis and other record text no code reads (30), the line number or key of an export refusal (3), the message of an internal exception (1). The reason code of a refusal is never text |
+| equivalent | 286 | 63 by rule, 223 by hand | SQL keyword case (41), codec-name case (12), `typing.cast` type arguments (10); ledger-identifier prefixes changed (84) or removed (25), where no code reads a registry record by its identifier; values always reassigned before they are read; guards made redundant by an earlier check; branches unreachable on any ledger the registries write; fields written and never read (below) |
+| tool-limit | 16 | by hand | 12 mutants of `_order`, a factory that runs once at import to build `COMPARATORS`, which mutmut's per-call switch cannot reach; 4 reason mutants of `evaluate` that only the deselected `test_4335130178` kills. Both claims were checked by applying each mutation to the source (2026-10-22): the full suite fails on the twelve, the deselected test on the four |
+| accepted | 3 | by hand | the retry bound of the three contention loops (`range(8)` to `range(9)` in `RegistrationRegistry._write`, `CapabilityGate._append`, `AdjudicationRegistry.adjudicate`): a real difference that only a ninth consecutive stale chain head shows; not worth a test that forges eight concurrent writers. Counted against the adjusted score |
+| unclassified | 0 | | |
 
-**Survivors of `e6c3ba2` by category (1992).**
+**Adjusted score 99.95 %,** derived from the committed classification: detected (killed or timed out, 6422) over all
+mutants minus the text, equivalent and tool-limit survivors (8387 − 1962 = 6425); the three accepted survivors are the
+difference. It is not a measurement of mutmut: it rests on the classification, which a reviewer can check row by row.
 
-| Category | Count | Reason |
-|---|---|---|
-| Text | 1666 | refusal detail text (721), field labels passed to validators for messages (861), adjudication basis, defect and incident text, log messages, report detail text. Killing them pins wording, not behaviour |
-| Equivalent | 302 | ledger-identifier prefixes that collide with nothing (87), SQL keyword and codec-name case (52), and 163 single mutants with their reasons in the scratch table of the PR (initial values always reassigned, `typing.cast` arguments, retry bounds of contention loops, values written and never read, guards made redundant by an earlier check, branches unreachable on a ledger the registry writes) |
-| Tool limit | 18 | 15 mutants of `_order`, a factory that runs once at import to build `COMPARATORS`, which mutmut's per-call switch cannot reach (hand-applied, its mutants are killed); 3 reason mutants of `evaluate` killed only by the deselected `test_4335130178` |
-| Real gap | 6 | killed by the last commit of the PR, after the measured run, verified by hand-applying each mutation: the reason of `check_record_chronology` for a publication after the receipt (3), a late timely report after a YES in `_contradicts` (2), the status-receipt reason in `adjudicate` (1) |
+**How the run on `aad6255` was reached.** The earlier session measured `ac4c640` (5526 killed, 2739 survived, 121
+without a covering test, 1 timeout; 65.9 %) and `e6c3ba2` (6394 killed, 1992 survived, 1 timeout; 76.2 %). Those two
+outputs are not committed and are not reproduced here. This session ran the tree of `e69b0c8` (the tests of the PR and
+the lock fix; 6401 killed, 1985 survived, 1 timeout; output kept outside the repository, not committed), classified
+every survivor with the tool above, and wrote `tests/test_mutation_final.py` for the 18 survivors with an observable
+effect (two cutoff corrections of different versions sharing an evidence id; a third forecast kept before the window;
+the baseline of a discontinuity rotation; two step-3 aborts on one ledger; two receipt-lag incidents on one stored
+disposition; a feature row refused at its receipt and not retried; the subject of a missing Jev record; the reason of a
+non-canonical base64 payload; a record published exactly at finality). A targeted mutmut run confirmed each kill
+before the final run, which then killed all 18 and two others.
 
-No real gap is left unkilled.
+**Score per module (run on `aad6255`).** Output of the `classify` command above.
 
-**Score per module at `e6c3ba2`.** Raw is killed over all mutants; adjusted excludes text, equivalent and tool-limit
-mutants and counts the six hand-verified kills.
-
-| Module | Mutants | Killed | Raw | Adjusted |
-|---|---|---|---|---|
-| `ledger.store` | 486 | 388 | 79.8 % | 100 % |
-| `ledger.replay` | 195 | 180 | 92.3 % | 100 % |
-| `ledger.record` | 136 | 105 | 77.2 % | 100 % |
-| `ledger.anchor` | 121 | 81 | 66.9 % | 100 % |
-| `capability.gate` | 572 | 452 | 79.0 % | 100 % |
-| `capability.records` | 322 | 254 | 78.9 % | 100 % |
-| `capability.state` | 74 | 62 | 83.8 % | 100 % |
-| `capability.timesource` | 78 | 59 | 75.6 % | 100 % |
-| `capability.levels` | 41 | 30 | 73.2 % | 100 % |
-| `capability.signing` | 15 | 11 | 73.3 % | 100 % |
-| `adjudication.rules` | 866 | 704 | 81.3 % | 100 % |
-| `adjudication.registry` | 614 | 488 | 79.5 % | 100 % |
-| `adjudication.records` | 406 | 292 | 71.9 % | 100 % |
-| `adjudication.predicate` | 168 | 111 | 66.1 % | 100 % |
-| `adjudication.content` | 153 | 96 | 62.7 % | 100 % |
-| `adjudication.breaches` | 37 | 37 | 100 % | 100 % |
-| `adjudication.eligibility` | 29 | 29 | 100 % | 100 % |
-| `registration.records` | 905 | 644 | 71.2 % | 100 % |
-| `registration.registry` | 864 | 644 | 74.5 % | 100 % |
-| `registration.seeds` | 6 | 5 | 83.3 % | 100 % |
-| `pointintime.store` | 262 | 198 | 75.6 % | 100 % |
-| `pointintime.leak` | 124 | 103 | 83.1 % | 100 % |
-| `canonical` | 88 | 68 | 77.3 % | 100 % |
-| `schemas.event` | 610 | 437 | 71.6 % | 100 % |
-| `schemas.forecast` | 496 | 363 | 73.2 % | 100 % |
-| `schemas.common` | 200 | 155 | 77.5 % | 100 % |
-| `schemas.capability` | 119 | 87 | 73.1 % | 100 % |
-| `schemas.research_output` | 106 | 79 | 74.5 % | 100 % |
-| `validation.issuance` | 219 | 178 | 81.3 % | 100 % |
-| `clock` | 69 | 49 | 71.0 % | 100 % |
-| `errors` | 6 | 6 | 100 % | 100 % |
+| Module | Mutants | Killed | Survived | Raw | Excluded | Adjusted |
+|---|---|---|---|---|---|---|
+| `adjudication.breaches` | 37 | 37 | 0 | 100.00% | 0 | 100.00% |
+| `adjudication.content` | 153 | 100 | 53 | 65.36% | 53 | 100.00% |
+| `adjudication.eligibility` | 29 | 29 | 0 | 100.00% | 0 | 100.00% |
+| `adjudication.predicate` | 168 | 111 | 57 | 66.07% | 57 | 100.00% |
+| `adjudication.records` | 406 | 292 | 114 | 71.92% | 114 | 100.00% |
+| `adjudication.registry` | 614 | 490 | 124 | 79.80% | 123 | 99.80% |
+| `adjudication.rules` | 866 | 712 | 154 | 82.22% | 154 | 100.00% |
+| `canonical` | 88 | 68 | 20 | 77.27% | 20 | 100.00% |
+| `capability.gate` | 572 | 457 | 115 | 79.90% | 114 | 99.78% |
+| `capability.levels` | 41 | 30 | 11 | 73.17% | 11 | 100.00% |
+| `capability.records` | 322 | 254 | 68 | 78.88% | 68 | 100.00% |
+| `capability.signing` | 15 | 11 | 4 | 73.33% | 4 | 100.00% |
+| `capability.state` | 74 | 62 | 12 | 83.78% | 12 | 100.00% |
+| `capability.timesource` | 78 | 59 | 19 | 75.64% | 19 | 100.00% |
+| `clock` | 69 | 49 | 20 | 71.01% | 20 | 100.00% |
+| `errors` | 6 | 6 | 0 | 100.00% | 0 | 100.00% |
+| `ledger.anchor` | 121 | 81 | 40 | 66.94% | 40 | 100.00% |
+| `ledger.record` | 136 | 105 | 31 | 77.21% | 31 | 100.00% |
+| `ledger.replay` | 195 | 180 | 15 | 92.31% | 15 | 100.00% |
+| `ledger.store` | 486 | 388 | 98 | 79.84% | 98 | 100.00% |
+| `pointintime.leak` | 124 | 103 | 21 | 83.06% | 21 | 100.00% |
+| `pointintime.store` | 262 | 199 | 63 | 75.95% | 63 | 100.00% |
+| `registration.records` | 905 | 644 | 261 | 71.16% | 261 | 100.00% |
+| `registration.registry` | 864 | 647 | 217 | 74.88% | 216 | 99.85% |
+| `registration.seeds` | 6 | 5 | 1 | 83.33% | 1 | 100.00% |
+| `schemas.capability` | 119 | 87 | 32 | 73.11% | 32 | 100.00% |
+| `schemas.common` | 200 | 155 | 45 | 77.50% | 45 | 100.00% |
+| `schemas.event` | 610 | 437 | 173 | 71.64% | 173 | 100.00% |
+| `schemas.forecast` | 496 | 362 (+1 timeout) | 133 | 72.98% | 133 | 100.00% |
+| `schemas.research_output` | 106 | 79 | 27 | 74.53% | 27 | 100.00% |
+| `validation.issuance` | 219 | 182 | 37 | 83.11% | 37 | 100.00% |
+| **total** | 8387 | 6421 (+1 timeout) | 1965 | 76.56% | 1962 | 99.95% |
 
 **The 85 % target.** Met on the adjusted score in every core module (ledger, capability, adjudication rules and
-registry, registration, point-in-time, canonical). On the raw score only `ledger.replay` meets it; in every other core
-module the remainder is text, equivalent or tool-limit mutants, and reaching 85 % raw would take tests that assert
-refusal wording and field labels, the case the delegate's rule stops at ("tests that only pin incidental
+registry, registration, point-in-time, canonical). On the raw score only `ledger.replay` (92.31 %) meets it; in every
+other core module the remainder is text, equivalent or tool-limit mutants, and reaching 85 % raw would take tests that
+assert refusal wording and field labels, the case the delegate's rule stops at ("tests that only pin incidental
 behaviour").
 
-**Found on the way, for a later cleanup (not changed here):** `GateState.commit_seq` and the values of
-`GateState.commits`, and the registration replay's `cluster_registered_at`, are written and never read; three
-branches are unreachable on any ledger the registries write (`anchor_confirmatory_register`'s mapping of
-`duplicate_record_id`, the second `commit_in_doubt` of `promote`, `submit_observation`'s `unknown_source`).
+**Found on the way, carried to the whole-codebase audit (not changed here).** `GateState.commit_seq` and the values
+of `GateState.commits`, the registration replay's `cluster_registered_at`, and the adjudication replay's
+`defect_record_ids` (whose ids the stored defects already carry) are written and never read. Three branches are
+unreachable on any ledger the registries write: `anchor_confirmatory_register`'s mapping of `duplicate_record_id`, the
+second `commit_in_doubt` of `promote`, `submit_observation`'s `unknown_source`. `HostTimeSource` draws its fallback
+boot id per object rather than per process (PR #35 review finding `4337918328`).
 
-**Codex's review of the PR (review `5601127550` on `0105a72`).**
+**Codex's reviews of the PR.**
 
-- `4337918314` (P1): the adjusted scores rest on a classification (a scratch classifier and a per-mutant table of
-  equivalents) that is not committed, so a reviewer cannot reproduce the category counts or the adjusted scores from
-  the repository. **Not a defect in the new tests; listed for the owner's delegate**: either commit the classifier,
-  the table and the final `mutmut results` output, or keep only the raw result as the reproducible number. The raw
-  figures above are reproducible with the command given.
-- `4337918328` (P2): `test_the_host_time_source_reads_the_kernel_boot_id_or_falls_back` asserted that two
-  `HostTimeSource` objects of one process get different fallback ids, against the documented one id per process.
-  **Defect in a new test, fixed**: the test now checks only that the fallback is a UUID. That `HostTimeSource` draws
-  a fresh UUID per object rather than per process, so a gate rebuilt in one process without `/proc` would see a
-  reboot, is a question for the whole-codebase audit, not changed here.
+- Review `5601127550` on `0105a72`. `4337918314` (P1): the adjusted scores rested on a classifier and a per-mutant
+  table that were not committed. **Fixed** by the files and commands above. `4337918328` (P2): the boot-id test
+  asserted a new fallback id per object. **Fixed in `8a0a826`** (the test checks a UUID only); the per-object fallback
+  itself goes to the audit.
+- Review `5601246138` on `8a0a826`. `4338008337` (P1): the measured run was on `e6c3ba2`, not on the final tree.
+  **Fixed**: the run reported here is on `aad6255`, whose `cpe/`, `tests/` and configuration are those of the head.
+  `4338008344` (P2): on Python 3.14 neither YAML package was installed. **Fixed in `e69b0c8`**: `PyYAML` is marked
+  `python_version != "3.13"`, as libcst's metadata selects it. `4338008329` (P2): hash-pin `uc-micro-py`. **Not
+  reproduced, not applied**: linkify-it-py 2.2.0 declares no dependency on it in its wheel metadata and carries the
+  Unicode tables itself (`linkify_it/_ucre_data.py`); in fresh environments built from both locks with `--no-deps`,
+  `pip check` prints `No broken requirements found` on Python 3.11.17 and 3.13.16, and `linkify_it` matches a URL
+  with `uc_micro` absent.
