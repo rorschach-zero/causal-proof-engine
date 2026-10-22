@@ -163,22 +163,29 @@ class AdjudicationRegistry:
         """Pre-register the resolution criteria once: after the source rule they name, before the issuance window
         opens; a different specification under the same id is refused."""
         with self._lock:
-            state = self.state()
-            existing = state.event(spec.event_id).spec
-            if existing is not None:
-                if existing != spec:
-                    raise Refusal("event_immutable", f"{spec.event_id} is registered with other criteria")
-                return
-            if spec.predicate.source not in state.rules:
-                raise Refusal("unknown_source", f"{spec.predicate.source} has no registered source rule (OD5)")
-            def before_the_window(receipt: datetime) -> None:  # the receipt is the time that counts (issue #37, C2)
-                if receipt >= spec.issuance_open:
-                    raise Refusal("late_registration", f"{spec.event_id}: the criteria must be recorded before the "
-                                  "issuance window opens")
+            for attempt in range(2):  # another writer on the same ledger that lands the event first is read back
+                state = self.state()
+                existing = state.event(spec.event_id).spec
+                if existing is not None:
+                    if existing != spec:
+                        raise Refusal("event_immutable", f"{spec.event_id} is registered with other criteria")
+                    return
+                if spec.predicate.source not in state.rules:
+                    raise Refusal("unknown_source", f"{spec.predicate.source} has no registered source rule (OD5)")
 
-            before_the_window(self._ledger.now())
-            self._ledger.append(KIND_EVENT, _ledger_id("event", spec.event_id), spec.to_payload(),
-                                admit=before_the_window)
+                def before_the_window(receipt: datetime) -> None:  # the receipt is the time that counts (issue #37, C2)
+                    if receipt >= spec.issuance_open:
+                        raise Refusal("late_registration", f"{spec.event_id}: the criteria must be recorded before "
+                                      "the issuance window opens")
+
+                before_the_window(self._ledger.now())
+                try:
+                    self._ledger.append(KIND_EVENT, _ledger_id("event", spec.event_id), spec.to_payload(),
+                                        admit=before_the_window)
+                    return
+                except Refusal as refusal:
+                    if refusal.reason != "duplicate_record_id" or attempt:
+                        raise
 
     def _spec(self, state: _State, event_id: str) -> EventSpec:
         spec = state.event(event_id).spec
@@ -188,12 +195,18 @@ class AdjudicationRegistry:
 
     def register_rule(self, rule: SourceRule) -> None:
         with self._lock:
-            existing = self.state().rules.get(rule.source_id)
-            if existing is not None:
-                if existing != rule:
-                    raise Refusal("rule_immutable", f"source {rule.source_id} already has a different rule")
-                return
-            self._ledger.append(KIND_RULE, _ledger_id("rule", rule.source_id), rule.to_payload())
+            for attempt in range(2):  # another writer on the same ledger that lands the rule first is read back
+                existing = self.state().rules.get(rule.source_id)
+                if existing is not None:
+                    if existing != rule:
+                        raise Refusal("rule_immutable", f"source {rule.source_id} already has a different rule")
+                    return
+                try:
+                    self._ledger.append(KIND_RULE, _ledger_id("rule", rule.source_id), rule.to_payload())
+                    return
+                except Refusal as refusal:
+                    if refusal.reason != "duplicate_record_id" or attempt:
+                        raise
 
     def archive_content(self, content: ArchivedContent) -> Record:
         """Archive source bytes under their SHA-256, with the ledger's receipt time. The content is an attested
@@ -279,30 +292,12 @@ class AdjudicationRegistry:
                     hook, self.before_write = self.before_write, None
                     hook()
                 if event.disposition is not None:
-                    # The disposition record embeds the defects and incidents known when it was written; side
-                    # rows carry only those found later. Both sets are known, so a retry adds nothing twice.
-                    stored = event.disposition
-                    known_defects = event.defect_record_ids | {d.record_id for d in stored.defects}
-                    for defect in late_contradictions(spec, rule, event.records, stored.disposition):
-                        if defect.record_id not in known_defects:
-                            self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
-                                                {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
-                            stored = replace(stored, defects=stored.defects + (defect,))
-                    # A public occurrence that arrives after the disposition still sets knowable_at (RC-146 read
-                    # with RC-88, section 9.2); the disposition itself stays (H1 review 4334622042).
-                    public = earliest_public_occurrence(spec, rule, event.records)
-                    if public is not None and stored.knowable_at is not None and public[0] < stored.knowable_at:
-                        self._ledger.append(KIND_KNOWABLE, _ledger_id("knowable", event_id, public[1]),
-                                            {"event_id": event_id, "knowable_at": timestamp_payload(public[0]),
-                                             "record_id": public[1]})
-                        stored = replace(stored, knowable_at=public[0])
-                    known = {(i.kind, i.reference_id) for i in stored.incidents}
-                    for incident in fresh.incidents:
-                        if (incident.kind, incident.reference_id) not in known:
-                            self._ledger.append(KIND_INCIDENT, _ledger_id("incident", event_id, incident.kind, incident.reference_id),
-                                                {"event_id": event_id, **incident.to_payload()})
-                            stored = replace(stored, incidents=stored.incidents + (incident,))
-                    return stored
+                    try:
+                        return self._late_rows(event_id, spec, rule, event, fresh)
+                    except Refusal as refusal:
+                        if refusal.reason != "duplicate_record_id":
+                            raise
+                        continue  # another writer on the same ledger wrote the row first; the re-read state holds it
                 if fresh.disposition not in FINAL:
                     return fresh
                 # One record: the disposition with its defects and incidents embedded; nothing to lose between
@@ -316,3 +311,33 @@ class AdjudicationRegistry:
                     continue
                 return fresh
             raise Refusal("contended", f"{event_id}: the ledger kept advancing during adjudication")
+
+    def _late_rows(self, event_id: str, spec: EventSpec, rule: SourceRule, event: _EventState,
+                   fresh: Adjudication) -> Adjudication:
+        """The rows found after a stored disposition: source-latency defects, a knowable-time correction and
+        incidents. A row another writer landed first refuses its append as a duplicate; the caller re-reads."""
+        # The disposition record embeds the defects and incidents known when it was written; side rows carry only
+        # those found later. Both sets are known, so a retry adds nothing twice.
+        stored = event.disposition
+        assert stored is not None
+        known_defects = event.defect_record_ids | {d.record_id for d in stored.defects}
+        for defect in late_contradictions(spec, rule, event.records, stored.disposition):
+            if defect.record_id not in known_defects:
+                self._ledger.append(KIND_DEFECT, _ledger_id("defect", event_id, defect.record_id),
+                                    {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
+                stored = replace(stored, defects=stored.defects + (defect,))
+        # A public occurrence that arrives after the disposition still sets knowable_at (RC-146 read with RC-88,
+        # section 9.2); the disposition itself stays (H1 review 4334622042).
+        public = earliest_public_occurrence(spec, rule, event.records)
+        if public is not None and stored.knowable_at is not None and public[0] < stored.knowable_at:
+            self._ledger.append(KIND_KNOWABLE, _ledger_id("knowable", event_id, public[1]),
+                                {"event_id": event_id, "knowable_at": timestamp_payload(public[0]),
+                                 "record_id": public[1]})
+            stored = replace(stored, knowable_at=public[0])
+        known = {(i.kind, i.reference_id) for i in stored.incidents}
+        for incident in fresh.incidents:
+            if (incident.kind, incident.reference_id) not in known:
+                self._ledger.append(KIND_INCIDENT, _ledger_id("incident", event_id, incident.kind, incident.reference_id),
+                                    {"event_id": event_id, **incident.to_payload()})
+                stored = replace(stored, incidents=stored.incidents + (incident,))
+        return stored
