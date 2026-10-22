@@ -310,9 +310,10 @@ class RegistrationRegistry:
         self.before_write: Callable[[], None] | None = None  # test hook, run between the decision and the write
 
     def state(self) -> _State:
-        state = replay_state(self._ledger.records())
-        state.local_anchors = self._ledger.local_anchors()
-        state.pending_anchors = self._ledger.pending_anchors()
+        records, local_anchors, pending_anchors = self._ledger.snapshot()  # one read under the ledger's lock
+        state = replay_state(records)
+        state.local_anchors = local_anchors
+        state.pending_anchors = pending_anchors
         check_anchor_times(state)
         return state
 
