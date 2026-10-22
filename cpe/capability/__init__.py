@@ -14,7 +14,7 @@
 from cpe.capability.gate import CapabilityGate, PromotionOutcome
 from cpe.capability.levels import ACTIONS, FLOOR, LEVELS, LIVE
 from cpe.capability.signing import HarnessVerifier, Verifier
-from cpe.capability.state import GateState, replay_gate
+from cpe.capability.state import GateRules, GateState, replay_gate
 from cpe.capability.timesource import ClockReading, HostTimeSource, ManualTimeSource, TimeSource
 
 __all__ = [
@@ -24,6 +24,7 @@ __all__ = [
     "LIVE",
     "CapabilityGate",
     "ClockReading",
+    "GateRules",
     "GateState",
     "HarnessVerifier",
     "HostTimeSource",

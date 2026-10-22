@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from cpe.canonical import require_hex_digest
+from cpe.canonical import digest_of, require_hex_digest
 from cpe.capability.timesource import ClockReading
 from cpe.errors import Refusal
 from cpe.schemas import Capability
@@ -25,6 +25,12 @@ def _text(value: object, field: str) -> str:
     if not isinstance(value, str):
         raise Refusal("invalid_text", f"{field} must be a string")
     return value
+
+
+def intent_ledger_id(capability: Capability) -> str:
+    """The nonce's identity in the ledger: one intent per (epoch, nonce), enforced by the ledger's unique record
+    identifier inside the writer transaction (RC-43). The protected operation writes it and replay requires it."""
+    return f"gate-intent:{digest_of([str(capability.epoch), capability.nonce])}"
 
 
 @dataclass(frozen=True)
