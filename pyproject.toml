@@ -24,3 +24,20 @@ files = ["cpe", "tests", "tools"]
 [[tool.mypy.overrides]]
 module = ["tests.test_review_dispatch"]
 ignore_errors = true
+
+# Mutation testing (research/19 section "Mutation testing"; not run in CI: a full run takes about 50 minutes).
+# Run from the repository root with the tools of requirements/dev.txt and requirements/mutation.txt:
+#   mutmut run --max-children 4 && mutmut results
+# mutmut writes its instrumented copy to mutants/ (ignored by Git). Two tests cannot run under its trampolines and
+# are deselected for the mutation run only: one inspects the public attribute names of PointInTimeStore, which the
+# trampolines extend; the other provokes a RecursionError at a depth the trampolines' extra frames change. The report
+# tool's test is deselected too: it reads research/mutation/, which the working copy does not hold, and no cpe/ code
+# (PR #35 review finding 4347648558).
+[tool.mutmut]
+source_paths = ["cpe/"]
+also_copy = [".github/", "tools/", "tests/", "research/original/", "requirements/", "proofs/"]
+pytest_add_cli_args = [
+    "--deselect", "tests/test_review_round1_pr33.py::test_4335189780_the_store_exposes_no_read_without_a_cutoff",
+    "--deselect", "tests/test_review_round2_pr32.py::test_4335130178_deep_values_in_a_comparison_are_a_typed_refusal",
+    "--deselect", "tests/test_mutation_report.py",
+]

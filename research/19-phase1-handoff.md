@@ -562,3 +562,190 @@ fixed in one PR against `main` at `44aa596`, with `tests/test_hardening_h4.py` (
   receipt (`evidence_after_receipt`), the bound `archive_content` enforces online.
 - `4335327806` (P2, leak detector): a seed that is not an integer (`None`, a Boolean, a float, a string) is refused
   as `invalid_seed`, so the null distribution is never drawn from system entropy.
+
+## 10. Mutation testing
+
+The quality gate of issue #3 comment `6312263652`, item 3 (second bullet), run on the PR "Mutation testing" (PR #35),
+with the reporting rules of the owner's delegate (message of 2026-10-21 11:20 UTC): scores per module, the mutants
+without covering tests first, at least 85 % killed in the invariant cores, the other survivors by category. Every
+number below is reproduced from committed files by the commands named here; the raw score is the primary figure.
+
+**Tool.** mutmut 3.8.0 (`requirements/mutation.txt`, hash-locked with every transitive package beside
+`requirements/dev.txt`), Python 3.13.16, four workers, in a virtual environment and a scratch copy of the tree
+(`git archive`) outside the repository. Configuration in `pyproject.toml` (`[tool.mutmut]`, source `cpe/`);
+`mutants/` is ignored by Git. Two tests are deselected for the mutation run only, because mutmut's trampolines
+change what they observe: `test_4335189780_the_store_exposes_no_read_without_a_cutoff` (it lists the public
+attributes of `PointInTimeStore`, which the trampolines extend) and
+`test_4335130178_deep_values_in_a_comparison_are_a_typed_refusal` (it provokes a `RecursionError` at a depth the
+trampolines' extra frames shift). Both run in CI as before. Mutation testing is not in CI: a run takes about an hour
+against the 15-minute job limit.
+
+**The measured tree.** Commit `aad6255283bb93f4f26fa8b5f704dab31f6683a0`, the last commit of the PR that changes
+`cpe/`, `tests/` or `pyproject.toml`; the commits after it add only the report tool, its test, the files of
+`research/mutation/` and this text, and the deselection of the tool's own test for the mutation run (it reads
+`research/mutation/`, which mutmut's working copy does not hold, and no `cpe/` code; PR #35 review finding
+`4347648558`). A run on the head therefore measures the same mutants with the same tests. Run 2026-10-21, 58 min 10 s.
+
+**Commands.**
+
+```sh
+pip install --require-hashes --no-deps -r requirements/dev.txt -r requirements/mutation.txt
+# in a scratch copy of the tree:
+mutmut run --max-children 4
+mutmut results --all true > results.txt
+python tools/mutation_report.py collect --results results.txt --mutants mutants --out evidence.json
+# from the repository root, with the committed files only (no mutmut, no mutants/):
+python tools/mutation_report.py classify --results research/mutation/results.txt \
+    --evidence research/mutation/evidence.json --manual research/mutation/manual.tsv \
+    --table research/mutation/classification.tsv --check
+```
+
+The committed files (`research/mutation/`): `results.txt`, the output of `mutmut results --all true` of the run on
+`aad6255`, one line per mutant; `evidence.json`, written by `collect`: for every mutant that was not killed, its status
+and the source lines it changes against its original function, with each original function once; `manual.tsv`, the
+hand classification, one reviewed reason per survivor that no structural rule classifies; `classification.tsv`,
+written by `classify`, one row per survivor with its category, its source (rule or hand) and its reason.
+`tests/test_mutation_report.py` runs `classify --check` in CI, so the committed table always follows from the
+committed evidence.
+
+**Totals of the run on `aad6255`.** 8387 mutants of `cpe/`: 6421 killed, 1965 survived, 1 timeout (`effective_cutoff`,
+a mutant that never ends the walk, detected), none without a covering test. **Raw score 76.56 %** (killed over all
+mutants).
+
+**Survivors by category (1965),** from `classification.tsv`. The rules are structural, over the syntax trees of the
+original and the mutated function (`tools/mutation_report.py`); the hand table gives one reason per mutant.
+
+| Category | Count | Of which | What it is |
+|---|---|---|---|
+| text | 1660 | 1656 by rule, 4 by hand | a refusal's detail text (774), a field label passed to a validator for its messages (846 by rule, 6 as a default label), the adjudication basis and other record text no code reads (30), the line number or key of an export refusal (3), the message of an internal exception (1). The reason code of a refusal is never text |
+| equivalent | 148 | 63 by rule, 85 by hand | SQL keyword case (41), codec-name case (12), `typing.cast` type arguments (10); values always reassigned before they are read; guards made redundant by an earlier check; branches unreachable on any ledger the registries write; fields written and never read (below) |
+| tool-limit | 16 | by hand | 12 mutants of `_order`, a factory that runs once at import to build `COMPARATORS`, which mutmut's per-call switch cannot reach; 4 reason mutants of `evaluate` that only the deselected `test_4335130178` kills. Both claims were checked by applying each mutation to the source (2026-10-22): the full suite fails on the twelve, the deselected test on the four |
+| accepted | 3 | by hand | the retry bound of the three contention loops (`range(8)` to `range(9)` in `RegistrationRegistry._write`, `CapabilityGate._append`, `AdjudicationRegistry.adjudicate`): a real difference that only a ninth consecutive stale chain head shows; not worth a test that forges eight concurrent writers. Counted against the adjusted score |
+| gap | 138 | by hand | mutants that change the identifier a record is written under: 134 in a `_ledger_id` call or in `CapabilityGate._intent_id`, 3 in the resubmission count of the registration replay, which numbers forecast identifiers, and 1 (`_validate` 17) that writes a refused check under another identifier. The identifier format is a contract (decision below), so each is a test gap; golden-identifier tests are queued for the whole-codebase audit. Counted against the adjusted score |
+| unclassified | 0 | | |
+
+**Adjusted score 97.85 %,** derived from the committed classification and printed by the `classify` command above:
+detected (killed or timed out, 6422) over all mutants minus the text, equivalent and tool-limit survivors
+(8387 − 1824 = 6563); the 3 accepted and 138 gap survivors are the difference. It is not a measurement of mutmut: it rests on the classification, which a reviewer can check row by row.
+
+**Owner decision, delegated to the coordinator on 2026-10-22: the ledger identifier format is a contract (finding
+`4347648529` of Codex's review `5613298276` on `a450ee4`).** Identifiers are persisted, cross-referenced by later records,
+covered by the anchored hashes, and reproduced byte for byte by replay and restore (T-08); changing their format is a
+ledger-incompatible change that needs a schema version and a migration. The 138 identifier mutants are therefore
+classified as `gap` and count against the adjusted score. (They were first counted as 136 by a keyword filter over the
+reasons; the 138 are those whose syntax-tree change lies in a `_ledger_id` call or `_intent_id`, plus the four named in
+the table.)
+
+**Sensitivity** to finding `4347648541` of the same review, reported and not applied: a mutant that puts `None` where
+a message goes (a refusal's detail, record text, an assigned basis) changes the value's type, so it is not text;
+validator labels, which stay inside f-strings, remain text. Counting those 277 mutants against as well gives an
+adjusted score of **93.89 %**. (First listed as 268 mutants and 94.04 % from a text match on the changed lines; the
+syntax-tree count below is the one that holds.) Reproduced from the committed files, from the repository root, by:
+
+```sh
+python3 - <<'PY'
+import ast, csv, json, sys
+sys.path.insert(0, ".")
+from tools.mutation_report import apply_changes, differences
+d = "research/mutation/"
+ev = json.load(open(d + "evidence.json", encoding="utf-8"))
+rows = {r["name"]: r for r in csv.DictReader(open(d + "classification.tsv", encoding="utf-8"), delimiter="\t")}
+def none_at_sink(e):  # a text survivor that puts None where a message goes (validator labels excepted)
+    r = rows.get(e["name"])
+    if r is None or r["category"] != "text" or r["reason"].startswith(("field label", "default label")):
+        return False
+    original = ev["functions"][e["function"]]
+    trees = ast.parse(original).body[0], ast.parse(apply_changes(original, e["changes"])).body[0]
+    return any(isinstance(x.mutated, ast.Constant) and x.mutated.value is None for x in differences(*trees))
+sink = {e["name"] for e in ev["mutants"] if none_at_sink(e)}
+excluded = sum(r["category"] in ("text", "equivalent", "tool-limit") for r in rows.values())
+print(f"4347648541: {len(sink)} moved, adjusted {6422 / (8387 - excluded + len(sink)):.2%}")
+PY
+```
+
+which prints `4347648541: 277 moved, adjusted 93.89%`. The raw score, 76.56 %, is the primary figure under every
+reading.
+
+**How the run on `aad6255` was reached.** The earlier session measured `ac4c640` (5526 killed, 2739 survived, 121
+without a covering test, 1 timeout; 65.9 %) and `e6c3ba2` (6394 killed, 1992 survived, 1 timeout; 76.2 %). Those two
+outputs are not committed and are not reproduced here. This session ran the tree of `e69b0c8` (the tests of the PR and
+the lock fix; 6401 killed, 1985 survived, 1 timeout; output kept outside the repository, not committed), classified
+every survivor with the tool above, and wrote `tests/test_mutation_final.py` for the 18 survivors with an observable
+effect (two cutoff corrections of different versions sharing an evidence id; a third forecast kept before the window;
+the baseline of a discontinuity rotation; two step-3 aborts on one ledger; two receipt-lag incidents on one stored
+disposition; a feature row refused at its receipt and not retried; the subject of a missing Jev record; the reason of a
+non-canonical base64 payload; a record published exactly at finality). A targeted mutmut run confirmed each kill
+before the final run, which then killed all 18 and two others.
+
+**Score per module (run on `aad6255`).** Output of the `classify` command above.
+
+| Module | Mutants | Killed | Survived | Raw | Excluded | Adjusted |
+|---|---|---|---|---|---|---|
+| `adjudication.breaches` | 37 | 37 | 0 | 100.00% | 0 | 100.00% |
+| `adjudication.content` | 153 | 100 | 53 | 65.36% | 53 | 100.00% |
+| `adjudication.eligibility` | 29 | 29 | 0 | 100.00% | 0 | 100.00% |
+| `adjudication.predicate` | 168 | 111 | 57 | 66.07% | 57 | 100.00% |
+| `adjudication.records` | 406 | 292 | 114 | 71.92% | 114 | 100.00% |
+| `adjudication.registry` | 614 | 490 | 124 | 79.80% | 80 | 91.76% |
+| `adjudication.rules` | 866 | 712 | 154 | 82.22% | 154 | 100.00% |
+| `canonical` | 88 | 68 | 20 | 77.27% | 20 | 100.00% |
+| `capability.gate` | 572 | 457 | 115 | 79.90% | 67 | 90.50% |
+| `capability.levels` | 41 | 30 | 11 | 73.17% | 11 | 100.00% |
+| `capability.records` | 322 | 254 | 68 | 78.88% | 68 | 100.00% |
+| `capability.signing` | 15 | 11 | 4 | 73.33% | 4 | 100.00% |
+| `capability.state` | 74 | 62 | 12 | 83.78% | 12 | 100.00% |
+| `capability.timesource` | 78 | 59 | 19 | 75.64% | 19 | 100.00% |
+| `clock` | 69 | 49 | 20 | 71.01% | 20 | 100.00% |
+| `errors` | 6 | 6 | 0 | 100.00% | 0 | 100.00% |
+| `ledger.anchor` | 121 | 81 | 40 | 66.94% | 40 | 100.00% |
+| `ledger.record` | 136 | 105 | 31 | 77.21% | 31 | 100.00% |
+| `ledger.replay` | 195 | 180 | 15 | 92.31% | 15 | 100.00% |
+| `ledger.store` | 486 | 388 | 98 | 79.84% | 98 | 100.00% |
+| `pointintime.leak` | 124 | 103 | 21 | 83.06% | 21 | 100.00% |
+| `pointintime.store` | 262 | 199 | 63 | 75.95% | 63 | 100.00% |
+| `registration.records` | 905 | 644 | 261 | 71.16% | 261 | 100.00% |
+| `registration.registry` | 864 | 647 | 217 | 74.88% | 168 | 92.96% |
+| `registration.seeds` | 6 | 5 | 1 | 83.33% | 1 | 100.00% |
+| `schemas.capability` | 119 | 87 | 32 | 73.11% | 32 | 100.00% |
+| `schemas.common` | 200 | 155 | 45 | 77.50% | 45 | 100.00% |
+| `schemas.event` | 610 | 437 | 173 | 71.64% | 173 | 100.00% |
+| `schemas.forecast` | 496 | 362 (+1 timeout) | 133 | 72.98% | 133 | 100.00% |
+| `schemas.research_output` | 106 | 79 | 27 | 74.53% | 27 | 100.00% |
+| `validation.issuance` | 219 | 182 | 37 | 83.11% | 37 | 100.00% |
+| **total** | 8387 | 6421 (+1 timeout) | 1965 | 76.56% | 1824 | 97.85% |
+
+**The 85 % target.** Met on the adjusted score in every core module (ledger, capability, adjudication rules and
+registry, registration, point-in-time, canonical); the lowest is `capability.gate` at 90.50 %, after its identifier
+gaps. On the raw score only `ledger.replay` (92.31 %) meets it; in every
+other core module the remainder is text, equivalent or tool-limit mutants, and reaching 85 % raw would take tests that
+assert refusal wording and field labels, the case the delegate's rule stops at ("tests that only pin incidental
+behaviour").
+
+**Found on the way, carried to the whole-codebase audit (not changed here).** `GateState.commit_seq` and the values
+of `GateState.commits`, the registration replay's `cluster_registered_at`, and the adjudication replay's
+`defect_record_ids` (whose ids the stored defects already carry) are written and never read. Three branches are
+unreachable on any ledger the registries write: `anchor_confirmatory_register`'s mapping of `duplicate_record_id`, the
+second `commit_in_doubt` of `promote`, `submit_observation`'s `unknown_source`. `HostTimeSource` draws its fallback
+boot id per object rather than per process (PR #35 review finding `4337918328`).
+
+**Codex's reviews of the PR.**
+
+- Review `5601127550` on `0105a72`. `4337918314` (P1): the adjusted scores rested on a classifier and a per-mutant
+  table that were not committed. **Fixed** by the files and commands above. `4337918328` (P2): the boot-id test
+  asserted a new fallback id per object. **Fixed in `8a0a826`** (the test checks a UUID only); the per-object fallback
+  itself goes to the audit.
+- Review `5601246138` on `8a0a826`. `4338008337` (P1): the measured run was on `e6c3ba2`, not on the final tree.
+  **Fixed**: the run reported here is on `aad6255`, whose `cpe/`, `tests/` and configuration are those of the head.
+  `4338008344` (P2): on Python 3.14 neither YAML package was installed. **Fixed in `e69b0c8`**: `PyYAML` is marked
+  `python_version != "3.13"`, as libcst's metadata selects it. `4338008329` (P2): hash-pin `uc-micro-py`. **Not
+  reproduced, not applied**: linkify-it-py 2.2.0 declares no dependency on it in its wheel metadata and carries the
+  Unicode tables itself (`linkify_it/_ucre_data.py`); in fresh environments built from both locks with `--no-deps`,
+  `pip check` prints `No broken requirements found` on Python 3.11.17 and 3.13.16, and `linkify_it` matches a URL
+  with `uc_micro` absent.
+- Review `5613298276` on `a450ee4`. `4347648558` (P1): the report tool's test read `research/mutation/`, which mutmut's
+  working copy does not hold, so a fresh `mutmut run` on the head failed while collecting its test statistics.
+  **Fixed in `1f917d1`**: the test is deselected for the mutation run (it reads no `cpe/` code); the clean test run
+  passes. `4347648529` (P2): changed ledger identifiers are observable. **Decided** by the owner's delegate: the
+  identifier format is a contract; the 138 identifier mutants are gaps, counted against (above), and their pinning
+  tests are queued for the audit. `4347648541` (P2): `None` at a message sink is not text. **Reported, not applied**:
+  the sensitivity above.
