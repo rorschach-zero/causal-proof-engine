@@ -153,7 +153,9 @@ def test_a_calibration_record_id_used_by_another_claim_is_refused(registry: Regi
     registry.register_claim(claim())
     registry.register_claim(claim("claim-2", "cal-2"))
     ledger.append("calibration_record", "forged-calibration", calibration("cal-2", "claim-1").to_payload())
-    assert refused(registry.record_calibration, calibration("cal-2", "claim-2")) == "calibration_record_exists"
+    # The forged row, bound to neither claim, now refuses the ledger on replay before the write path is reached
+    # (issue #37, pass 4 W2): replay re-validates every calibration record as the registry does.
+    assert refused(registry.record_calibration, calibration("cal-2", "claim-2")) == "invalid_record"
 
 
 def test_a_registry_on_a_ledger_that_never_stops_advancing_is_contended(registry: RegistrationRegistry,

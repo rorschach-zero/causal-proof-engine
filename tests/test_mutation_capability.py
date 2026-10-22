@@ -24,13 +24,14 @@ from cpe.capability.records import (
     CommitRecord,
     EpochRecord,
     IntentRecord,
+    intent_ledger_id,
 )
 from cpe.capability.timesource import ClockReading
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.ledger.anchor import UnavailableAnchorStore
-from tests.test_capability import BASE, ENV, OWNER, RELEASE, TOLERANCE, Rig, issue
+from tests.test_capability import BASE, ENV, OWNER, RELEASE, RULES, TOLERANCE, Rig, issue
 from tests.test_review_round2_pr25 import PausingTimeSource
 
 
@@ -254,7 +255,16 @@ def test_a_ledger_that_never_stops_advancing_is_contended(rig: Rig) -> None:
 
 def malformed(rig: Rig, kind: str, payload: Any) -> str:
     rig.ledger.append(kind, f"forged:{len(rig.ledger.records())}", payload)
-    return reason_of(lambda: replay_gate(rig.ledger.records(), 0))
+    return reason_of(lambda: replay_gate(rig.ledger.records(), 0, RULES))
+
+
+def genuine_intent(rig: Rig, nonce: str, reading: ClockReading) -> str:
+    """An intent as the protected operation writes it, under its nonce's identity, so that the structural checks
+    after it are the ones exercised (replay re-validates the intent itself since issue #37, pass 4 W1)."""
+    capability = issue(rig.epoch(), nonce)
+    intent_id = intent_ledger_id(capability)
+    rig.ledger.append(KIND_INTENT, intent_id, IntentRecord(intent_id, capability, "SIM_READ_ONLY", reading).to_payload())
+    return intent_id
 
 
 def test_replay_names_every_malformed_gate_ledger(tmp_path: Path) -> None:
@@ -268,27 +278,28 @@ def test_replay_names_every_malformed_gate_ledger(tmp_path: Path) -> None:
     r = fresh("index")
     assert malformed(r, KIND_EPOCH, EpochRecord(1, 9, "start", reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("twice")
-    intent = IntentRecord("i-1", issue(r.epoch(), "x"), "SIM_READ_ONLY", reading)
-    r.ledger.append(KIND_INTENT, "forged-intent", intent.to_payload())
+    capability = issue(r.epoch(), "x")
+    intent = IntentRecord(intent_ledger_id(capability), capability, "SIM_READ_ONLY", reading)
+    r.ledger.append(KIND_INTENT, intent.intent_id, intent.to_payload())
     assert malformed(r, KIND_INTENT, intent.to_payload()) == "invalid_gate_ledger"
     r = fresh("abort")
     assert malformed(r, KIND_ABORT, AbortRecord("i-unknown", "x", reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("commit-after-abort")
-    intent = IntentRecord("i-2", issue(r.epoch(), "y"), "SIM_READ_ONLY", reading)
-    r.ledger.append(KIND_INTENT, "forged-intent-2", intent.to_payload())
-    r.ledger.append(KIND_ABORT, "forged-abort-2", AbortRecord("i-2", "gone", reading).to_payload())
-    assert replay_gate(r.ledger.records(), 0).aborted == {"i-2": "gone"}
-    assert malformed(r, KIND_COMMIT, CommitRecord("i-2", 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
+    i2 = genuine_intent(r, "y", reading)
+    r.ledger.append(KIND_ABORT, "forged-abort-2", AbortRecord(i2, "gone", reading).to_payload())
+    assert replay_gate(r.ledger.records(), 0, RULES).aborted == {i2: "gone"}
+    assert malformed(r, KIND_COMMIT, CommitRecord(i2, 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("abort-after-commit")
-    intent = IntentRecord("i-3", issue(r.epoch(), "z"), "SIM_READ_ONLY", reading)
-    r.ledger.append(KIND_INTENT, "forged-intent-3", intent.to_payload())
-    r.ledger.append(KIND_COMMIT, "forged-commit-3", CommitRecord("i-3", 1, "ab" * 32, reading).to_payload())
-    assert malformed(r, KIND_ABORT, AbortRecord("i-3", "late", reading).to_payload()) == "invalid_gate_ledger"
+    i3 = genuine_intent(r, "z", reading)
+    anchor = r.ledger.anchor()
+    r.ledger.append(KIND_COMMIT, "forged-commit-3",
+                    CommitRecord(i3, anchor.prefix_length, anchor.digest, reading).to_payload())
+    assert i3 in replay_gate(r.ledger.records(), 0, RULES).commits
+    assert malformed(r, KIND_ABORT, AbortRecord(i3, "late", reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("old-epoch")
-    old = IntentRecord("i-4", issue(r.epoch(), "w"), "SIM_READ_ONLY", reading)
-    r.ledger.append(KIND_INTENT, "forged-intent-4", old.to_payload())
+    i4 = genuine_intent(r, "w", reading)
     r.gate.demote("rotate")
-    assert malformed(r, KIND_COMMIT, CommitRecord("i-4", 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
+    assert malformed(r, KIND_COMMIT, CommitRecord(i4, 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
 
 
 def test_a_receipt_equal_to_the_expiry_is_expired(rig: Rig) -> None:
