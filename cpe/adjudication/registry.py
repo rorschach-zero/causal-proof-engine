@@ -170,10 +170,14 @@ class AdjudicationRegistry:
                 return
             if spec.predicate.source not in state.rules:
                 raise Refusal("unknown_source", f"{spec.predicate.source} has no registered source rule (OD5)")
-            if self._ledger.now() >= spec.issuance_open:
-                raise Refusal("late_registration", f"{spec.event_id}: the criteria must be recorded before the "
-                              "issuance window opens")
-            self._ledger.append(KIND_EVENT, _ledger_id("event", spec.event_id), spec.to_payload())
+            def before_the_window(receipt: datetime) -> None:  # the receipt is the time that counts (issue #37, C2)
+                if receipt >= spec.issuance_open:
+                    raise Refusal("late_registration", f"{spec.event_id}: the criteria must be recorded before the "
+                                  "issuance window opens")
+
+            before_the_window(self._ledger.now())
+            self._ledger.append(KIND_EVENT, _ledger_id("event", spec.event_id), spec.to_payload(),
+                                admit=before_the_window)
 
     def _spec(self, state: _State, event_id: str) -> EventSpec:
         spec = state.event(event_id).spec
