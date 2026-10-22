@@ -80,6 +80,8 @@ class ClusterRegistration:
             raise Refusal("invalid_cluster", "the baseline arm must be among the pre-registered arms")
         if FULL_ARM_ID not in self.arm_versions:
             raise Refusal("invalid_cluster", f"the {FULL_ARM_ID} arm is mandatory in every registration")
+        if self.baseline_arm_id == FULL_ARM_ID:  # FULL is the composite arm, never the base-rate slot (issue #37)
+            raise Refusal("invalid_cluster", f"the {FULL_ARM_ID} arm cannot be the baseline arm (``18`` M-5)")
 
     @classmethod
     def from_payload(cls, payload: object) -> ClusterRegistration:
