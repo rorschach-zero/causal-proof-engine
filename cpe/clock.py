@@ -14,10 +14,18 @@ _FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
 
 def format_timestamp(moment: datetime) -> str:
-    """UTC, microsecond resolution, trailing ``Z``; the only timestamp text the ledger stores."""
+    """UTC, microsecond resolution, trailing ``Z``; the only timestamp text the ledger stores. Fixed width, the
+    year written with four digits, so that the order of the text is the order of the instants: ``strftime`` writes
+    year 999 as ``999``, which sorted above ``2026`` and let a clock rolled back below year 1000 pass the
+    high-water mark (issue #37, pass 4 C1)."""
     if moment.tzinfo is None or moment.utcoffset() is None:
         raise Refusal("naive_timestamp", "timestamps must carry a time zone")
-    return moment.astimezone(timezone.utc).strftime(_FORMAT)
+    try:
+        utc = moment.astimezone(timezone.utc)
+    except OverflowError:
+        raise Refusal("invalid_timestamp", "the instant is outside the UTC range") from None
+    return (f"{utc.year:04d}-{utc.month:02d}-{utc.day:02d}T{utc.hour:02d}:{utc.minute:02d}:{utc.second:02d}"
+            f".{utc.microsecond:06d}Z")
 
 
 def parse_timestamp(text: object, field: str = "timestamp") -> datetime:
