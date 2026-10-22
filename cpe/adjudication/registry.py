@@ -327,11 +327,12 @@ class AdjudicationRegistry:
                                     {"event_id": event_id, "record_id": defect.record_id, "detail": defect.detail})
                 stored = replace(stored, defects=stored.defects + (defect,))
         # A public occurrence that arrives after the disposition still sets knowable_at (RC-146 read with RC-88,
-        # section 9.2); the disposition itself stays (H1 review 4334622042). So does an earlier evidenced
-        # publication of a record that decides the same disposition (issue #37, Codex 2).
+        # section 9.2); the disposition itself stays (H1 review 4334622042). So does the earliest evidenced
+        # publication of a timely deciding record, whether or not it agrees with the stored disposition: the outcome
+        # information was public from then on, and a contradiction stays a recorded defect (issue #37, Codex 2;
+        # PR #44 review 4351249330; a reading, see S2).
         earliest = earliest_public_occurrence(spec, rule, event.records)
-        if fresh.disposition == stored.disposition and fresh.knowable_at is not None \
-                and fresh.deciding_record_id is not None \
+        if fresh.knowable_at is not None and fresh.deciding_record_id is not None \
                 and (earliest is None or fresh.knowable_at < earliest[0]):
             earliest = fresh.knowable_at, fresh.deciding_record_id
         if earliest is not None and stored.knowable_at is not None and earliest[0] < stored.knowable_at:
