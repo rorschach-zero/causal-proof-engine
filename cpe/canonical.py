@@ -26,7 +26,9 @@ def _check_json(value: object, path: str, active: frozenset[int] = frozenset()) 
         return
     if isinstance(value, int):
         try:
-            repr(value)  # Python refuses the decimal form of an integer beyond its digit limit (issue #37)
+            # json writes int.__repr__ whatever a subclass defines, and Python refuses the decimal form of an integer
+            # beyond its digit limit (issue #37; the subclass case is PR #39 review 4348066271)
+            int.__repr__(value)
         except ValueError:
             raise Refusal("integer_too_large", f"{path} has more digits than a JSON integer may carry here") from None
         return
