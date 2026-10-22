@@ -265,6 +265,20 @@ def _contradicts(received: ReceivedRecord, spec: EventSpec, disposition: Disposi
     return timely and disposition == "RESOLVED_YES"
 
 
+def late_contradictions(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedRecord],
+                        disposition: Disposition) -> tuple[Defect, ...]:
+    """Source-latency defects against a final ``disposition``: every record published after finality that reports
+    a timely occurrence contradicting it (RC-88). The disposition stands; the defect is logged against the source.
+    The registry judges a stored disposition by this function too, never by a fresh adjudication's (issue #37)."""
+    if disposition not in FINAL:
+        return ()
+    finality = spec.logical_finality
+    late = sorted((r for r in records if r.publication(rule) > finality),
+                  key=lambda r: (r.publication(rule), r.record.record_id))
+    return tuple(Defect(r.record.record_id, "report of timely occurrence published after finality; the disposition "
+                                            "stands (RC-88)") for r in late if _contradicts(r, spec, disposition))
+
+
 def earliest_public_occurrence(spec: EventSpec, rule: SourceRule,
                                records: Sequence[ReceivedRecord]) -> tuple[datetime, str] | None:
     """The earliest occurrence, with its record id, that a record of a public act evidences and that bears on the
@@ -394,12 +408,7 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
             disposition, knowable, basis = "VOID", finality, (
                 "the source cannot evidence absence at finality and no observation exists (RC-113)")
 
-    defects: list[Defect] = []
-    if disposition in FINAL:
-        for received in late:
-            if _contradicts(received, spec, disposition):
-                defects.append(Defect(received.record.record_id, "report of timely occurrence published after "
-                                                                 "finality; the disposition stands (RC-88)"))
+    defects = late_contradictions(spec, rule, records, disposition)
 
     if disposition not in FINAL:
         return Adjudication(spec.event_id, "OPEN", None, None, basis, None)
@@ -414,4 +423,4 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
         adjudication=now,
     )
     return Adjudication(spec.event_id, disposition, knowable, now, basis, timestamps,
-                        deciding.record.record_id if deciding is not None else None, tuple(defects), tuple(incidents))
+                        deciding.record.record_id if deciding is not None else None, defects, tuple(incidents))

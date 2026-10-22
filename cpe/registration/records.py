@@ -290,9 +290,13 @@ class CalibrationRecord:
         budget = m["budget"]
         if isinstance(budget, bool) or not isinstance(budget, (int, float)):
             raise Refusal("invalid_calibration", "budget must be a number")
+        try:
+            budget = float(budget)
+        except OverflowError:  # an integer beyond the float range (issue #37)
+            raise Refusal("invalid_calibration", "budget lies in (0, 1)") from None
         return cls(require_identifier(m["calibration_record_id"], "calibration_record_id"),
                    require_identifier(m["claim_id"], "claim_id"), require_identifier(m["algorithm_id"], "algorithm_id"),
-                   require_non_negative_int(m["calibration_size"], "calibration_size"), float(budget),
+                   require_non_negative_int(m["calibration_size"], "calibration_size"), budget,
                    require_identifier(m["beacon_id"], "beacon_id"), require_identifier(m["round_id"], "round_id"))
 
     def to_payload(self) -> Payload:

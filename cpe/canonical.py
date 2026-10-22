@@ -25,6 +25,10 @@ def _check_json(value: object, path: str, active: frozenset[int] = frozenset()) 
     if value is None or isinstance(value, (bool, str)):
         return
     if isinstance(value, int):
+        try:
+            repr(value)  # Python refuses the decimal form of an integer beyond its digit limit (issue #37)
+        except ValueError:
+            raise Refusal("integer_too_large", f"{path} has more digits than a JSON integer may carry here") from None
         return
     if isinstance(value, float):
         if not math.isfinite(value):

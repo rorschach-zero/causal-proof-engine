@@ -337,9 +337,9 @@ def records_from_jsonl(text: str) -> tuple[Record, ...]:
             continue
         try:
             payload = json.loads(line, object_pairs_hook=_pairs_without_duplicates)
-        except json.JSONDecodeError as error:
-            raise Refusal("invalid_export", f"line {number}: {error}") from None
         except _DuplicateKey as error:
             raise Refusal("invalid_export", f"line {number}: duplicate key {error.key!r}") from None
+        except ValueError as error:  # malformed JSON, or an integer beyond the digit limit (issue #37)
+            raise Refusal("invalid_export", f"line {number}: {error}") from None
         records.append(Record.from_payload(payload))
     return tuple(records)

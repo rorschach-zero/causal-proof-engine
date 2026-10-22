@@ -69,7 +69,11 @@ class CapabilityGate:
 
     def __init__(self, ledger: Ledger, verifier: Verifier, time_source: TimeSource, environment: str,
                  release_digest: str, slew_tolerance_seconds: float) -> None:
-        if not math.isfinite(slew_tolerance_seconds) or slew_tolerance_seconds <= 0:  # NaN or inf would disable RC-73, RC-100
+        try:  # NaN or inf would disable RC-73, RC-100; an integer beyond the float range raises (issue #37)
+            finite = math.isfinite(slew_tolerance_seconds)
+        except OverflowError:
+            finite = False
+        if not finite or slew_tolerance_seconds <= 0:
             raise Refusal("invalid_tolerance", "the slew tolerance is a finite positive number of seconds (owner field)")
         self._ledger = ledger
         self._verifier = verifier
