@@ -109,10 +109,7 @@ class Ledger:
         """The server clock, the only time a registry may persist as its own (RC-02); refused, like a receipt,
         when it is below the high-water mark of receipts and anchors, so a read gate never moves backwards."""
         moment = self._clock.now()
-        stamp = format_timestamp(moment)
-        high_water = max(self._state.high_water, self._anchor_high_water)
-        if stamp < high_water:
-            raise Refusal("clock_rollback", f"server clock {stamp} is below the high-water mark {high_water}")
+        self._refuse_rollback(format_timestamp(moment))
         return moment
 
     def state_digest(self) -> str:
@@ -162,10 +159,15 @@ class Ledger:
         """The server clock as a canonical timestamp, refused when it is below the persisted high-water mark of
         record receipts and anchor publications."""
         receipt_time = format_timestamp(self._clock.now())
-        high_water = max(self._state.high_water, self._anchor_high_water)
-        if receipt_time < high_water:
-            raise Refusal("clock_rollback", f"server clock {receipt_time} is below the high-water mark {high_water}")
+        self._refuse_rollback(receipt_time)
         return receipt_time
+
+    def _refuse_rollback(self, stamp: str) -> None:
+        """Compared as instants, never as text (issue #37, pass 4 C1); every mark is a canonical timestamp."""
+        moment = parse_timestamp(stamp, "server clock")
+        for mark in (self._state.high_water, self._anchor_high_water):
+            if mark and moment < parse_timestamp(mark, "high-water mark"):
+                raise Refusal("clock_rollback", f"server clock {stamp} is below the high-water mark {mark}")
 
     def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
                admit: Admit | None = None) -> Record:

@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Literal
 
 from cpe.canonical import JsonValue, digest_of
+from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger.anchor import Anchor
 from cpe.ledger.record import GENESIS_HASH, Record
@@ -35,7 +36,8 @@ class LedgerState:
             raise Refusal("chain_break", f"record {record.seq} does not extend the chain head")
         if record.entry_hash != record.expected_hash():
             raise Refusal("hash_mismatch", f"record {record.seq} does not match its own hash")
-        if record.receipt_time < self.high_water:
+        receipt = parse_timestamp(record.receipt_time, "receipt_time")  # an instant, never compared as text (C1)
+        if self.high_water and receipt < parse_timestamp(self.high_water, "high_water"):
             raise Refusal("receipt_time_regression", f"record {record.seq} is received before its predecessor")
         self.count = record.seq
         self.head = record.entry_hash

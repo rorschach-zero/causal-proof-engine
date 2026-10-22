@@ -71,6 +71,11 @@ class ResolutionPredicate:
                 raise Refusal("invalid_predicate_value", "comparator 'in' needs a non-empty list")
         elif isinstance(self.value, (list, dict)):
             raise Refusal("invalid_predicate_value", f"comparator {self.comparator!r} needs a scalar value")
+        elif self.comparator in ("lt", "le", "gt", "ge") and (
+                isinstance(self.value, bool) or not isinstance(self.value, (int, float))):
+            # An order comparison is defined on numbers only; a predicate that can never evaluate would refuse every
+            # record and resolve its member NO by absence (issue #37, pass 3 A4).
+            raise Refusal("invalid_predicate_value", f"comparator {self.comparator!r} needs a number")
 
     @classmethod
     def from_payload(cls, payload: object) -> ResolutionPredicate:
