@@ -113,11 +113,12 @@ def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules:
 
 
 def _check_commit(record: Record, commit: CommitRecord, state: GateState, hashes: list[str],
-                  anchors: frozenset[tuple[int, str]]) -> None:
+                  anchors: dict[tuple[int, str], datetime]) -> None:
     """The checks step 3 made before it wrote this commit rather than an abort: the epoch has not rotated since the
     intent, the commit raises the gate above every commit of the epoch, and it cites a published anchor, one of the
     ledger's anchors, of a prefix that covers the intent and ends at a record of this chain; a hash-chain reference
-    to a prefix nobody anchored is not step 2 (PR #51 review 4353051497)."""
+    to a prefix nobody anchored is not step 2 (PR #51 review 4353051497), and neither is an anchor published after
+    the commit was received (PR #59 review 4353380367)."""
     stored = state.intents[commit.intent_id]
     intent_seq = state.intent_seq[commit.intent_id]
     problem = None
@@ -132,6 +133,8 @@ def _check_commit(record: Record, commit: CommitRecord, state: GateState, hashes
                 or hashes[commit.intent_anchor_prefix - 1] != commit.intent_anchor_digest \
                 or (commit.intent_anchor_prefix, commit.intent_anchor_digest) not in anchors:
             problem = "cites no published anchor of a prefix covering its intent"
+        elif anchors[(commit.intent_anchor_prefix, commit.intent_anchor_digest)] > parse_timestamp(record.receipt_time):
+            problem = "cites an anchor published after the commit was received"
     if problem is not None:
         raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} {problem}")
 
@@ -141,7 +144,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
     """Replay the gate from the ledger records, with ``anchored_prefix`` the length of the longest anchored prefix
     the caller trusts and ``anchors`` the anchors it holds (the local anchor copy is self-attested; the restore path
     verifies externally), and every intent and commit re-validated under ``rules``."""
-    published = frozenset((anchor.prefix_length, anchor.digest) for anchor in anchors)
+    published = {(anchor.prefix_length, anchor.digest): parse_timestamp(anchor.published_at) for anchor in anchors}
     state = GateState()
     hashes: list[str] = []
     for record in records:

@@ -95,9 +95,16 @@ class CapabilityGate:
         """Replayed from the ledger and its local anchor copy (self-attested; the restore path verifies), every
         intent and commit re-validated against this gate's verifier, environment and release (RC-43, RC-46)."""
         with self._lock:
-            anchors = self._ledger.local_anchors()
+            records, anchors, _ = self._ledger.snapshot()  # one read under the ledger's lock (PR #59 review 4353380381)
             prefix = max((a.prefix_length for a in anchors), default=0)
-            return replay_gate(self._ledger.records(), prefix, self._rules, anchors)
+            return replay_gate(records, prefix, self._rules, anchors)
+
+    def _stale_release(self, state: GateState) -> bool:
+        """True while the current epoch was opened by another release: a gate of an earlier release that is still
+        running after a later one rotated the ledger acts on nothing, so that no level the later release's
+        capabilities raised is used by a process that holds no capability for its own release (PR #59 review
+        4353380374). Its own next start rotates the epoch under its release."""
+        return state.epoch_release is not None and state.epoch_release != self._release_digest
 
     def _hook(self, point: str) -> None:
         hook = self.hooks.pop(point, None)
@@ -221,7 +228,9 @@ class CapabilityGate:
         def decide(state: GateState, now: datetime) -> Write:
             nonlocal verdict
             reading = self._reading(state, now)
-            if action not in ACTIONS:
+            if self._stale_release(state):
+                verdict = ("refused", "stale_release")
+            elif action not in ACTIONS:
                 verdict = ("refused", "unknown_action")
             elif state.epoch_unanchored:
                 verdict = ("refused", "epoch_unanchored")
@@ -243,6 +252,8 @@ class CapabilityGate:
     def _validate(self, state: GateState, capability: Capability, evidence_digest: str, now: datetime) -> str | None:
         """The reason a presentation is refused, or None. Whole-tuple signature first (RC-62), then the environment,
         release, evidence, expiry, epoch, anchoring and nonce checks."""
+        if self._stale_release(state):
+            return "stale_release"
         if not self._verifier.verify(capability.signed_bytes(), capability.signature):
             return "invalid_signature"
         if capability.environment != self._environment:
