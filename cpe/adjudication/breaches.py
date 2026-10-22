@@ -9,6 +9,8 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, datetime
 
+from cpe.clock import format_timestamp
+
 from cpe.schemas.common import Payload, timestamp_payload
 
 
@@ -44,7 +46,8 @@ def classify_breaches(event_id: str, knowable_at: datetime, scheduled_registrati
       of a member of its cluster (RC-163).
     """
     registration = knowable_at <= scheduled_registration_time
-    early = tuple(sorted(arm for arm, cutoff in arm_effective_cutoffs.items() if knowable_at.date() <= cutoff))
+    knowable_day = date.fromisoformat(format_timestamp(knowable_at)[:10])  # the UTC date, as it is persisted
+    early = tuple(sorted(arm for arm, cutoff in arm_effective_cutoffs.items() if knowable_day <= cutoff))
     issuance = (not registration and not early and bool(cluster_issuance_closes)
                 and knowable_at <= max(cluster_issuance_closes))
     return BreachReport(event_id, knowable_at, registration, early, issuance)

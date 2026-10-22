@@ -6,11 +6,11 @@ from __future__ import annotations
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from cpe.canonical import JsonValue, digest_of
-from cpe.clock import parse_timestamp
+from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.ledger.record import GENESIS_HASH
@@ -94,6 +94,19 @@ class _State:
     beacon_outputs: dict[str, BeaconOutput] = field(default_factory=dict)
     seeds: dict[str, str] = field(default_factory=dict)
     local_anchors: tuple[Anchor, ...] = ()  # read with the snapshot, never by a decision under the ledger's lock
+
+
+def _payload_of(value: ArmVersion | CutoffCorrection | BaseRate | ClusterRegistration | VoidRequest
+                | ConfirmatoryRegister | CalibrationRecord | BeaconOutput) -> Payload:
+    """The payload a write would persist, for validation in full as replay will read it: a directly constructed
+    object that bypasses its schema is refused before anything is written, never committed as a row that every
+    later replay refuses (issue #37, Codex 5). An object whose fields cannot be serialised is refused alike."""
+    try:
+        return value.to_payload()
+    except Refusal:
+        raise
+    except Exception as error:
+        raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
 
 
 def _consumption_closure(version_id: str, versions: dict[str, ArmVersion]) -> set[str]:
@@ -216,6 +229,8 @@ class RegistrationRegistry:
     # arm versions -------------------------------------------------------------------------------------------
 
     def register_arm_version(self, version: ArmVersion) -> Record:
+        version = ArmVersion.from_payload(_payload_of(version))
+
         def decide(state: _State, now: datetime) -> Write:
             if version.arm_version_id in state.arm_versions:
                 raise Refusal("arm_version_immutable", f"{version.arm_version_id} is already registered")
@@ -242,6 +257,7 @@ class RegistrationRegistry:
         correction amends the version's declared cutoff and evidence in place; after it, the version and every
         version that consumes it are withdrawn from further registrations and the claim consequence (RC-150)
         is item 3's."""
+        correction = CutoffCorrection.from_payload(_payload_of(correction))
         registered_under = False
 
         def decide(state: _State, now: datetime) -> Write:
@@ -285,6 +301,8 @@ class RegistrationRegistry:
     # clusters and events ------------------------------------------------------------------------------------
 
     def commit_base_rate(self, rate: BaseRate) -> Record:
+        rate = BaseRate.from_payload(_payload_of(rate))
+
         def decide(state: _State, now: datetime) -> Write:
             if rate.reference_class_id in state.base_rates:
                 raise Refusal("base_rate_immutable", f"{rate.reference_class_id} already has a committed base rate")
@@ -293,7 +311,10 @@ class RegistrationRegistry:
         return self._write(decide)
 
     def register_cluster(self, registration: ClusterRegistration) -> Record:
-        """Write the registration record, decided against its own receipt (RC-87, RC-138)."""
+        """Write the registration record, decided against its own receipt (RC-87, RC-138). Validated as replay
+        will read it, so every time is compared in UTC as it is persisted (issue #37, Codex 6)."""
+        registration = ClusterRegistration.from_payload(_payload_of(registration))
+
         def decide(state: _State, now: datetime) -> Write:
             cluster_id = registration.cluster.cluster_id
             if cluster_id in state.clusters:
@@ -322,7 +343,7 @@ class RegistrationRegistry:
                     raise Refusal("arm_version_withdrawn", f"{version_id} is withdrawn from registrations (RC-150)")
                 cutoff = effective_cutoff(version_id, state.arm_versions)
                 for spec in registration.events:
-                    if spec.earliest_knowable_bound.date() <= cutoff:
+                    if date.fromisoformat(format_timestamp(spec.earliest_knowable_bound)[:10]) <= cutoff:  # UTC
                         raise Refusal("cutoff_after_e_i", f"{spec.event_id}: e_i is not after the effective cutoff "
                                       f"{cutoff.isoformat()} of arm {arm_id} (RC-138)")
             return KIND_CLUSTER, _ledger_id("cluster", cluster_id), registration.to_payload()
@@ -337,6 +358,8 @@ class RegistrationRegistry:
 
     def request_void(self, request: VoidRequest) -> Record:
         """Logged with its receipt time; it changes no state (RC-85, RC-87)."""
+        request = VoidRequest.from_payload(_payload_of(request))
+
         def decide(state: _State, now: datetime) -> Write:
             if request.event_id not in state.events:
                 raise Refusal("unknown_event", f"{request.event_id} is not registered")
@@ -447,6 +470,8 @@ class RegistrationRegistry:
     def anchor_confirmatory_register(self, register: ConfirmatoryRegister) -> Record:
         """Phase 1's one register, written once, before any beacon output exists and before the evaluation period
         of every claim it lists, naming registered claims only (RC-311, RC-315)."""
+        register = ConfirmatoryRegister.from_payload(_payload_of(register))
+
         def decide(state: _State, now: datetime) -> Write:
             if state.register is not None:
                 raise Refusal("register_immutable", "Phase 1 has one confirmatory register; a second or an amendment confers nothing")
@@ -481,6 +506,8 @@ class RegistrationRegistry:
     def record_calibration(self, calibration: CalibrationRecord) -> Record:
         """One record per claim, bound both ways, recorded before the claim's evaluation period and before any
         beacon round (RC-304, RC-309)."""
+        calibration = CalibrationRecord.from_payload(_payload_of(calibration))
+
         def decide(state: _State, now: datetime) -> Write:
             claim = state.claims.get(calibration.claim_id)
             if claim is None:
@@ -514,6 +541,7 @@ class RegistrationRegistry:
         for the record is refused; the seed is SHA-256(record ‖ value), derived here and never supplied
         (RC-187, RC-304, RC-311).
         """
+        output = BeaconOutput.from_payload(_payload_of(output))
         seed = ""
 
         def decide(state: _State, now: datetime) -> Write:
