@@ -41,6 +41,7 @@ from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.ledger.store import Admit
 from cpe.schemas import Capability
+from cpe.schemas.common import require_digest
 
 log = logging.getLogger("cpe.capability")
 
@@ -76,6 +77,7 @@ class CapabilityGate:
             finite = False
         if not finite or slew_tolerance_seconds <= 0:
             raise Refusal("invalid_tolerance", "the slew tolerance is a finite positive number of seconds (owner field)")
+        release_digest = require_digest(release_digest, "release_digest")  # recorded with every epoch it opens
         self._ledger = ledger
         self._verifier = verifier
         self._time = time_source
@@ -95,7 +97,7 @@ class CapabilityGate:
         with self._lock:
             anchors = self._ledger.local_anchors()
             prefix = max((a.prefix_length for a in anchors), default=0)
-            return replay_gate(self._ledger.records(), prefix, self._rules)
+            return replay_gate(self._ledger.records(), prefix, self._rules, anchors)
 
     def _hook(self, point: str) -> None:
         hook = self.hooks.pop(point, None)
@@ -175,7 +177,7 @@ class CapabilityGate:
         def decide(state: GateState, now: datetime) -> Write:
             reading = baseline if baseline is not None else self._raw_reading(now)
             # the identifier is random (not a secret): unique across restores, which a counter is not (RC-123)
-            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading)
+            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest)
             return KIND_EPOCH, _ledger_id("gate-epoch", str(record.index), str(record.epoch)), record.to_payload()
 
         record = self._append(decide)
