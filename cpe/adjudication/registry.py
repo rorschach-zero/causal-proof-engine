@@ -2,6 +2,7 @@
 replay."""
 from __future__ import annotations
 
+import json
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -23,7 +24,7 @@ from cpe.adjudication.rules import (
     earliest_public_occurrence,
     late_contradictions,
 )
-from cpe.canonical import digest_of
+from cpe.canonical import canonical_bytes, digest_of
 from cpe.clock import parse_timestamp
 from cpe.schemas.common import Payload, require_identifier, require_keys, timestamp_payload
 from cpe.errors import Refusal
@@ -62,7 +63,9 @@ def _as_replayed(value: _Persisted, from_payload: Callable[[object], _T]) -> _T:
         raise
     except Exception as error:
         raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
-    return from_payload(payload)
+    # Through the canonical form the ledger persists: a ``str`` subclass that compares and hashes like one value
+    # while its text names another is read here as its text, the value replay will read (PR #54 review 4353163782).
+    return from_payload(json.loads(canonical_bytes(payload)))
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -312,8 +315,15 @@ class AdjudicationRegistry:
         (issue #37, pass 4 A6); the identifier format is unchanged."""
         status = _as_replayed(status, SourceStatus.from_payload)
         with self._lock:
-            if status.source_id not in self.state().rules:
+            state = self.state()
+            if status.source_id not in state.rules:
                 raise Refusal("unknown_source", f"{status.source_id} has no registered source rule (OD5)")
+            # One status per source and instant, whatever identifier an earlier version gave a row: a ledger written
+            # before the UTC read-back holds identifiers formed from the offset as written (PR #54 review
+            # 4353163787).
+            if any(held.declared_at == status.declared_at for held, _ in state.status.get(status.source_id, [])):
+                raise Refusal("duplicate_status", f"{status.source_id} already has a status declared at "
+                              f"{timestamp_payload(status.declared_at)}")
             return self._ledger.append(KIND_STATUS, _ledger_id("status", status.source_id, status.declared_at.isoformat()),
                                        status.to_payload(), admit=_not_after(status.declared_at,
                                                                              f"the status of {status.source_id}"))

@@ -7,21 +7,26 @@ pass 4 (comment 6349971614).
   ``KeyError`` on replay instead of a typed refusal.
 - Pass 4: a naive datetime in ``submit_record`` or ``register_event`` raised ``TypeError``.
 - Pass 4: a ``late_publication`` incident was persisted against a stored VOID its record never decided.
+- PR #54 review ``4353163782``: a ``str`` subclass that compares and hashes like an archived digest while its text
+  names another passed the content lookup, and the record written with its text made every later replay refuse.
+- PR #54 review ``4353163787``: on a ledger an earlier version wrote, a status declared with a non-UTC offset kept an
+  identifier formed from the offset, so the same instant declared again in UTC landed a conflicting status.
 
-The tests failed on the pass-4 commit ``c3d6233dbaeb71eb71cb128394099b23cef285b5``, except the naive-time tests,
-which PR #54 already makes pass."""
+The pass-3 and pass-4 tests failed on the pass-4 commit ``c3d6233dbaeb71eb71cb128394099b23cef285b5``, except the
+naive-time tests, which PR #54 already makes pass; the two review tests failed on the head of PR #54,
+``fa7ac8630e3a67875de5108ab00e96a7df277b61``."""
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import replace
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from cpe.adjudication import AdjudicationRegistry, SourceRule
-from cpe.adjudication.registry import KIND_DEFECT, KIND_INCIDENT, KIND_KNOWABLE, replay_state
+from cpe.adjudication import AdjudicationRegistry, SourceRule, SourceStatus
+from cpe.adjudication.registry import KIND_DEFECT, KIND_INCIDENT, KIND_KNOWABLE, KIND_STATUS, _ledger_id, replay_state
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
@@ -116,3 +121,40 @@ def test_a_receipt_lag_found_after_the_disposition_is_still_recorded(tmp_path: P
     clock.set(day(120))
     submit(reg, record("r-2", occurrence=90, published=96, observed=120))
     assert ("receipt_lag", "r-2") in {(i.kind, i.reference_id) for i in reg.adjudicate("E").incidents}
+
+
+def test_4353163782_a_digest_that_only_compares_like_an_archived_one_writes_nothing_unreadable(tmp_path: Path) -> None:
+    reg, clock, ledger = _registry(tmp_path)
+    reg.register_event(spec())
+    clock.set(day(101))
+    r = record("r", occurrence=95, published=100)
+    reg.archive_content(r.content)
+    real = r.content.sha256
+
+    class Mimic(str):
+        def __eq__(self, other: object) -> bool:
+            return other == real or str.__eq__(self, other)
+
+        def __ne__(self, other: object) -> bool:
+            return not self.__eq__(other)
+
+        def __hash__(self) -> int:
+            return hash(real)
+
+    try:
+        reg.submit_record(replace(r.record, content_digest=Mimic("ab" * 32)))
+    except Refusal:
+        pass  # refused at the write: the required behaviour
+    reg.state()  # at fa7ac86: unknown_content, for this and every later reader
+
+
+def test_4353163787_a_legacy_offset_identifier_is_still_one_status(tmp_path: Path) -> None:
+    reg, clock, ledger = _registry(tmp_path)
+    reg.register_event(spec())
+    clock.set(day(101))
+    declared = day(100).astimezone(timezone(timedelta(hours=1)))
+    legacy = SourceStatus("src", False, declared)  # as an earlier version wrote it: the identifier keeps the offset
+    ledger.append(KIND_STATUS, _ledger_id("status", "src", declared.isoformat()), legacy.to_payload())
+    with pytest.raises(Refusal) as refused:
+        reg.declare_source_status(SourceStatus("src", True, day(100)))  # at fa7ac86: lands beside it
+    assert refused.value.reason == "duplicate_status"
