@@ -416,7 +416,9 @@ def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedReco
         # The disposition stays OPEN, but an evidenced public occurrence already makes the outcome determinable: it
         # is the member's knowable time, capped at logical finality (RC-146; a reading of issue #37, Codex 3).
         knowable = None if public is None else min(public[0], finality)
-        return Adjudication(spec.event_id, "OPEN", knowable, None, basis, None)
+        # An OPEN result keeps its incidents: a timely record received late is a receipt lag even when it decides
+        # nothing (PR #44 review 4351249349).
+        return Adjudication(spec.event_id, "OPEN", knowable, None, basis, None, incidents=tuple(incidents))
     assert knowable is not None
     if public is not None:
         knowable = min(knowable, public[0])
