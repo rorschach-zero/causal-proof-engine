@@ -35,4 +35,5 @@ class HarnessVerifier:
         return sha256_hex(b"cpe-harness-signature:" + self.signer_id.encode("utf-8") + b":" + message)
 
     def verify(self, message: bytes, signature: str) -> bool:
-        return hmac.compare_digest(self.sign(message), signature)
+        # Compared as bytes: ``compare_digest`` refuses a non-ASCII string with a TypeError (issue #37).
+        return hmac.compare_digest(self.sign(message).encode("ascii"), signature.encode("utf-8"))

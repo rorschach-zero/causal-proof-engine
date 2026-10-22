@@ -112,6 +112,10 @@ class CapabilityGate:
                     if refusal.reason == "clock_rollback":  # fails closed and is logged (item 2 "Clock", RC-37)
                         log.warning("clock rollback refused: %s", refusal)
                     raise
+                if state.observed is not None and now < state.observed:  # a decision never precedes a seen time
+                    log.warning("clock rollback refused: below the observed %s", format_timestamp(state.observed))
+                    raise Refusal("clock_rollback", f"server clock {format_timestamp(now)} is below the wall time "
+                                  f"{format_timestamp(state.observed)} a persisted check observed (RC-65)")
                 kind, record_id, payload = decide(state, now)
                 try:
                     return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit)
