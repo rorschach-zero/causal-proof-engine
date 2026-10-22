@@ -169,8 +169,12 @@ def test_each_comparator_against_its_fixtures(comparator: str, registered: JsonV
 ])
 def test_an_order_comparison_of_anything_but_two_numbers_is_refused(comparator: str, registered: JsonValue,
                                                                      observed: JsonValue) -> None:
+    # A registered value that is not a number is refused by the schema since issue #37 (pass 3 A4); it is set here
+    # past the schema, so that evaluation's own guard is still the one exercised.
+    unchecked = predicate(comparator, 0)
+    object.__setattr__(unchecked, "value", registered)
     with pytest.raises(Refusal) as refused:
-        evaluate(predicate(comparator, registered), content_of({"sel": {"f": observed}}))
+        evaluate(unchecked, content_of({"sel": {"f": observed}}))
     assert refused.value.reason == "incomparable_values"
 
 

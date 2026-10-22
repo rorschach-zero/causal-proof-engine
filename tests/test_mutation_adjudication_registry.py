@@ -63,7 +63,9 @@ def test_order_comparisons_put_the_observed_value_on_the_left(comparator: str, o
 
 @pytest.mark.parametrize(("observed", "registered"), [("1", 2), (2, "1"), (True, 2)])
 def test_an_order_comparison_with_one_number_is_refused_by_name(observed: Any, registered: Any) -> None:
-    assert refused(evaluate, predicate("lt", registered), content_of({"sel": {"f": observed}})) == "incomparable_values"
+    unchecked = predicate("lt", 0)  # a non-number is refused by the schema (issue #37, pass 3 A4); set past it
+    object.__setattr__(unchecked, "value", registered)
+    assert refused(evaluate, unchecked, content_of({"sel": {"f": observed}})) == "incomparable_values"
 
 
 def test_a_non_json_constant_in_the_content_is_non_canonical() -> None:
