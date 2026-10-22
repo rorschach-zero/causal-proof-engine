@@ -618,25 +618,29 @@ original and the mutated function (`tools/mutation_report.py`); the hand table g
 | Category | Count | Of which | What it is |
 |---|---|---|---|
 | text | 1660 | 1656 by rule, 4 by hand | a refusal's detail text (774), a field label passed to a validator for its messages (846 by rule, 6 as a default label), the adjudication basis and other record text no code reads (30), the line number or key of an export refusal (3), the message of an internal exception (1). The reason code of a refusal is never text |
-| equivalent | 286 | 63 by rule, 223 by hand | SQL keyword case (41), codec-name case (12), `typing.cast` type arguments (10); ledger-identifier prefixes changed (84) or removed (25), where no code reads a registry record by its identifier; values always reassigned before they are read; guards made redundant by an earlier check; branches unreachable on any ledger the registries write; fields written and never read (below) |
+| equivalent | 148 | 63 by rule, 85 by hand | SQL keyword case (41), codec-name case (12), `typing.cast` type arguments (10); values always reassigned before they are read; guards made redundant by an earlier check; branches unreachable on any ledger the registries write; fields written and never read (below) |
 | tool-limit | 16 | by hand | 12 mutants of `_order`, a factory that runs once at import to build `COMPARATORS`, which mutmut's per-call switch cannot reach; 4 reason mutants of `evaluate` that only the deselected `test_4335130178` kills. Both claims were checked by applying each mutation to the source (2026-10-22): the full suite fails on the twelve, the deselected test on the four |
 | accepted | 3 | by hand | the retry bound of the three contention loops (`range(8)` to `range(9)` in `RegistrationRegistry._write`, `CapabilityGate._append`, `AdjudicationRegistry.adjudicate`): a real difference that only a ninth consecutive stale chain head shows; not worth a test that forges eight concurrent writers. Counted against the adjusted score |
+| gap | 138 | by hand | mutants that change the identifier a record is written under: 134 in a `_ledger_id` call or in `CapabilityGate._intent_id`, 3 in the resubmission count of the registration replay, which numbers forecast identifiers, and 1 (`_validate` 17) that writes a refused check under another identifier. The identifier format is a contract (decision below), so each is a test gap; golden-identifier tests are queued for the whole-codebase audit. Counted against the adjusted score |
 | unclassified | 0 | | |
 
-**Adjusted score 99.95 %,** derived from the committed classification: detected (killed or timed out, 6422) over all
-mutants minus the text, equivalent and tool-limit survivors (8387 − 1962 = 6425); the three accepted survivors are the
-difference. It is not a measurement of mutmut: it rests on the classification, which a reviewer can check row by row.
+**Adjusted score 97.85 %,** derived from the committed classification and printed by the `classify` command above:
+detected (killed or timed out, 6422) over all mutants minus the text, equivalent and tool-limit survivors
+(8387 − 1824 = 6563); the 3 accepted and 138 gap survivors are the difference. It is not a measurement of mutmut: it rests on the classification, which a reviewer can check row by row.
 
-**Sensitivity of the adjusted score** to two readings of Codex's review `5613298276` (on `a450ee4`), which the owner's
-delegate decided to report, not to apply (the classification above is unchanged):
+**Owner decision, delegated to the coordinator on 2026-10-22: the ledger identifier format is a contract (finding
+`4347648529` of Codex's review `5613298276` on `a450ee4`).** Identifiers are persisted, cross-referenced by later records,
+covered by the anchored hashes, and reproduced byte for byte by replay and restore (T-08); changing their format is a
+ledger-incompatible change that needs a schema version and a migration. The 138 identifier mutants are therefore
+classified as `gap` and count against the adjusted score. (They were first counted as 136 by a keyword filter over the
+reasons; the 138 are those whose syntax-tree change lies in a `_ledger_id` call or `_intent_id`, plus the four named in
+the table.)
 
-| Reading | Survivors moved out of the excluded categories | Adjusted score |
-|---|---|---|
-| `4347648541`: a mutant that puts `None` where a message goes (a refusal's detail, record text, an assigned basis) changes the value's type, so it is not text; validator labels, which stay inside f-strings, remain text | 277 | 95.82 % |
-| `4347648529`: a changed ledger identifier is observable in the persisted record and its `entry_hash`, so it is not equivalent | 136 | 97.88 % |
-| both | 413 | 93.92 % |
-
-Each figure is reproduced from the committed files, from the repository root, by:
+**Sensitivity** to finding `4347648541` of the same review, reported and not applied: a mutant that puts `None` where
+a message goes (a refusal's detail, record text, an assigned basis) changes the value's type, so it is not text;
+validator labels, which stay inside f-strings, remain text. Counting those 277 mutants against as well gives an
+adjusted score of **93.89 %**. (First listed as 268 mutants and 94.04 % from a text match on the changed lines; the
+syntax-tree count below is the one that holds.) Reproduced from the committed files, from the repository root, by:
 
 ```sh
 python3 - <<'PY'
@@ -654,21 +658,13 @@ def none_at_sink(e):  # a text survivor that puts None where a message goes (val
     trees = ast.parse(original).body[0], ast.parse(apply_changes(original, e["changes"])).body[0]
     return any(isinstance(x.mutated, ast.Constant) and x.mutated.value is None for x in differences(*trees))
 sink = {e["name"] for e in ev["mutants"] if none_at_sink(e)}
-ident = {n for n, r in rows.items() if r["category"] == "equivalent" and "identifier" in r["reason"]}
 excluded = sum(r["category"] in ("text", "equivalent", "tool-limit") for r in rows.values())
-for label, moved in (("4347648541", sink), ("4347648529", ident), ("both", sink | ident)):
-    print(f"{label}: {len(moved)} moved, adjusted {6422 / (8387 - excluded + len(moved)):.2%}")
+print(f"4347648541: {len(sink)} moved, adjusted {6422 / (8387 - excluded + len(sink)):.2%}")
 PY
 ```
 
-which prints `4347648541: 277 moved, adjusted 95.82%`, `4347648529: 136 moved, adjusted 97.88%` and
-`both: 413 moved, adjusted 93.92%`. The raw score, 76.56 %, is the primary figure under every reading.
-
-**Specification question for the owner** (from `4347648529`): is the format of a ledger record identifier (a prefix
-naming the record kind and the SHA-256 of the identifying parts, `_ledger_id` in each registry) a contract under `17`?
-`17` §3 item 2 fixes a single transactional writer with a canonical JSONL export, which carries the identifier, but
-names no identifier format. If it is a contract, the 136 identifier mutants are real gaps and tests should pin the format; if not, they
-are equivalent for every registry decision, as classified.
+which prints `4347648541: 277 moved, adjusted 93.89%`. The raw score, 76.56 %, is the primary figure under every
+reading.
 
 **How the run on `aad6255` was reached.** The earlier session measured `ac4c640` (5526 killed, 2739 survived, 121
 without a covering test, 1 timeout; 65.9 %) and `e6c3ba2` (6394 killed, 1992 survived, 1 timeout; 76.2 %). Those two
@@ -690,10 +686,10 @@ before the final run, which then killed all 18 and two others.
 | `adjudication.eligibility` | 29 | 29 | 0 | 100.00% | 0 | 100.00% |
 | `adjudication.predicate` | 168 | 111 | 57 | 66.07% | 57 | 100.00% |
 | `adjudication.records` | 406 | 292 | 114 | 71.92% | 114 | 100.00% |
-| `adjudication.registry` | 614 | 490 | 124 | 79.80% | 123 | 99.80% |
+| `adjudication.registry` | 614 | 490 | 124 | 79.80% | 80 | 91.76% |
 | `adjudication.rules` | 866 | 712 | 154 | 82.22% | 154 | 100.00% |
 | `canonical` | 88 | 68 | 20 | 77.27% | 20 | 100.00% |
-| `capability.gate` | 572 | 457 | 115 | 79.90% | 114 | 99.78% |
+| `capability.gate` | 572 | 457 | 115 | 79.90% | 67 | 90.50% |
 | `capability.levels` | 41 | 30 | 11 | 73.17% | 11 | 100.00% |
 | `capability.records` | 322 | 254 | 68 | 78.88% | 68 | 100.00% |
 | `capability.signing` | 15 | 11 | 4 | 73.33% | 4 | 100.00% |
@@ -708,7 +704,7 @@ before the final run, which then killed all 18 and two others.
 | `pointintime.leak` | 124 | 103 | 21 | 83.06% | 21 | 100.00% |
 | `pointintime.store` | 262 | 199 | 63 | 75.95% | 63 | 100.00% |
 | `registration.records` | 905 | 644 | 261 | 71.16% | 261 | 100.00% |
-| `registration.registry` | 864 | 647 | 217 | 74.88% | 216 | 99.85% |
+| `registration.registry` | 864 | 647 | 217 | 74.88% | 168 | 92.96% |
 | `registration.seeds` | 6 | 5 | 1 | 83.33% | 1 | 100.00% |
 | `schemas.capability` | 119 | 87 | 32 | 73.11% | 32 | 100.00% |
 | `schemas.common` | 200 | 155 | 45 | 77.50% | 45 | 100.00% |
@@ -716,10 +712,11 @@ before the final run, which then killed all 18 and two others.
 | `schemas.forecast` | 496 | 362 (+1 timeout) | 133 | 72.98% | 133 | 100.00% |
 | `schemas.research_output` | 106 | 79 | 27 | 74.53% | 27 | 100.00% |
 | `validation.issuance` | 219 | 182 | 37 | 83.11% | 37 | 100.00% |
-| **total** | 8387 | 6421 (+1 timeout) | 1965 | 76.56% | 1962 | 99.95% |
+| **total** | 8387 | 6421 (+1 timeout) | 1965 | 76.56% | 1824 | 97.85% |
 
 **The 85 % target.** Met on the adjusted score in every core module (ledger, capability, adjudication rules and
-registry, registration, point-in-time, canonical). On the raw score only `ledger.replay` (92.31 %) meets it; in every
+registry, registration, point-in-time, canonical); the lowest is `capability.gate` at 90.50 %, after its identifier
+gaps. On the raw score only `ledger.replay` (92.31 %) meets it; in every
 other core module the remainder is text, equivalent or tool-limit mutants, and reaching 85 % raw would take tests that
 assert refusal wording and field labels, the case the delegate's rule stops at ("tests that only pin incidental
 behaviour").
@@ -745,3 +742,10 @@ boot id per object rather than per process (PR #35 review finding `4337918328`).
   Unicode tables itself (`linkify_it/_ucre_data.py`); in fresh environments built from both locks with `--no-deps`,
   `pip check` prints `No broken requirements found` on Python 3.11.17 and 3.13.16, and `linkify_it` matches a URL
   with `uc_micro` absent.
+- Review `5613298276` on `a450ee4`. `4347648558` (P1): the report tool's test read `research/mutation/`, which mutmut's
+  working copy does not hold, so a fresh `mutmut run` on the head failed while collecting its test statistics.
+  **Fixed in `1f917d1`**: the test is deselected for the mutation run (it reads no `cpe/` code); the clean test run
+  passes. `4347648529` (P2): changed ledger identifiers are observable. **Decided** by the owner's delegate: the
+  identifier format is a contract; the 138 identifier mutants are gaps, counted against (above), and their pinning
+  tests are queued for the audit. `4347648541` (P2): `None` at a message sink is not text. **Reported, not applied**:
+  the sensitivity above.

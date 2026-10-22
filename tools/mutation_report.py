@@ -13,11 +13,12 @@ Two steps, both reproducible:
 Categories of a survivor: ``text`` (it changes only a message, a field label used in messages, or record text no
 code reads), ``equivalent`` (no input the system can receive tells it from the original), ``tool-limit`` (mutmut
 cannot run it or the test that kills it), ``accepted`` (a real difference judged not worth a test, with the reason),
-and ``unclassified`` (no rule applies and the hand table names no reason). Rules are
+``gap`` (a real difference a test should kill, queued with the reason), and ``unclassified`` (no rule applies and the
+hand table names no reason). Rules are
 structural, over the Python syntax trees of the original and the mutated function; the hand table gives one reason
 per mutant. The raw score is killed over all mutants. The adjusted score is derived from this classification:
-detected (killed or timed out) over all mutants minus the text, equivalent and tool-limit survivors; accepted and
-unclassified survivors count against it.
+detected (killed or timed out) over all mutants minus the text, equivalent and tool-limit survivors; accepted, gap
+and unclassified survivors count against it.
 
 Usage::
 
@@ -41,7 +42,7 @@ from pathlib import Path
 RESULT_LINE = re.compile(r"^\s*(?P<name>\S+): (?P<status>\S.*?)\s*$")
 MUTANT_NAME = re.compile(r"^(?P<module>[\w.]+?)\.(?P<function>x(?:_|ǁ).*)__mutmut_(?P<number>\d+)$")
 DETECTED = ("killed", "timeout")
-CATEGORIES = ("text", "equivalent", "tool-limit", "accepted", "unclassified")
+CATEGORIES = ("text", "equivalent", "tool-limit", "accepted", "gap", "unclassified")
 
 
 @dataclass(frozen=True)
