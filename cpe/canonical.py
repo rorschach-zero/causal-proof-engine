@@ -57,8 +57,12 @@ def canonical_bytes(value: JsonValue) -> bytes:
 
     Refuses anything that is not plain JSON data, so that no object can carry hidden state into a digest.
     """
-    _check_json(value, "$")
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False).encode("ascii")
+    try:
+        _check_json(value, "$")
+        text = json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False)
+    except RecursionError:  # acyclic, but nested deeper than the interpreter can walk (issue #37, Codex 11)
+        raise Refusal("nesting_too_deep", "the value is nested too deeply for the canonical form") from None
+    return text.encode("ascii")
 
 
 def sha256_hex(data: bytes) -> str:

@@ -35,7 +35,8 @@ GITHUB_MERGE_COMMITTER = "GitHub <noreply@github.com>"
 # section 7), session links, promotional footers of any assistant (a line that opens with "Generated with/by",
 # or one naming a known assistant anywhere), tool identities and badges; all case-insensitive.
 PROHIBITED_PATTERNS: tuple[tuple[str, str], ...] = (
-    ("attribution trailer", r"(?i)^\s*(?!reviewed-by:)[a-z][a-z0-9]*(?:-[a-z0-9]+)*-by:\s*\S"),
+    # Git also reads ``Co-Authored-By : x`` as a trailer; whitespace before the colon is allowed (issue #37).
+    ("attribution trailer", r"(?i)^\s*(?!reviewed-by[ \t]*:)[a-z][a-z0-9]*(?:-[a-z0-9]+)*-by[ \t]*:\s*\S"),
     ("session link", r"(?i)(claude\.ai/code/session|chatgpt\.com/codex/tasks|Claude-Session:)"),
     ("promotional footer", r"(?i)^[\s_*]*generated (with|by)\b"),
     ("promotional footer", r"(?i)generated (with|by)\b.*\b(claude|codex|copilot|chatgpt|openai|anthropic|gemini|cursor|devin|aider)\b"),
@@ -104,7 +105,14 @@ def trailer_findings(message: str, where: str) -> list[str]:
     paragraphs = [p for p in message.strip().split("\n\n") if p.strip()]
     if len(paragraphs) < 2:
         return []
-    lines = [line for line in paragraphs[-1].splitlines() if line.strip()]
+    lines: list[str] = []
+    for line in paragraphs[-1].splitlines():
+        if not line.strip():
+            continue
+        if line[0] in " \t" and lines:  # a folded continuation of the trailer above it, as git reads it (issue #37)
+            lines[-1] += " " + line.strip()
+        else:
+            lines.append(line)
     matches = [TRAILER_LINE.match(line) for line in lines]
     if not lines or not all(matches):
         return []
