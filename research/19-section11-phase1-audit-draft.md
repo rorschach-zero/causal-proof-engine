@@ -162,9 +162,10 @@ Pinned on 2026-10-29 at `main` after PRs #60, #55, #57, #58, #61, #62, #63, #65 
 - PR #67, `4415215845` (P1 badge): claims commit `d47a396` with a Codex identity and a session footer. **Not reproduced**: no such object in the repository; the PR's commit carries the owner identity and no trailer; the provenance check reports 0 findings. A reviewer artifact, as `4414429436`.
 - PR #69: no findings.
 - PR #70, `4415337967`, and PR #71, `4415379656` (P1 badges): the same claim, about commits `c3f0c6c` and `c6977dd`. **Not reproduced**: neither object exists in the repository, each PR's commit carries the owner identity, and the provenance check reports 0 findings. Reviewer artifacts.
-- PR #68: <PENDING>.
+- PR #68: requested at opening (16:46 UTC); still running with no findings at 17:31 UTC, past the 45-minute window; merged with that reason recorded.
+- PR #72 (P3-c, a non-string identifier at nine read interfaces refused as `invalid_identifier`): no findings. Opened as a draft with a one-line body, its full body read back footer-free before it was marked ready (the coordinator's workaround); unlike #67, #70 and #71, its review raised no claim about a nonexistent commit. One sample.
 
-**Merged** on 2026-10-29 by the coordinator: #66 (`6320cb4`), #67 (`65e3f80`), #69 (`1c49ac5`), #70 (`b25b376`), #71 (`00168e7`). Each open PR was trial-merged onto the new `main` and passed the suite before the next merge.
+**Merged** on 2026-10-29 by the coordinator: #66 (`6320cb4`), #67 (`65e3f80`), #69 (`1c49ac5`), #70 (`b25b376`), #71 (`00168e7`), #72 (`b6d52a4`) and #68 (`1dca8d7`). Each open PR was trial-merged onto the new `main` and passed the suite before the next merge. Every reproduced finding of pass 5 is fixed on `main` at `1dca8d75ab6f49a82397cd493714d8602131538b`.
 
 **Codex pass 5**, run by the owner in the web UI: <PENDING: findings and classification.>
 
