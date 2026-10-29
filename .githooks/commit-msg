@@ -1,0 +1,13 @@
+#!/bin/sh
+# Reject commit messages containing AI attribution trailers, session links,
+# or promotional footers (AGENTS.md, section "Provenance and attribution").
+# Enable once per clone:  git config core.hooksPath .githooks
+msg_file="$1"
+pattern='^(Co-Authored-By|Co-authored-by|Claude-Session|Signed-off-by: Claude)|claude\.ai/code/session|Generated with \[?Claude|noreply@anthropic\.com|🤖'
+if grep -nEi "$pattern" "$msg_file" >/dev/null 2>&1; then
+  echo "commit-msg: rejected. Prohibited attribution/session/promotional line(s):" >&2
+  grep -nEi "$pattern" "$msg_file" >&2
+  echo "See AGENTS.md > Provenance and attribution." >&2
+  exit 1
+fi
+exit 0

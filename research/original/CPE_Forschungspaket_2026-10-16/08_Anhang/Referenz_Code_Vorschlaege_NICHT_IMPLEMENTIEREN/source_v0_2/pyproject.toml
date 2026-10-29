@@ -1,0 +1,12 @@
+[project]
+name = "causal-proof-engine-starter"
+version = "0.2.0"
+description = "Research-only skeleton for evidence-anchored coherent investment forecasts"
+requires-python = ">=3.11"
+dependencies = ["httpx>=0.26", "scipy>=1.11", "numpy>=1.26"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
