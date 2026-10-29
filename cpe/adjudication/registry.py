@@ -2,12 +2,10 @@
 replay."""
 from __future__ import annotations
 
-import json
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from datetime import datetime
-from typing import Protocol, TypeVar
 
 from cpe.adjudication.content import ArchivedContent
 from cpe.adjudication.records import AbsenceObservation, ResolutionRecord, SourceRule, SourceStatus
@@ -25,9 +23,9 @@ from cpe.adjudication.rules import (
     knowable_times_evidenced,
     late_contradictions,
 )
-from cpe.canonical import canonical_bytes, digest_of
+from cpe.canonical import digest_of
 from cpe.clock import parse_timestamp
-from cpe.schemas.common import Payload, require_identifier, require_keys, timestamp_payload
+from cpe.schemas.common import Payload, as_persisted, require_identifier, require_keys, timestamp_payload
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.ledger.kinds import (
@@ -45,29 +43,6 @@ from cpe.ledger.kinds import (
     owned,
 )
 from cpe.schemas.event import EventSpec
-
-
-class _Persisted(Protocol):
-    def to_payload(self) -> Payload: ...
-
-
-_T = TypeVar("_T")
-
-
-def _as_replayed(value: _Persisted, from_payload: Callable[[object], _T]) -> _T:
-    """The value as replay will read it: every input is validated in full through its payload before anything is
-    computed or written, so that the registry never writes a row its own replay refuses, and every later reader of
-    the ledger fails (issue #37, pass 3 A2, A3; pass 4 A5). An object whose fields cannot be serialised is refused
-    alike."""
-    try:
-        payload = value.to_payload()
-    except Refusal:
-        raise
-    except Exception as error:
-        raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
-    # Through the canonical form the ledger persists: a ``str`` subclass that compares and hashes like one value
-    # while its text names another is read here as its text, the value replay will read (PR #54 review 4353163782).
-    return from_payload(json.loads(canonical_bytes(payload)))
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -333,7 +308,7 @@ class AdjudicationRegistry:
     def register_event(self, spec: EventSpec) -> None:
         """Pre-register the resolution criteria once: after the source rule they name, before the issuance window
         opens; a different specification under the same id is refused."""
-        spec = _as_replayed(spec, EventSpec.from_payload)
+        spec = as_persisted(spec, EventSpec.from_payload)
         with self._lock:
             for attempt in range(2):  # another writer on the same ledger that lands the event first is read back
                 state = self.state()
@@ -358,7 +333,7 @@ class AdjudicationRegistry:
         return spec
 
     def register_rule(self, rule: SourceRule) -> None:
-        rule = _as_replayed(rule, SourceRule.from_payload)
+        rule = as_persisted(rule, SourceRule.from_payload)
         with self._lock:
             for attempt in range(2):  # another writer on the same ledger that lands the rule first is read back
                 existing = self.state().rules.get(rule.source_id)
@@ -377,7 +352,7 @@ class AdjudicationRegistry:
         """Archive source bytes under their SHA-256, with the ledger's receipt time. The content is an attested
         input; nothing is fetched. The same bytes with the same attestation are archived once; the same bytes with
         another attestation are refused, so that one digest names one archived read."""
-        content = _as_replayed(content, ArchivedContent.from_payload)
+        content = as_persisted(content, ArchivedContent.from_payload)
         with self._lock:
             state = self.state()
             if content.source_id not in state.rules:
@@ -408,7 +383,7 @@ class AdjudicationRegistry:
     def submit_record(self, record: ResolutionRecord) -> Record:
         """Admit a record that names archived content; the content must evaluate, under the registered predicate,
         to the claim the record states."""
-        record = _as_replayed(record, ResolutionRecord.from_payload)
+        record = as_persisted(record, ResolutionRecord.from_payload)
         with self._lock:
             state = self.state()
             self._spec(state, record.event_id)
@@ -423,7 +398,7 @@ class AdjudicationRegistry:
                                        admit=lambda receipt: admit_record(state, replace(received, receipt=receipt)))
 
     def submit_observation(self, observation: AbsenceObservation) -> Record:
-        observation = _as_replayed(observation, AbsenceObservation.from_payload)
+        observation = as_persisted(observation, AbsenceObservation.from_payload)
         with self._lock:
             state = self.state()
             self._spec(state, observation.event_id)
@@ -436,7 +411,7 @@ class AdjudicationRegistry:
         """One status per source and declared instant. The status is read as replay reads it, in UTC, before its
         identifier is formed, so that one instant written in two time zones is one status, not two conflicting ones
         (issue #37, pass 4 A6); the identifier format is unchanged."""
-        status = _as_replayed(status, SourceStatus.from_payload)
+        status = as_persisted(status, SourceStatus.from_payload)
         with self._lock:
             state = self.state()
             admit_status(state, status, status.declared_at)  # the rules but the receipt's, early

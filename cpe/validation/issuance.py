@@ -25,7 +25,7 @@ from typing import Literal
 
 from cpe.errors import Refusal
 from cpe.schemas import ResearchOutput
-from cpe.schemas.common import require_identifier
+from cpe.schemas.common import as_persisted, require_identifier
 from cpe.schemas.forecast import JevRecord
 
 IssuanceStatus = Literal["issuable", "held", "rejected"]
@@ -56,21 +56,6 @@ class IssuanceDecision:
     jev: JevRecord | None  # the validated Jev record; None unless issuable
 
 
-def _payload(value: object) -> object:
-    """A payload as it would be replayed: a schema object goes through its own payload first. An object whose
-    fields cannot be serialised (a directly constructed object with a value of the wrong type) is refused, never
-    allowed to crash the check."""
-    to_payload = getattr(value, "to_payload", None)
-    if not callable(to_payload):
-        return value
-    try:
-        return to_payload()
-    except Refusal:
-        raise
-    except Exception as error:
-        raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
-
-
 def check_issuance(event_id: str, arm_versions: Mapping[str, str], outputs: Sequence[object],
                    jev: object | None, *, slot_id: str) -> IssuanceDecision:
     """Decide whether an issuance of ``slot_id`` on ``event_id`` has every mandatory input, each valid.
@@ -93,7 +78,7 @@ def check_issuance(event_id: str, arm_versions: Mapping[str, str], outputs: Sequ
     for index, raw in enumerate(outputs):
         subject = f"outputs[{index}]"
         try:
-            output = ResearchOutput.from_payload(_payload(raw))
+            output = as_persisted(raw, ResearchOutput.from_payload)  # each provider as its output names it (pass 7 I1)
         except Refusal as refusal:
             problems.append(Problem(refusal.reason, subject, refusal.detail))
             continue
@@ -121,7 +106,7 @@ def check_issuance(event_id: str, arm_versions: Mapping[str, str], outputs: Sequ
         problems.append(Problem("missing_jev", "jev", "issuance is held without the Jev record"))
     else:
         try:
-            record = JevRecord.from_payload(_payload(jev))
+            record = as_persisted(jev, JevRecord.from_payload)
         except Refusal as refusal:
             problems.append(Problem(refusal.reason, "jev", refusal.detail))
         else:

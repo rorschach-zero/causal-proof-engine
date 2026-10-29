@@ -3,15 +3,16 @@ from __future__ import annotations
 
 import json
 import math
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import date, datetime
-from typing import Any, cast
+from typing import Any, TypeVar, cast
 
 from cpe.canonical import JsonValue, canonical_bytes, require_hex_digest
 from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 
 Payload = dict[str, JsonValue]
+_T = TypeVar("_T")
 
 MAX_IDENTIFIER_LENGTH = 256
 
@@ -86,6 +87,15 @@ def payload_of(value: object) -> Payload:
     except Exception as error:
         raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
     return payload  # type: ignore[no-any-return]
+
+
+def as_persisted(value: object, from_payload: Callable[[object], _T]) -> _T:
+    """``value`` (a schema object or its payload) as the ledger persists it: validated by its schema first, so that a
+    refusal keeps the schema's reason, then read back through the canonical form, so that every check sees plain
+    values only, the values replay will read. A ``str`` subclass that compares equal to one value while its text is
+    another is read as its text (PR #54 review 4353163782; issue #37, pass 7 Codex 7-2, G1, I1)."""
+    validated = from_payload(payload_of(value) if callable(getattr(value, "to_payload", None)) else value)
+    return from_payload(json.loads(canonical_bytes(payload_of(validated))))
 
 
 def require_probability(value: object, field: str) -> float:
