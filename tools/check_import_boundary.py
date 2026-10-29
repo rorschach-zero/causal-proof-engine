@@ -27,7 +27,12 @@ FORBIDDEN_MODULES: frozenset[str] = frozenset({
     # The modules beneath ``os``, ``subprocess`` and ``socket``: ``posix.system`` spawns a process as ``os.system``
     # does, and nothing about the name says so (issue #37, pass 5 B1).
     "posix", "nt", "_posixsubprocess", "_winapi", "_socket", "_ssl",
+    # ``concurrent.futures.ProcessPoolExecutor`` spawns processes (issue #37, pass 6 B2).
+    "concurrent",
 })
+# Submodules that are network or process facilities under a package that is not one: the socket, HTTP, SMTP and syslog
+# handlers of ``logging.handlers`` and the socket server of ``logging.config.listen`` (issue #37, pass 6 B2).
+FORBIDDEN_SUBMODULES: frozenset[str] = frozenset({"logging.handlers", "logging.config"})
 # Process-spawning names of os (os.system, os.popen, os.exec*, os.spawn*, os.fork*, os.posix_spawn*).
 FORBIDDEN_OS_NAMES: frozenset[str] = frozenset({
     "system", "popen", "fork", "forkpty", "startfile", "posix_spawn", "posix_spawnp",
@@ -122,7 +127,8 @@ def findings_for_module(path: Path, source: str, package_root: Path) -> list[str
         findings.setdefault((line, rule), f"{path}:{line}: {text}")
 
     for name, line in imported_names(tree, module, is_package):
-        if _root(name) in FORBIDDEN_MODULES:
+        if _root(name) in FORBIDDEN_MODULES or any(name == sub or name.startswith(sub + ".")
+                                                   for sub in FORBIDDEN_SUBMODULES):
             add(line, "network", f"imports {name}, a network or process facility outside the offline boundary")
         if _root(name) == "os" and name.split(".")[-1] in FORBIDDEN_OS_NAMES and name.count(".") == 1:
             add(line, "process", f"imports {name}, a process-spawning facility outside the offline boundary")
@@ -133,7 +139,8 @@ def findings_for_module(path: Path, source: str, package_root: Path) -> list[str
     for name, line in process_api_uses(tree):
         add(line, "process-use", f"uses {name}, a process-spawning facility outside the offline boundary")
     for module_name_, line in star_imports(tree):
-        if _root(module_name_) in FORBIDDEN_MODULES or module_name_ == "os":  # ``os.path`` binds no process name
+        if _root(module_name_) in FORBIDDEN_MODULES or module_name_ in FORBIDDEN_SUBMODULES \
+                or module_name_ == "os":  # ``os.path`` binds no process name
             add(line, "star", f"imports * from {module_name_}, which binds process or network facilities unseen")
     return [findings[key] for key in sorted(findings)]
 
