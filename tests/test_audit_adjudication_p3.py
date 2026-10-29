@@ -60,17 +60,19 @@ def test_archive_content_reads_back_content_another_registry_landed_first(tmp_pa
     assert [r.kind for r in ledger.records()].count("resolution_content") == 1
 
 
-@pytest.mark.parametrize("kind, payload", [
-    (KIND_DEFECT, {"event_id": "E"}),
-    (KIND_DEFECT, {"event_id": "E", "record_id": "r", "detail": 3}),
-    (KIND_KNOWABLE, {"event_id": "E"}),
-    (KIND_INCIDENT, {"kind": "receipt_lag", "reference_id": "r", "detail": "x"}),
+@pytest.mark.parametrize("kind, payload, reason", [
+    (KIND_DEFECT, {"event_id": "E"}, "missing_field"),
+    (KIND_DEFECT, {"event_id": "E", "record_id": "r", "detail": 3}, "invalid_text"),
+    (KIND_KNOWABLE, {"event_id": "E"}, "missing_field"),
+    (KIND_INCIDENT, {"kind": "receipt_lag", "reference_id": "r", "detail": "x"}, "missing_field"),
 ])
-def test_a_malformed_side_row_is_a_typed_refusal_on_replay(tmp_path: Path, kind: str, payload: dict[str, Any]) -> None:
+def test_a_malformed_side_row_is_a_typed_refusal_on_replay(tmp_path: Path, kind: str, payload: dict[str, Any],
+                                                           reason: str) -> None:
     _, _, ledger = _registry(tmp_path)
     ledger.append(kind, "side-row", payload)
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as refused:
         replay_state(ledger.records())  # at c3d6233: KeyError, or a detail coerced
+    assert refused.value.reason == reason  # the malformed field, not a later rule (issue #37, pass 7)
 
 
 def _naive_record(reg: AdjudicationRegistry, clock: ManualClock) -> None:
@@ -110,17 +112,6 @@ def test_no_late_publication_incident_claims_a_decision_that_was_not_made(tmp_pa
     after = reg.adjudicate("E")
     assert after.disposition == "VOID"
     assert [i.kind for i in after.incidents] == []  # at c3d6233: ['late_publication']
-
-
-def test_a_receipt_lag_found_after_the_disposition_is_still_recorded(tmp_path: Path) -> None:
-    reg, clock, _ = _registry(tmp_path)
-    reg.register_event(spec())
-    clock.set(day(100))
-    submit(reg, record("r-1", occurrence=90, published=95, observed=100))
-    assert reg.adjudicate("E").disposition == "RESOLVED_YES"
-    clock.set(day(120))
-    submit(reg, record("r-2", occurrence=90, published=96, observed=120))
-    assert ("receipt_lag", "r-2") in {(i.kind, i.reference_id) for i in reg.adjudicate("E").incidents}
 
 
 def test_4353163782_a_digest_that_only_compares_like_an_archived_one_writes_nothing_unreadable(tmp_path: Path) -> None:

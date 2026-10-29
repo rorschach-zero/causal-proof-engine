@@ -82,10 +82,14 @@ def _reading() -> dict[str, object]:
 def test_gate_records_refuse_rather_than_coerce_text_fields() -> None:
     """records.py:159, 201, 246 use ``str(...)`` on reason, subject and verdict: a replayed gate record with a list
     or a number in those fields is silently coerced, not refused (AGENTS.md section 6)."""
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as refused:
         EpochRecord.from_payload({"epoch": 1, "index": 1, "reason": ["start"], "baseline": _reading()})
-    with pytest.raises(Refusal):
-        CheckRecord.from_payload({"subject": 7, "verdict": {"admitted": True}, "reason": None, "reading": _reading()})
+    assert refused.value.reason == "invalid_text"
+    valid = {"subject": "action:research", "verdict": "admitted", "reason": "", "reading": _reading()}
+    for field, value in (("subject", 7), ("verdict", {"admitted": True}), ("reason", None)):  # one field at a time
+        with pytest.raises(Refusal) as refused:
+            CheckRecord.from_payload({**valid, field: value})
+        assert refused.value.reason == "invalid_text", field
 
 
 @pytest.fixture

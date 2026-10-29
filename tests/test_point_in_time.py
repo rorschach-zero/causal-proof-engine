@@ -121,7 +121,13 @@ def test_t15_d_a_post_cutoff_timestamp_is_refused(f25: tuple[PointInTimeStore, L
 def test_t15_a_future_vintage_and_an_unknown_one_are_refused_alike(f25: tuple[PointInTimeStore, Ledger]) -> None:
     store, _ = f25
     reader = store.reader(day(19))
-    assert refused(lambda: reader.row("E1", "f", "v2")) == refused(lambda: reader.row("E1", "f", "v9"))
+    with pytest.raises(Refusal) as future:
+        reader.row("E1", "f", "v2")
+    with pytest.raises(Refusal) as unknown:
+        reader.row("E1", "f", "v9")
+    # alike in reason and in detail, but for the vintage asked for: nothing says that v2 exists (issue #37, pass 7)
+    assert future.value.reason == unknown.value.reason == "not_available"
+    assert future.value.detail.replace("v2", "v9") == unknown.value.detail
 
 
 def test_t15_the_reader_of_a_forecast_is_bound_to_the_event_evidence_cutoff(tmp_path: Path) -> None:

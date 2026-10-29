@@ -103,8 +103,9 @@ def registry(ledger: Ledger, clock: ManualClock) -> RegistrationRegistry:
 def test_arm_versions_are_immutable_and_name_registered_inputs(ledger: Ledger) -> None:
     r = RegistrationRegistry(ledger)
     r.register_arm_version(arm("A-1", "2026-01-05"))
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as immutable:
         r.register_arm_version(arm("A-1", "2026-01-06"))
+    assert immutable.value.reason == "arm_version_immutable"
     with pytest.raises(Refusal):
         r.register_arm_version(arm("FULL-1", "2026-01-03", ["B-1"]))
 
@@ -244,8 +245,8 @@ def test_m1_binding_register_and_beacon_seed(registry: RegistrationRegistry, led
     assert refusal.value.reason == "binding_mismatch"
     registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
     with pytest.raises(Refusal) as refusal:
-        registry.record_calibration(CalibrationRecord("cal-1b", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
-    assert refusal.value.reason in ("second_calibration_record", "binding_mismatch")
+        registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 2000, 0.01, "beacon", "round-7"))
+    assert refusal.value.reason == "second_calibration_record"  # bound both ways, and the claim's second
     output = BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(12))
     with pytest.raises(Refusal) as refusal:  # no anchor yet: the round cannot be after the record's anchor
         registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(9)))

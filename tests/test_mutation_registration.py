@@ -28,6 +28,7 @@ from cpe.registration import (
     VoidRequest,
     derive_seed,
 )
+from cpe.registration.registry import _ledger_id
 from cpe.schemas import ClusterRecord
 from tests.test_registration import arm, clock, day, forecast, ledger, registration, registry, spec  # noqa: F401
 
@@ -152,9 +153,10 @@ def test_claim_and_calibration_refusals_are_named(registry: RegistrationRegistry
 def test_a_calibration_record_id_used_by_another_claim_is_refused(registry: RegistrationRegistry, ledger: Ledger) -> None:
     registry.register_claim(claim())
     registry.register_claim(claim("claim-2", "cal-2"))
-    ledger.append("calibration_record", "forged-calibration", calibration("cal-2", "claim-1").to_payload())
+    ledger.append("calibration_record", _ledger_id("calibration", "cal-2"), calibration("cal-2", "claim-1").to_payload())
     # The forged row, bound to neither claim, now refuses the ledger on replay before the write path is reached
-    # (issue #37, pass 4 W2): replay re-validates every calibration record as the registry does.
+    # (issue #37, pass 4 W2): replay re-validates every calibration record as the registry does. It is written under
+    # the identifier the registry gives it, so that the binding, not the identifier, refuses it (pass 7).
     assert refused(registry.record_calibration, calibration("cal-2", "claim-2")) == "invalid_record"
 
 

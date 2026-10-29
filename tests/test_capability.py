@@ -172,11 +172,13 @@ def test_t31_an_added_field_and_a_re_typed_numeric_field_are_refused(rig: Rig) -
     with pytest.raises(Refusal) as added:
         Capability.from_payload({**payload, "scope": "all"})
     assert added.value.reason == "unknown_field"
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as retyped_field:
         Capability.from_payload({**payload, "epoch": str(payload["epoch"])})
+    assert retyped_field.value.reason == "invalid_integer"
     retyped = replace(issue(rig.epoch(), "n-2"), epoch="1")  # type: ignore[arg-type]
-    with pytest.raises(Refusal):
-        rig.promote(retyped)  # validated in full through its payload before anything is written
+    written = len(rig.ledger.records())
+    assert rig.refused(retyped) == "invalid_integer"  # validated in full through its payload before anything is written
+    assert len(rig.ledger.records()) == written
 
 
 # T-30: the capability cases, sequential ------------------------------------------------------------------------

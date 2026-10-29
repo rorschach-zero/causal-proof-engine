@@ -14,9 +14,12 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from cpe.adjudication import AdjudicationRegistry, SourceStatus
 from cpe.capability import CapabilityGate
 from cpe.clock import ManualClock, parse_timestamp
+from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger, Record
 from cpe.pointintime import FeatureRow, PointInTimeStore
 from cpe.registration import (
@@ -70,6 +73,7 @@ def registration_identifier(record: Record, earlier: list[Record]) -> str:
         "confirmatory_register": lambda: identifier("register"),
         "calibration_record": lambda: identifier("calibration", p["calibration_record_id"]),
         "beacon_output": lambda: identifier("beacon", p["output"]["calibration_record_id"]),
+        "beacon_round_refused": lambda: identifier("round-refused", p["output"]["calibration_record_id"]),
     }[record.kind]()
 
 
@@ -94,16 +98,22 @@ def test_every_registration_record_has_its_golden_identifier(tmp_path: Path) -> 
     registry.register_claim(ClaimPreregistration("claim-1", "fixed_question_set", "Q-1", "holder", reg.day(1), reg.day(60),
                                                  reg.day(400), "period-balanced", ("DESIGN_C",), ("L-1",), "cal-1"))
     registry.record_calibration(CalibrationRecord("cal-1", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7"))
+    registry.register_claim(ClaimPreregistration("claim-2", "fixed_question_set", "Q-2", "holder", reg.day(1), reg.day(60),
+                                                 reg.day(400), "period-balanced", ("DESIGN_C",), ("L-1",), "cal-2"))
+    registry.record_calibration(CalibrationRecord("cal-2", "claim-2", "block-t", 1000, 0.01, "beacon", "round-8"))
     registry.anchor_confirmatory_register(ConfirmatoryRegister("reg-1", 1, ("claim-1",)))
     ledger.anchor()
     clock.set(reg.day(23))
     registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, reg.day(22)))
+    with pytest.raises(Refusal) as refused:  # published before the register's anchor: recorded (issue #37, pass 7)
+        registry.supply_beacon_output(BeaconOutput("cal-2", "beacon", "round-8", "cd" * 32, reg.day(20)))
+    assert refused.value.reason == "round_before_anchor"
 
     records = list(ledger.records())
     kinds = {r.kind for r in records}
     assert kinds == {"arm_version", "cutoff_correction", "candidate", "base_rate", "cluster_registration",
                      "void_request", "forecast", "claim_preregistration", "confirmatory_register",
-                     "calibration_record", "beacon_output"}
+                     "calibration_record", "beacon_output", "beacon_round_refused"}
     for index, record in enumerate(records):
         assert record.record_id == registration_identifier(record, records[:index]), record.kind
 

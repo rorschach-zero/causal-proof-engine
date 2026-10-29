@@ -53,8 +53,9 @@ def test_replay_reads_past_records_of_other_registries(tmp_path: Path) -> None:
     ledger.append("event_spec", "other", {"x": 1})
     store.ingest(FeatureRow("E", "f", 1, day(10), day(12), "v1"))
     assert store.reader(day(12)).row("E", "f", "v1").value == 1
-    ledger.append("pit_row", "pit:forged", FeatureRow("E", "f", 2, day(10), day(13), "v2").to_payload())
-    assert refused(replay_state, ledger.records()) in ("invalid_record_id", "evidence_after_receipt")
+    ledger.append("pit_row", "pit:forged", FeatureRow("E", "f", 2, day(10), day(12), "v2").to_payload())
+    # available at its receipt, so that its identifier alone refuses it (issue #37, pass 7)
+    assert refused(replay_state, ledger.records()) == "invalid_record_id"
 
 
 def test_replay_refuses_by_name(tmp_path: Path) -> None:

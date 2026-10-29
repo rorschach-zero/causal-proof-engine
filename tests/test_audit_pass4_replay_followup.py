@@ -20,7 +20,7 @@ import pytest
 from cpe.canonical import digest_of
 from cpe.capability import CapabilityGate
 from cpe.capability.records import KIND_COMMIT, KIND_EPOCH, KIND_INTENT, CommitRecord, EpochRecord, IntentRecord
-from cpe.capability.records import intent_ledger_id
+from cpe.capability.records import gate_ledger_id, intent_ledger_id
 from cpe.capability.timesource import ClockReading
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
@@ -46,7 +46,7 @@ def test_4353051497_a_commit_must_cite_a_published_anchor(tmp_path: Path) -> Non
     intent_id = intent_ledger_id(capability)
     intent = rig.ledger.append(KIND_INTENT, intent_id,
                                IntentRecord(intent_id, capability, "SIM_EXECUTION", reading_of(rig)).to_payload())
-    rig.ledger.append(KIND_COMMIT, "commit", CommitRecord(intent_id, intent.seq, intent.entry_hash,
+    rig.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", intent_id), CommitRecord(intent_id, intent.seq, intent.entry_hash,
                                                           reading_of(rig)).to_payload())
     rig.ledger.anchor()  # only the completed prefix is anchored; step 2 never happened
     rig.tick()

@@ -59,4 +59,5 @@ def test_b1_the_modules_beneath_os_subprocess_and_socket_are_forbidden(tmp_path:
 
 
 def test_b1_the_package_itself_stays_clean() -> None:
-    assert check_import_boundary.check_package(Path("cpe")) == []
+    package = Path(__file__).resolve().parent.parent / "cpe"  # whatever the working directory (issue #37, pass 7)
+    assert list(package.glob("*.py")) and check_import_boundary.check_package(package) == []
