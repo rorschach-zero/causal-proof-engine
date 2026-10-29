@@ -160,7 +160,11 @@ Pinned on 2026-10-29 at `main` after PRs #60, #55, #57, #58, #61, #62, #63, #65 
 **Codex reviews of the pass-5 fix PRs:**
 - PR #66: no findings.
 - PR #67, `4415215845` (P1 badge): claims commit `d47a396` with a Codex identity and a session footer. **Not reproduced**: no such object in the repository; the PR's commit carries the owner identity and no trailer; the provenance check reports 0 findings. A reviewer artifact, as `4414429436`.
-- PRs #68 to #71: <PENDING>.
+- PR #69: no findings.
+- PR #70, `4415337967`, and PR #71, `4415379656` (P1 badges): the same claim, about commits `c3f0c6c` and `c6977dd`. **Not reproduced**: neither object exists in the repository, each PR's commit carries the owner identity, and the provenance check reports 0 findings. Reviewer artifacts.
+- PR #68: <PENDING>.
+
+**Merged** on 2026-10-29 by the coordinator: #66 (`6320cb4`), #67 (`65e3f80`), #69 (`1c49ac5`), #70 (`b25b376`), #71 (`00168e7`). Each open PR was trial-merged onto the new `main` and passed the suite before the next merge.
 
 **Codex pass 5**, run by the owner in the web UI: <PENDING: findings and classification.>
 
