@@ -186,7 +186,7 @@ Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68
 | R3 | P3 | A raw `beacon_output` or `beacon_round_refused` row raised `KeyError` on replay (reproduced at the pin) | PR #80 |
 | — | P3 | Test hygiene: six tests could not fail for the reason they name (PR #33 `4335189761` either-reason; the C1 year-999 bare raises; the F-21b clause refused by its window; the T-32 planted object; the T-30 landed-mode no-op; PR #19 `4329836196`'s duplicate loop) | PR #79 (supersedes #78) |
 
-**Codex pass 6**: automatic review `5702392824` of the whole-tree PR #73, three P1 badges.
+**Codex pass 6**: automatic review `5702392824` of the whole-tree PR #73, three P1 badges (findings `4415890495`, `4415890506`, `4415890522`).
 - 6-1: Y1, reproduced (PR #74).
 - 6-2: `RegistrationRegistry.state()` exposes sealed forecasts. First recorded as the specification question open since pass 2; **decided by the coordinator as a P2 defect** with reading P6-R2 (§11.4). PR #81: `state()` redacts the forecasts of events whose issuance window is open; the unredacted `_state()` is internal to replay.
 - 6-3: a gate check's persisted wall time above its receipt did not bound other registries' receipts. **Reproduced, P1.** PR #77: `Ledger.append(observed=)` keeps the maximum in an `observed_walls` table, reloaded at open.
@@ -319,4 +319,6 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 - pass 5: Claude 3;
 - pass 6: Claude 2, Codex 1 new (6-1 is Y1).
 
-<PENDING: the owner's decision on pass 7; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+**Pass 7** is pinned at `main` `c55e4cee65656355850bde32b07059e37d8b523b`, the merge of #81 (coordinator, 2026-10-29); every reproduced finding of passes 1 to 6 is fixed there. A fresh session (session 9) runs the Claude side.
+
+<PENDING: pass 7 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
