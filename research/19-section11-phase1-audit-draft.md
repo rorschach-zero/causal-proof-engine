@@ -202,6 +202,32 @@ Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68
 
 **Pass 6 is not passed: Y1, E1 and 6-3 are reproduced P1s.**
 
+### 11.3d Pass 7, at `c55e4cee65656355850bde32b07059e37d8b523b`
+
+Pinned at the merge of #81; every reproduced finding of passes 1 to 6 is fixed there. Records on issue #37: Codex classification `6505797378`, Claude interim `6505816705`. The existing suite at the pin gives 901 passed (Python 3.13.17).
+
+**Codex**: automatic review `5703222100` of the whole-tree PR #82, four findings, each reproduced as a test failing at the pin.
+
+| # | Codex id | Severity | Finding | Fixed in |
+|---|---|---|---|---|
+| 7-1 | `4416532445` | proposed **P1** | `Ledger.restore` did not rebuild the observed-wall bound of 6-3, so a restore of the complete history admitted `register_event` 400 ms before the issuance window | PR #85 |
+| 7-2 | `4416532454` | P2 | A `str` subclass kept through validation in registration writes (and the gate) made the ledger unreadable | PR #84 |
+| 7-3 | `4416532460` | P2 | Reconciliation at open caught only `Refusal`; a `TimeoutError` from the store prevented the ledger from opening | PR #85 |
+| 7-4 | `4416532472` | proposed **P1** (class W) | Replay admitted an intent received while its epoch was unanchored (RC-123) | PR #83 |
+
+**Claude** (a fresh session, session 9):
+
+| # | Severity | Finding | Fixed in |
+|---|---|---|---|
+| G1 | proposed **P1** | A capability signed for other evidence, presented with a look-alike `str` evidence digest, promoted the gate (T-30) | PR #84 |
+| I1 | proposed **P1** | `check_issuance` was issuable with two outputs of provider P-A and none of P-B through look-alike `str` identifiers (T-28, RC-17) | PR #84 |
+| B3 | P3 | The import boundary passed `_ctypes`, `_bootsubprocess`, `distutils`, `ensurepip`, `venv`, `pydoc` and `compileall` | PR #86 |
+| — | P3 | Test hygiene: 19 tests could not fail for the reason they name (W1 forgeries refused by the commit identifier before the checks ran; forged adjudication rows refused by identifier; cluster-after-e_i also refused by the issuance rule; bare raises and either-reason asserts; replay compared with itself; an armed fault that never fired; an unread clock reading; a cwd-dependent clean check; a missing golden identifier for `beacon_round_refused`; T-15's detail unchecked; one duplicate). Table in PR #86's description | PR #86 |
+
+**Codex reviews of the pass-7 fix PRs:** #83 and #84: no findings; #85 and #86: <PENDING>.
+
+**Verdict of pass 7:** <PENDING: the coordinator's ratings of 7-1, 7-4, G1 and I1; if any stands as P1, pass 7 is not passed.>
+
 ### 11.4 Deviations and readings, for the owner
 
 - **An `OPEN` member with an evidenced public occurrence** (pass 2, Codex 3). `17` defines `knowable_at` = min(publication, public occurrence, deadline + window) for an outcome, but does not say what an undecided member carries.
@@ -222,7 +248,7 @@ Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68
   - This changed one step of `test_m1_binding_register_and_beacon_seed`; PR #50 states the old and new expectation.
   - It sits beside the open question of evidence binding for beacon outputs.
 
-- **Replay re-validates every authority-bearing row, and a forged row refuses the whole ledger** (PR #51; coordinator's design). A party able to append to the ledger can stop every later read but gains no level, status or seed. Not re-checked on replay: the evidence a capability binds (only its digest is on the ledger), whether an intent was a promotion, and whether its epoch was anchored when it was written (replay cannot know the anchors of that moment).
+- **Replay re-validates every authority-bearing row, and a forged row refuses the whole ledger** (PR #51; coordinator's design). A party able to append to the ledger can stop every later read but gains no level, status or seed. Not re-checked on replay: the evidence a capability binds (only its digest is on the ledger), whether an intent was a promotion, and whether its epoch was anchored when it was written (replay cannot know the anchors of that moment). **Superseded in pass 7** (Codex 7-4, PR #83): replay refuses an intent received while its epoch was unanchored.
 - **An unconfirmed anchor attempt never makes a refused round bind** (R1): the round is refused `anchor_pending` and weighed again once the attempt settles.
 - **PR #56 was superseded, not merged** (coordinator, 2026-10-22). Its one Codex review reproduced a P1 regression of that PR (`4353231816`: a disproved pending attempt was trusted, and a claim stayed confirmatory although its register was anchored after the round) and a P2 (`4353231824`: two anchor reads raced). The review cap stops fix rounds but never lands a reproduced P1 regression on `main`; R1 and both fixes landed in PR #61.
 - **PR #59 was superseded, not merged** (coordinator, 2026-10-22). Its one Codex review reproduced a P1 regression of that PR (`4353380374`), a P1 present on `main` (`4353380367`) and two P2s (`4353380358`, `4353380381`). They landed with #59's fixes in PR #63, built on PR #61.
@@ -235,7 +261,7 @@ Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68
 - **Pass 6 readings** (session 8; for the owner, none changes a document):
   - (a) P5-R1 extended to every adjudication row kind (criteria, rule, content, records, observations, statuses); status rows are checked for one status per source and instant rather than by identifier, because of PR #54's legacy offsets (PR #74).
   - (b) An epoch row must be a fresh rotation: canonical identifier, an epoch id never seen before on the ledger (PR #75).
-  - (c) The observed-wall mark is ledger-local, like P5-R2's retired times: a JSONL restore rebuilds receipts only, and the gate still bounds itself by its replayed readings (PR #77).
+  - (c) The observed-wall mark is ledger-local, like P5-R2's retired times: a JSONL restore rebuilds receipts only, and the gate still bounds itself by its replayed readings (PR #77). **Withdrawn in pass 7 for these times** (Codex 7-1, PR #85): the observed walls are in the export, and a restore rebuilds their bound. P5-R2 stands for the retired attempt times, which are not in the export.
   - (d) The disposition append refuses a receipt below its adjudication time (`clock_rollback`) (PR #77).
 - **P6-R1 (coordinator-approved): replay is closed in every module** (PR #80). Each replay re-validates its own record kinds, skips the kinds of other modules and refuses an unknown kind. A `gate_check`'s verdict is not recomputed (the caller's trusted prefix decides it).
 - **P6-R2 (coordinator): the public snapshot never carries a sealed forecast; the unredacted snapshot is internal to replay** (PR #81).
@@ -317,8 +343,9 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 - pass 3: Claude 1;
 - pass 4: Claude 6, fix-PR reviews 2;
 - pass 5: Claude 3;
-- pass 6: Claude 2, Codex 1 new (6-1 is Y1).
+- pass 6: Claude 2, Codex 1 new (6-1 is Y1);
+- pass 7: Claude 2 suspected (G1, I1), Codex 2 suspected (7-1, 7-4), pending the coordinator's ratings.
 
 **Pass 7** is pinned at `main` `c55e4cee65656355850bde32b07059e37d8b523b`, the merge of #81 (coordinator, 2026-10-29); every reproduced finding of passes 1 to 6 is fixed there. A fresh session (session 9) runs the Claude side.
 
-<PENDING: pass 7 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+<PENDING: the ratings of pass 7 (11.3d) and its verdict; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
