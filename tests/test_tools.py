@@ -100,6 +100,16 @@ def test_prospective_pr_text_is_checked_against_the_head_tree_and_identity_on_me
     assert any("matrix version 50" in f for f in findings)
 
 
+def test_a_pull_request_title_that_becomes_a_git_trailer_is_refused_before_the_merge(repo: Path) -> None:
+    # GitHub writes the title as the merge commit body; the title "CI: ..." of PR #60 became the trailer 'CI' on
+    # main 6233803 and failed the post-merge T-09 run (issue #37). The pre-merge text check refuses such a title.
+    head = _git(repo, "rev-parse", "HEAD")
+    findings = check_provenance.check(f"{head}..{head}", repo, "CI: trim the workflow", "a body", "HEAD")
+    assert findings == ["pull request title as merge commit body: trailer 'CI' (only Reviewed-by is allowed)"]
+    assert check_provenance.check(f"{head}..{head}", repo, "Trim the CI workflow: fewer runs", "a body", "HEAD") == []
+    assert check_provenance.check(f"{head}..{head}", repo, "Audit P2s, canonical form: refuse surrogates", None, "HEAD") == []
+
+
 def test_provenance_cli_reports_and_exits_nonzero_on_findings(repo: Path, capsys: pytest.CaptureFixture[str]) -> None:
     base = _git(repo, "rev-parse", "HEAD")
     (repo / "note.txt").write_text("x")

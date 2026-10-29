@@ -221,6 +221,11 @@ def check(commit_range: str, repo: Path, title: str | None, body: str | None, he
         prospective = "\n\n".join(part for part in (title, body) if part)
         findings += text_findings(prospective, "pull request text")
         findings += label_findings(prospective, tree_labels(head, repo), "pull request text")
+    if title:
+        # GitHub writes the pull request title as the body of the merge commit. A title that is one ``Token: value``
+        # line is then a git trailer, and the post-merge check refuses the merge commit (main 6233803, issue #37);
+        # refuse the title before the merge instead.
+        findings += trailer_findings(f"Merge pull request\n\n{title.strip()}", "pull request title as merge commit body")
     return findings
 
 
