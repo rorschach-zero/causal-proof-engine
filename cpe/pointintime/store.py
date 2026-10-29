@@ -183,6 +183,8 @@ class AsOfReader:
 
     def __init__(self, store: PointInTimeStore, evidence_cutoff: datetime) -> None:
         self._store = store
+        if not isinstance(evidence_cutoff, datetime):  # typed, never an AttributeError (issue #37, pass 5)
+            raise Refusal("invalid_timestamp", "the evidence cutoff must be an aware datetime")
         self.evidence_cutoff = require_timestamp(timestamp_payload(evidence_cutoff), "evidence_cutoff")
 
     def _bounded(self, as_of: datetime | None) -> datetime:

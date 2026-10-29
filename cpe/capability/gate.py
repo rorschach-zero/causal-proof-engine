@@ -41,7 +41,7 @@ from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.ledger.store import Admit
 from cpe.schemas import Capability
-from cpe.schemas.common import require_digest
+from cpe.schemas.common import payload_of, require_digest
 
 log = logging.getLogger("cpe.capability")
 
@@ -295,7 +295,9 @@ class CapabilityGate:
         """The protected operation: promote the gate to the level the capability names, on ``evidence`` whose
         digest the capability binds. Four recoverable steps: intent, anchor of the intent, commit record, anchor
         of the commit; the change takes effect at the commit record's position once that anchor is confirmed."""
-        capability = Capability.from_payload(capability.to_payload())  # validated in full, as it will be replayed
+        # validated in full, as it will be replayed; a field that cannot be serialised is a typed refusal (issue #37,
+        # pass 5), as for every registry's input
+        capability = Capability.from_payload(payload_of(capability))
         target = promotion_target(capability.capability)
         evidence_digest = digest_of(evidence)
         intent_id = self._intent_id(capability)
