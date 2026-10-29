@@ -21,7 +21,7 @@ from pathlib import Path
 import pytest
 
 from cpe.capability import CapabilityGate
-from cpe.capability.records import KIND_COMMIT, KIND_INTENT, CommitRecord, IntentRecord, intent_ledger_id
+from cpe.capability.records import KIND_COMMIT, KIND_INTENT, CommitRecord, IntentRecord, gate_ledger_id, intent_ledger_id
 from cpe.capability.timesource import ClockReading
 from cpe.clock import ManualClock, format_timestamp
 from cpe.errors import Refusal
@@ -64,7 +64,7 @@ def test_4353380367_an_intent_anchor_published_after_the_commit_is_not_step_2(tm
     intent_id = intent_ledger_id(capability)
     intent = rig.ledger.append(KIND_INTENT, intent_id,
                                IntentRecord(intent_id, capability, "SIM_EXECUTION", reading).to_payload())
-    rig.ledger.append(KIND_COMMIT, "commit", CommitRecord(intent_id, intent.seq, intent.entry_hash, reading).to_payload())
+    rig.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", intent_id), CommitRecord(intent_id, intent.seq, intent.entry_hash, reading).to_payload())
     rig.tick()  # an anchor of the intent's prefix, published after the commit was received
     rig.store.inner.publish(Anchor(intent.seq, intent.entry_hash, format_timestamp(rig.ledger.now())))
     rig.ledger.anchor()

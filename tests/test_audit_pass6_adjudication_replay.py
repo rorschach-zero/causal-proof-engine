@@ -18,7 +18,15 @@ from pathlib import Path
 import pytest
 
 from cpe.adjudication import AdjudicationRegistry, SourceStatus
-from cpe.adjudication.registry import KIND_CONTENT, KIND_EVENT, KIND_OBSERVATION, KIND_RECORD, KIND_RULE, KIND_STATUS
+from cpe.adjudication.registry import (
+    KIND_CONTENT,
+    KIND_EVENT,
+    KIND_OBSERVATION,
+    KIND_RECORD,
+    KIND_RULE,
+    KIND_STATUS,
+    _ledger_id,
+)
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
@@ -62,7 +70,7 @@ def test_y1_an_event_spec_row_received_after_its_issuance_opened_is_not_criteria
     with pytest.raises(Refusal) as late:
         registry.register_event(spec())
     assert late.value.reason == "late_registration"
-    ledger.append(KIND_EVENT, "event:late", spec().to_payload())
+    ledger.append(KIND_EVENT, _ledger_id("event", "E"), spec().to_payload())  # the identifier the registry gives it
     refuses(ledger)  # at 1dca8d7: the criteria recorded inside the issuance window are read as registered
 
 
@@ -76,18 +84,22 @@ def test_y1_a_second_source_rule_row_does_not_replace_the_rule(tmp_path: Path) -
 
 
 def forged_rows() -> dict[str, tuple[str, str, object]]:
-    """Rows the registry would refuse, each under the kind it names and an identifier of the writer's choosing."""
+    """Rows the registry would refuse, each under the kind it names: under another identifier, or under the identifier
+    the registry gives it, so that the write rule, not the identifier, is what refuses it (issue #37, pass 7)."""
     content = archived()
+    foreign = archived(claim="not-occurred", source="other")  # other bytes than the archived YES
     wrong_claim = record("wrong", claim="not-occurred", published=96)  # its content evaluates to "occurred"
+    late, elsewhere = observation(200), {**observation(97).to_payload(), "source_id": "other"}
     return {
-        "content of an unregistered source": (KIND_CONTENT, "content:forged", archived(source="other").to_payload()),
+        "content of an unregistered source": (KIND_CONTENT, _ledger_id("content", foreign.sha256), foreign.to_payload()),
         "content under another identifier": (KIND_CONTENT, "content:other-id", content.to_payload()),
         "record under another identifier": (KIND_RECORD, "record:other-id", record("other", published=96).record.to_payload()),
-        "record whose content disagrees": (KIND_RECORD, "record:wrong",
+        "record whose content disagrees": (KIND_RECORD, _ledger_id("record", "wrong"),
                                            {**wrong_claim.record.to_payload(), "content_digest": content.sha256}),
-        "observation made after its receipt": (KIND_OBSERVATION, "observation:late", observation(200).to_payload()),
-        "observation of another source": (KIND_OBSERVATION, "observation:other",
-                                          {**observation(97).to_payload(), "source_id": "other"}),
+        "observation made after its receipt": (KIND_OBSERVATION, _ledger_id("observation", late.observation_id),
+                                               late.to_payload()),
+        "observation of another source": (KIND_OBSERVATION, _ledger_id("observation", str(elsewhere["observation_id"])),
+                                          elsewhere),
         "status declared after its receipt": (KIND_STATUS, "status:late", SourceStatus("src", True, day(200)).to_payload()),
         "status of an unregistered source": (KIND_STATUS, "status:other", SourceStatus("other", True, day(50)).to_payload()),
     }

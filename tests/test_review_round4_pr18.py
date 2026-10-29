@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from cpe.adjudication import adjudicate
 from cpe.adjudication.registry import KIND_DEFECT
 from cpe.canonical import JsonValue
@@ -34,8 +36,10 @@ def test_4329838002_a_late_record_proving_expiry_decides_before_any_disposition(
 def test_4329838030_a_retry_after_the_disposition_commit_adds_no_duplicate_defect(tmp_path: Path) -> None:
     reg, clock, ledger = registry(tmp_path, 110)
     reg.submit_observation(observation(110))
+    clock.set(day(111))
+    assert reg.adjudicate("E").disposition == "RESOLVED_NO"  # committed before the late record exists
     clock.set(day(120))
-    submit(reg, record("late", occurrence=90, published=115, observed=115))
+    submit(reg, record("late", occurrence=90, published=115, observed=115))  # its defect is a side row
     original = ledger.append
 
     def dies_on_the_first_defect_row(kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
@@ -46,11 +50,10 @@ def test_4329838030_a_retry_after_the_disposition_commit_adds_no_duplicate_defec
         return original(kind, record_id, payload, expected_head, admit)
 
     ledger.append = dies_on_the_first_defect_row  # type: ignore[method-assign, assignment]
-    try:
+    with pytest.raises(RuntimeError):  # the fault fires (issue #37, pass 7: it never did, defects being embedded)
         reg.adjudicate("E")
-    except RuntimeError:
-        pass
     ledger.append = original  # type: ignore[method-assign]
+    assert KIND_DEFECT not in [r.kind for r in ledger.records()]
     out = reg.adjudicate("E")
     assert out.disposition == "RESOLVED_NO" and [d.record_id for d in out.defects] == ["late"]
     replayed = reg.state().events["E"].disposition

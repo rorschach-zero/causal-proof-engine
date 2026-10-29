@@ -11,7 +11,7 @@ from typing import Any
 
 import pytest
 
-from cpe.capability.records import gate_ledger_id
+from cpe.capability.records import epoch_ledger_id, gate_ledger_id
 from cpe.capability import CapabilityGate, HostTimeSource, ManualTimeSource, replay_gate
 from cpe.capability.levels import permits, promotion_target, rank
 from cpe.capability.records import (
@@ -254,8 +254,10 @@ def test_a_ledger_that_never_stops_advancing_is_contended(rig: Rig) -> None:
 
 # replay of a malformed gate ledger ---------------------------------------------------------------------------------
 
-def malformed(rig: Rig, kind: str, payload: Any) -> str:
-    rig.ledger.append(kind, f"forged:{len(rig.ledger.records())}", payload)
+def malformed(rig: Rig, kind: str, payload: Any, record_id: str | None = None) -> str:
+    """The replay refusal of a row written under ``record_id``: the identifier the gate gives such a row, so that the
+    structural check, not the identifier check, is what refuses it (issue #37, pass 7)."""
+    rig.ledger.append(kind, record_id or f"forged:{len(rig.ledger.records())}", payload)
     return reason_of(lambda: replay_gate(rig.ledger.records(), 0, RULES, rig.ledger.local_anchors()))
 
 
@@ -277,30 +279,36 @@ def test_replay_names_every_malformed_gate_ledger(tmp_path: Path) -> None:
         return Rig(sub)
 
     r = fresh("index")
-    assert malformed(r, KIND_EPOCH, EpochRecord(1, 9, "start", reading).to_payload()) == "invalid_gate_ledger"
+    assert malformed(r, KIND_EPOCH, EpochRecord(1, 9, "start", reading).to_payload(),
+                     epoch_ledger_id(9, 1)) == "invalid_gate_ledger"
     r = fresh("twice")
     capability = issue(r.epoch(), "x")
     intent = IntentRecord(intent_ledger_id(capability), capability, "SIM_READ_ONLY", reading)
     r.ledger.append(KIND_INTENT, intent.intent_id, intent.to_payload())
+    # under its own identity the second row is a duplicate the ledger refuses; under another it is refused by either check
     assert malformed(r, KIND_INTENT, intent.to_payload()) == "invalid_gate_ledger"
     r = fresh("abort")
-    assert malformed(r, KIND_ABORT, AbortRecord("i-unknown", "x", reading).to_payload()) == "invalid_gate_ledger"
+    assert malformed(r, KIND_ABORT, AbortRecord("i-unknown", "x", reading).to_payload(),
+                     gate_ledger_id("gate-abort", "i-unknown")) == "invalid_gate_ledger"
     r = fresh("commit-after-abort")
     i2 = genuine_intent(r, "y", reading)
     r.ledger.append(KIND_ABORT, gate_ledger_id("gate-abort", i2), AbortRecord(i2, "gone", reading).to_payload())
     assert replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors()).aborted == {i2: "gone"}
-    assert malformed(r, KIND_COMMIT, CommitRecord(i2, 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
+    assert malformed(r, KIND_COMMIT, CommitRecord(i2, 1, "ab" * 32, reading).to_payload(),
+                     gate_ledger_id("gate-commit", i2)) == "invalid_gate_ledger"
     r = fresh("abort-after-commit")
     i3 = genuine_intent(r, "z", reading)
     anchor = r.ledger.anchor()
     r.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", i3),
                     CommitRecord(i3, anchor.prefix_length, anchor.digest, reading).to_payload())
     assert i3 in replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors()).commits
-    assert malformed(r, KIND_ABORT, AbortRecord(i3, "late", reading).to_payload()) == "invalid_gate_ledger"
+    assert malformed(r, KIND_ABORT, AbortRecord(i3, "late", reading).to_payload(),
+                     gate_ledger_id("gate-abort", i3)) == "invalid_gate_ledger"
     r = fresh("old-epoch")
     i4 = genuine_intent(r, "w", reading)
     r.gate.demote("rotate")
-    assert malformed(r, KIND_COMMIT, CommitRecord(i4, 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
+    assert malformed(r, KIND_COMMIT, CommitRecord(i4, 1, "ab" * 32, reading).to_payload(),
+                     gate_ledger_id("gate-commit", i4)) == "invalid_gate_ledger"
 
 
 def test_a_receipt_equal_to_the_expiry_is_expired(rig: Rig) -> None:

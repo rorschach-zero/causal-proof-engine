@@ -60,23 +60,25 @@ def test_4334622042_a_late_public_occurrence_corrects_the_stored_knowable_time(t
 
 @pytest.mark.parametrize("kind", ["observation", "status", "record"])
 def test_4334622048_evidence_is_checked_against_the_appended_receipt(tmp_path: Path, kind: str) -> None:
-    """The submission's own clock sample reads 111, the append's 109 (above the high-water mark): evidence at 110
-    is refused at that receipt or admitted at a receipt not before it, never admitted at 109."""
+    """The append's clock reads 109 (above the high-water mark) and, for a record, the submission's own clock sample
+    before it reads 111: evidence at 110 is refused at that receipt, never admitted at 109. An observation and a
+    status take no sample before the append, so the append's is the only reading (issue #37, pass 7: with both
+    readings queued for them, the 109 one was never read)."""
     clock = StepClock(day(1))
     reg = registry(tmp_path, clock)
     clock.set(day(100))
     if kind == "record":
         reg.archive_content(archived())
-    clock.queue = [day(111), day(109)]
-    try:
+    clock.queue = [day(111), day(109)] if kind == "record" else [day(109)]
+    with pytest.raises(Refusal) as refused:
         if kind == "observation":
             reg.submit_observation(observation(110))
         elif kind == "status":
             reg.declare_source_status(SourceStatus("src", True, day(110)))
         else:
             reg.submit_record(record("r", occurrence=95, published=110).record)
-    except Refusal as refused:
-        assert refused.reason == "evidence_after_receipt"
+    assert refused.value.reason == "evidence_after_receipt"
+    assert clock.queue == []  # every queued reading was read: the receipt was 109
     clock.queue = []
     clock.set(day(112))
     reg.adjudicate("E")  # replay and adjudication accept every row the ledger holds

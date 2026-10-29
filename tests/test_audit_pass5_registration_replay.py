@@ -12,6 +12,7 @@
 Every test but the last failed on the pass-5 commit; the last checks that the API's own ledger still replays."""
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -71,8 +72,14 @@ def test_x1_a_cluster_row_after_e_i_refuses_the_ledger(tmp_path: Path) -> None:
     registry.register_arm_version(arm("FULL-1", "2026-01-03", ["A-1"]))
     registry.commit_base_rate(BaseRate("RC-1", 0.2))
     registry.log_candidate(CandidateEntry("cand-E-1", "E-1", "src", day(1), "registered", "predicate match"))
-    clock.set(day(60))  # after e_i (not_before, day 50): register_cluster refuses registration_after_e_i
-    late = registration([spec("E-1")])
+    # Received at e_i (not_before, day 50), with the issuance window [50, 50] not yet open before it, so that
+    # registration_after_e_i is the one rule that refuses the row (issue #37, pass 7)
+    at_e_i = replace(spec("E-1", issuance=(49, 50)), issuance_open=day(50), evidence_cutoff=day(50))
+    clock.set(day(50))
+    with pytest.raises(Refusal) as online:
+        registry.register_cluster(registration([at_e_i]))
+    assert online.value.reason == "registration_after_e_i"
+    late = registration([at_e_i])
     ledger.append(KIND_CLUSTER, _ledger_id("cluster", "C-1"), late.to_payload())
     refuses(ledger)  # at b34c721: E-1 was registered, after its outcome could be known (RC-138)
 

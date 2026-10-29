@@ -29,6 +29,11 @@ FORBIDDEN_MODULES: frozenset[str] = frozenset({
     "posix", "nt", "_posixsubprocess", "_winapi", "_socket", "_ssl",
     # ``concurrent.futures.ProcessPoolExecutor`` spawns processes (issue #37, pass 6 B2).
     "concurrent",
+    # Facilities whose own interface spawns a process or serves the network (issue #37, pass 7 B3): ``_ctypes`` beneath
+    # ``ctypes`` (a foreign-function call reaches ``system``), ``_bootsubprocess`` (a ``Popen``, Python 3.11),
+    # ``distutils`` (``distutils.spawn``, Python 3.11), ``ensurepip`` and ``venv`` (pip in a subprocess), ``pydoc``
+    # (``browse`` serves HTTP, ``pipepager`` spawns) and ``compileall`` (``compile_dir(workers=...)``, a process pool).
+    "_ctypes", "_bootsubprocess", "distutils", "ensurepip", "venv", "pydoc", "compileall",
 })
 # Submodules that are network or process facilities under a package that is not one: the socket, HTTP, SMTP and syslog
 # handlers of ``logging.handlers`` and the socket server of ``logging.config.listen`` (issue #37, pass 6 B2).
