@@ -198,6 +198,8 @@ class AsOfReader:
 
     def series(self, entity: str, feature: str, as_of: datetime | None = None) -> AsOfSeries:
         """Per observation time, the vintage with the greatest ``available_at`` at or before the as-of time."""
+        entity = require_identifier(entity, "entity")  # typed, never a TypeError (issue #37, pass 5)
+        feature = require_identifier(feature, "feature")  # typed, never a TypeError (issue #37, pass 5)
         cut = self._bounded(as_of)
         latest: dict[datetime, FeatureRow] = {}
         for row in self._store._rows():
@@ -211,6 +213,9 @@ class AsOfReader:
 
     def row(self, entity: str, feature: str, vintage_id: str, as_of: datetime | None = None) -> FeatureRow:
         """One vintage, refused unless it was available at the as-of time; an unknown vintage is refused alike."""
+        entity = require_identifier(entity, "entity")  # typed, never a TypeError (issue #37, pass 5)
+        feature = require_identifier(feature, "feature")  # typed, never a TypeError (issue #37, pass 5)
+        vintage_id = require_identifier(vintage_id, "vintage_id")  # typed, never a TypeError (issue #37, pass 5)
         cut = self._bounded(as_of)
         for row in self._store._rows():
             if (row.entity, row.feature, row.vintage_id) == (entity, feature, vintage_id) and row.available_at <= cut:

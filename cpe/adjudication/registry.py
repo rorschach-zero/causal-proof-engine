@@ -392,6 +392,7 @@ class AdjudicationRegistry:
         """Adjudicate the event at the ledger's clock. A final disposition is written once, against the chain head
         the decision was computed on, and never rewritten; a record that arrives after it can only add a
         source-latency defect (RC-88)."""
+        event_id = require_identifier(event_id, "event_id")  # typed, never a TypeError (issue #37, pass 5)
         with self._lock:
             for _ in range(8):
                 state = self.state()

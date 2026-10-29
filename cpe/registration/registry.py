@@ -27,7 +27,7 @@ from cpe.registration.records import (
 )
 from cpe.registration.seeds import derive_seed
 from cpe.schemas import ArmVersion, EventSpec, Forecast, effective_cutoff
-from cpe.schemas.common import Payload
+from cpe.schemas.common import Payload, require_identifier
 
 KIND_ARM_VERSION = "arm_version"
 KIND_CUTOFF_CORRECTION = "cutoff_correction"
@@ -487,6 +487,7 @@ class RegistrationRegistry:
 
     def arm_version(self, version_id: str) -> ArmVersion:
         """The version as registered, with any correction made before its first registration applied."""
+        version_id = require_identifier(version_id, "version_id")  # typed, never a TypeError (issue #37, pass 5)
         version = self.state().arm_versions.get(version_id)
         if version is None:
             raise Refusal("unknown_arm_version", version_id)
@@ -553,6 +554,7 @@ class RegistrationRegistry:
         return self._write(decide)
 
     def event(self, event_id: str) -> EventSpec:
+        event_id = require_identifier(event_id, "event_id")  # typed, never a TypeError (issue #37, pass 5)
         spec = self.state().events.get(event_id)
         if spec is None:
             raise Refusal("unknown_event", f"{event_id} is not registered")
@@ -590,6 +592,7 @@ class RegistrationRegistry:
     def forecasts_of(self, event_id: str) -> tuple[ReceivedForecast, ...]:
         """The event's forecasts, every one with its receipt; sealed until the issuance window has closed, so that
         no arm reads another's forecast while it can still submit (RC-109)."""
+        event_id = require_identifier(event_id, "event_id")  # typed, never a TypeError (issue #37, pass 5)
         state = self.state()
         spec = state.events.get(event_id)
         if spec is None:
@@ -606,6 +609,7 @@ class RegistrationRegistry:
         """Every (arm, slot) of the event at the ledger clock: filled, open, or, after the issuance close, an
         abstention; a filled slot's value is shown only after the close; the baseline slot carries the committed
         base rate (RC-109; ``18`` M-5 slot state)."""
+        event_id = require_identifier(event_id, "event_id")  # typed, never a TypeError (issue #37, pass 5)
         state = self.state()
         spec = state.events.get(event_id)
         if spec is None:
@@ -682,6 +686,7 @@ class RegistrationRegistry:
         the register was then not anchored before the round of every calibration record, and every claim is
         exploratory (RC-311, ``18`` M-1 (i)). The status does not change: it was exploratory from the anchor on, and
         the registry learns the round's publication time when the round is supplied (issue #37, pass 3 F4)."""
+        claim_id = require_identifier(claim_id, "claim_id")  # typed, never a TypeError (issue #37, pass 5)
         state = self.state()
         if claim_id not in state.claims:
             raise Refusal("unknown_claim", claim_id)
@@ -797,6 +802,7 @@ class RegistrationRegistry:
         return record, seed
 
     def seed_of(self, calibration_record_id: str) -> str:
+        calibration_record_id = require_identifier(calibration_record_id, "calibration_record_id")  # typed, never a TypeError (issue #37, pass 5)
         seed = self.state().seeds.get(calibration_record_id)
         if seed is None:
             raise Refusal("no_seed", f"{calibration_record_id} has no beacon output yet; no draw before the round (RC-187)")
