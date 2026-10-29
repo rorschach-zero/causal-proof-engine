@@ -544,14 +544,14 @@ cpe.capability.gate.xǁCapabilityGateǁ_intent_id__mutmut_1	gap	hand	the ledger 
 cpe.capability.gate.xǁCapabilityGateǁ_intent_id__mutmut_4	gap	hand	the ledger identifier format is a contract (owner decision, delegated to the coordinator on 2026-10-22, finding 4347648529) and this mutant changes the identifier a record is written under; golden-identifier tests are queued for the whole-codebase audit
 cpe.capability.gate.xǁCapabilityGateǁ_intent_id__mutmut_7	gap	hand	the ledger identifier format is a contract (owner decision, delegated to the coordinator on 2026-10-22, finding 4347648529) and this mutant changes the identifier a record is written under; golden-identifier tests are queued for the whole-codebase audit
 cpe.capability.gate.xǁCapabilityGateǁ_intent_id__mutmut_8	gap	hand	the ledger identifier format is a contract (owner decision, delegated to the coordinator on 2026-10-22, finding 4347648529) and this mutant changes the identifier a record is written under; golden-identifier tests are queued for the whole-codebase audit
-cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_13	text	rule	assigned to detail
+cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_13	text	hand	the drift figure inside the discontinuity detail: any non-empty detail rotates alike and the figure is message text only
 cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_19	text	rule	text argument of log.warning
 cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_20	text	rule	text argument of log.warning
 cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_21	text	rule	text argument of log.warning
 cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_22	text	rule	text argument of log.warning
 cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_25	text	rule	text argument of Refusal
 cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_27	text	rule	text argument of Refusal
-cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_5	text	rule	assigned to detail
+cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_5	equivalent	hand	an empty detail and None are both false: detail is read as the discontinuity condition and as message text, and no discontinuity leaves it unset
 cpe.capability.gate.xǁCapabilityGateǁ_rotate__mutmut_16	equivalent	hand	the epoch identifier is random either way; its width changes only the probability of a repeat
 cpe.capability.gate.xǁCapabilityGateǁ_rotate__mutmut_19	gap	hand	the ledger identifier format is a contract (owner decision, delegated to the coordinator on 2026-10-22, finding 4347648529) and this mutant changes the identifier a record is written under; golden-identifier tests are queued for the whole-codebase audit
 cpe.capability.gate.xǁCapabilityGateǁ_rotate__mutmut_20	gap	hand	the ledger identifier format is a contract (owner decision, delegated to the coordinator on 2026-10-22, finding 4347648529) and this mutant changes the identifier a record is written under; golden-identifier tests are queued for the whole-codebase audit

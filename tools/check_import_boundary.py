@@ -34,6 +34,10 @@ FORBIDDEN_MODULES: frozenset[str] = frozenset({
     # ``distutils`` (``distutils.spawn``, Python 3.11), ``ensurepip`` and ``venv`` (pip in a subprocess), ``pydoc``
     # (``browse`` serves HTTP, ``pipepager`` spawns) and ``compileall`` (``compile_dir(workers=...)``, a process pool).
     "_ctypes", "_bootsubprocess", "distutils", "ensurepip", "venv", "pydoc", "compileall",
+    # ``antigravity`` opens a web browser when imported; ``pipes`` (``Template.open``, ``os.popen``) and ``mailcap``
+    # (``os.system`` in its test helpers) spawn processes, Python 3.11 (issue #37, pass 9 P9-7). The test of P9-7 runs
+    # these rules over the whole standard library of the running interpreter, so that the next such module is found.
+    "antigravity", "pipes", "mailcap",
 })
 # Submodules that are network or process facilities under a package that is not one: the socket, HTTP, SMTP and syslog
 # handlers of ``logging.handlers`` and the socket server of ``logging.config.listen`` (issue #37, pass 6 B2).
