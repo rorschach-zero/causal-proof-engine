@@ -216,8 +216,8 @@ class Ledger:
         same transaction as the record, so a rollback between the sample and the append cannot let a later record
         fall below a wall time the ledger already holds (``17`` item 2 "Clock", RC-37, RC-65; issue #37, pass 6
         Codex 6-3)."""
-        require_identifier(kind, "kind")
-        require_identifier(record_id, "record_id")
+        kind = require_identifier(kind, "kind")  # the plain text, as the row persists it (issue #37, pass 8)
+        record_id = require_identifier(record_id, "record_id")
         observed_stamp = None if observed is None else format_timestamp(observed)
         with self._lock:
             if expected_head is not None and self._state.head != expected_head:
@@ -230,8 +230,8 @@ class Ledger:
                 substitute = admit(parse_timestamp(receipt_time, "receipt_time"))
                 if substitute is not None:
                     kind, record_id, payload = substitute
-                    require_identifier(kind, "kind")
-                    require_identifier(record_id, "record_id")
+                    kind = require_identifier(kind, "kind")
+                    record_id = require_identifier(record_id, "record_id")
             seq = self._state.count + 1
             payload_text = canonical_bytes(payload).decode("ascii")
             canonical_payload: JsonValue = json.loads(payload_text)

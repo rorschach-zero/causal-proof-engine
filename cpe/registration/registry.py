@@ -104,6 +104,7 @@ class _State:
     # Beacon rounds refused because the register was not anchored before them: each one shows that a round bound to
     # a Phase 1 calibration record was published at that time (RC-311; issue #37, pass 3 F4).
     refused_rounds: dict[str, BeaconOutput] = field(default_factory=dict)
+    refused_reasons: dict[str, str] = field(default_factory=dict)  # the reason each refused round was written with
     local_anchors: tuple[Anchor, ...] = ()  # read with the snapshot, never by a decision under the ledger's lock
     pending_anchors: tuple[Anchor, ...] = ()  # attempts not yet confirmed, read with the snapshot
 
@@ -227,6 +228,7 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             output = BeaconOutput.from_payload(row["output"])
             _check_refused_round(record, output, row["reason"], state)
             state.refused_rounds[output.calibration_record_id] = output
+            state.refused_reasons[output.calibration_record_id] = row["reason"]
     return state
 
 
@@ -332,6 +334,15 @@ def check_anchor_times(state: _State) -> None:
         if register_anchored_at is not None and register_anchored_at < output.published_at:
             raise Refusal("invalid_record", f"the refused round of {calibration_id} was published after the "
                           "register's anchor, so the registry would not have refused it (RC-311)")
+        # The registry names the calibration record's anchor first when the round preceded it too. A covering anchor
+        # only settles earlier, never later, so a round that followed the record's anchor when it was written still
+        # does; the other reason is not re-derived, because an attempt pending then may have settled earlier since
+        # (issue #37, pass 8 P8-7).
+        anchored_at = _anchor_time_covering(state.local_anchors, state.calibration_seq[calibration_id])
+        calibration_late = anchored_at is None or anchored_at >= output.published_at
+        if calibration_late and state.refused_reasons.get(calibration_id) == "register_not_anchored":
+            raise Refusal("invalid_record", f"the refused round of {calibration_id} preceded its calibration record's "
+                          "anchor, which the registry names first (RC-182, RC-304)")
 
 
 # Replay is closed (reading P6-R1): every registration kind is re-validated below or in check_anchor_times, another

@@ -36,9 +36,11 @@ from cpe.registration.registry import (
     KIND_REGISTER,
     KIND_ROUND_REFUSED,
     _ledger_id,
+    replay_state,
 )
 from cpe.registration.seeds import derive_seed
 from cpe.schemas import Capability
+from tests.rows import extended
 from tests.test_audit_pass3_claim_status import calibrated, claim
 from tests.test_capability import ENV, EVIDENCE, OTHER, OWNER, RELEASE, Rig, issue
 from tests.test_registration import clock, day, ledger, registry  # noqa: F401
@@ -203,10 +205,28 @@ def test_w2_a_second_register_row_confers_nothing(registry: RegistrationRegistry
     clock.set(day(11))
     ledger.anchor()
     assert registry.claim_status("claim-1") == "confirmatory"
-    ledger.append(KIND_REGISTER, "register-amended", ConfirmatoryRegister("reg-2", 2, ()).to_payload())
+    amended = ConfirmatoryRegister("reg-2", 2, ()).to_payload()
+    # Under the register's own identifier, so that the one-register rule decides, not the identifier (pass 8)
+    with pytest.raises(Refusal) as second:
+        replay_state(extended(ledger.records(), KIND_REGISTER, _ledger_id("register"), amended))
+    assert "is a second register" in second.value.detail
+    ledger.append(KIND_REGISTER, "register-amended", amended)
     clock.set(day(12))
     ledger.anchor()
     assert refusal_of(lambda: registry.claim_status("claim-1")) == "invalid_record"  # at c3d6233: "exploratory"
+
+
+def test_a_second_calibration_record_under_its_own_identifier_refuses_replay(registry: RegistrationRegistry,
+                                                                           ledger: Ledger, clock: ManualClock) -> None:
+    """The parametrized case below is refused by the binding check (claim-1 names cal-1, not cal-1b); this one by the
+    one-record rule, under the record's own identifier (pass 8). The rule has two clauses, the record seen and the
+    claim calibrated, and either refuses this row: a claim names exactly one record, so each is redundant with the
+    other and the binding check, and only removing both lets the row through."""
+    calibrated(registry, ledger, clock)
+    again = CalibrationRecord("cal-1", "claim-1", "block-t", 2000, 0.01, "beacon", "round-7").to_payload()
+    with pytest.raises(Refusal) as second:
+        replay_state(extended(ledger.records(), KIND_CALIBRATION, _ledger_id("calibration", "cal-1"), again))
+    assert "is not the one calibration record of its claim" in second.value.detail
 
 
 def test_w3_a_register_row_after_a_seeded_round_confers_nothing(registry: RegistrationRegistry, ledger: Ledger,
