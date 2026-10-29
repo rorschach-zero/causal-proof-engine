@@ -379,6 +379,8 @@ class Ledger:
         The restore refuses to run without an external store: a local anchor copy alone is self-attested, and a
         restore that trusts it could revive a rewritten history (T-18, RC-34).
         """
+        if external is None or not callable(getattr(external, "anchors", None)):  # typed (issue #37, pass 9)
+            raise Refusal("no_anchor_store", "a restore is verified against the external anchor store (T-18, RC-34)")
         ordered = tuple(records)
         replay(ordered)
         if len({record.record_id for record in ordered}) != len(ordered):  # the writer never holds two (issue #37)
