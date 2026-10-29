@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Literal, cast
 
+from cpe.canonical import plain_text
 from cpe.errors import Refusal
 from cpe.schemas import ClusterRecord, EventSpec
 from cpe.schemas.common import (
@@ -28,9 +29,9 @@ _CANDIDATE_KEYS = frozenset({"candidate_id", "event_id", "source_id", "listed_at
 
 
 def _choice(value: object, field: str, allowed: tuple[str, ...]) -> str:
-    if not isinstance(value, str) or value not in allowed:
+    if not isinstance(value, str) or plain_text(value) not in allowed:
         raise Refusal("invalid_choice", f"{field} must be one of {', '.join(allowed)}")
-    return value
+    return plain_text(value)
 
 
 @dataclass(frozen=True)

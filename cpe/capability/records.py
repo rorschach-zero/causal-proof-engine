@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from cpe.canonical import digest_of, require_hex_digest
+from cpe.canonical import digest_of, plain_text, require_hex_digest
 from cpe.capability.timesource import ClockReading
 from cpe.errors import Refusal
 from cpe.ledger.kinds import GATE_KINDS as GATE_KINDS
@@ -32,7 +32,7 @@ def _text(value: object, field: str) -> str:
     """A text field of a gate record, refused rather than coerced when it is not a string (issue #37, pass 3)."""
     if not isinstance(value, str):
         raise Refusal("invalid_text", f"{field} must be a string")
-    return value
+    return plain_text(value)
 
 
 def gate_ledger_id(prefix: str, *parts: str) -> str:

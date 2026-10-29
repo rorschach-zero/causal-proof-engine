@@ -229,11 +229,13 @@ def test_m8_a_source_listing_population_is_refused_and_claims_are_immutable(regi
         registry.register_claim(ClaimPreregistration("claim-2", "source_listing", "S-1", "holder", day(1), day(60), day(400),
                                                      "period-balanced", ("DESIGN_C",), ("L-1",), "cal-2"))
     assert refusal.value.reason == "non_confirmatory_population"
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as immutable:
         registry.register_claim(claim)
-    with pytest.raises(Refusal):
+    assert immutable.value.reason == "claim_immutable"  # not the reservation of its own record (pass 8)
+    with pytest.raises(Refusal) as family:
         ClaimPreregistration("claim-3", "fixed_question_set", "Q", "h", day(1), day(60), day(400), "period-balanced",
                              ("DESIGN_C", "A"), ("L-1",), "cal-3")
+    assert family.value.reason == "invalid_family"
 
 
 def test_m1_binding_register_and_beacon_seed(registry: RegistrationRegistry, ledger: Ledger, clock: ManualClock) -> None:

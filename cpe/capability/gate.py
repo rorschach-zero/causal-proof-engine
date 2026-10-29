@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
-from cpe.canonical import JsonValue, digest_of
+from cpe.canonical import JsonValue, digest_of, plain_text
 from cpe.capability.levels import ACTIONS, permits, promotion_target, rank
 from cpe.capability.records import (
     KIND_ABORT,
@@ -43,7 +43,7 @@ from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.ledger.store import Admit
 from cpe.schemas import Capability
-from cpe.schemas.common import as_persisted, require_digest
+from cpe.schemas.common import as_persisted, require_digest, require_identifier
 
 log = logging.getLogger("cpe.capability")
 
@@ -77,6 +77,8 @@ class CapabilityGate:
         if not finite or slew_tolerance_seconds <= 0:
             raise Refusal("invalid_tolerance", "the slew tolerance is a finite positive number of seconds (owner field)")
         release_digest = require_digest(release_digest, "release_digest")  # recorded with every epoch it opens
+        # every capability is checked against it as the intent persists it: the plain text (issue #37, pass 8 P8-5)
+        environment = require_identifier(environment, "environment")
         self._ledger = ledger
         self._verifier = verifier
         self._time = time_source
@@ -230,7 +232,10 @@ class CapabilityGate:
 
     def perform(self, action: str) -> Record:
         """Authorise ``action`` against the replayed gate state, never against an object the caller holds (RC-46);
-        the check and its reading are persisted before the verdict."""
+        the check and its reading are persisted before the verdict. The action is decided as the check persists it,
+        its plain text (issue #37, pass 8 P8-1)."""
+        if isinstance(action, str):
+            action = plain_text(action)
         verdict: tuple[str, str] = ("admitted", "")
 
         def decide(state: GateState, now: datetime) -> Write:

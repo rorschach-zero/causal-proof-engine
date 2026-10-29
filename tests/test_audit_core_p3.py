@@ -54,9 +54,13 @@ def test_restore_refuses_a_duplicate_record_id_with_a_typed_refusal(tmp_path: Pa
 
 def test_a_lone_surrogate_signature_is_an_invalid_signature(rig: Rig) -> None:
     """signing.py:444 encodes the signature as UTF-8; a lone surrogate (a valid identifier per require_identifier)
-    raises UnicodeEncodeError inside the decision, so nothing is persisted and the refusal is untyped."""
+    raises UnicodeEncodeError inside the decision, so nothing is persisted and the refusal is untyped. Since pass 4 the
+    identifier check refuses such a signature before the decision (``as_persisted``), and nothing is written; the
+    verifier refuses it too (pass 8: the test named one of two reasons it could not tell apart)."""
     forged = replace(issue(rig.epoch(), "s"), signature="\ud800")
-    assert rig.refused(forged) in ("invalid_signature", "invalid_identifier")
+    written = len(rig.ledger.records())
+    assert rig.refused(forged) == "invalid_identifier"
+    assert len(rig.ledger.records()) == written
     assert not OWNER.verify(b"message", "\ud800")
 
 

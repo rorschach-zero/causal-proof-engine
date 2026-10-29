@@ -18,11 +18,12 @@ from pathlib import Path
 import pytest
 
 from cpe.adjudication import AdjudicationRegistry
-from cpe.adjudication.registry import KIND_DEFECT, KIND_DISPOSITION, KIND_KNOWABLE, _ledger_id
+from cpe.adjudication.registry import KIND_DEFECT, KIND_DISPOSITION, KIND_KNOWABLE, _ledger_id, replay_state
 from cpe.adjudication.rules import adjudicate
 from cpe.clock import ManualClock, format_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
+from tests.rows import extended
 from tests.test_adjudication import day, observation, record, rule, spec, submit
 
 
@@ -47,8 +48,14 @@ def refuses(ledger: Ledger) -> None:
 def test_x2_a_second_disposition_row_refuses_the_ledger(tmp_path: Path) -> None:
     ledger, _, registry = stored_no(tmp_path)
     forged = replace(registry.adjudicate("E"), disposition="RESOLVED_YES")
+    # Under the disposition's own identifier, so that the one-disposition rule decides, not the identifier (pass 8):
+    # the ledger cannot hold the row, and replay of the records with it must refuse them.
+    second = extended(ledger.records(), KIND_DISPOSITION, _ledger_id("disposition", "E"), forged.to_payload())
+    with pytest.raises(Refusal) as refused:
+        replay_state(second)  # at b34c721: RESOLVED_YES
+    assert "is not the one disposition of its event" in refused.value.detail
     ledger.append(KIND_DISPOSITION, "disposition:forged", forged.to_payload())
-    refuses(ledger)  # at b34c721: RESOLVED_YES
+    refuses(ledger)  # under another identifier, refused by it
 
 
 def test_x2_a_disposition_row_the_records_do_not_give_refuses_the_ledger(tmp_path: Path) -> None:
