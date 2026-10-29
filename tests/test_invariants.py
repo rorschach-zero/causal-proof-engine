@@ -333,16 +333,10 @@ def write_registration(ledger: Ledger, row: Record) -> None:
     REGISTRATION_WRITES[row.kind](RegistrationRegistry(ledger), row.payload)
 
 
-# Disagreements reproduced at the pass-8 pin c37d048, each a finding of pass 8 (issue #37) with its open fix. A module's
-# test fails on any other disagreement; the finding's own test is a strict expected failure until its fix lands, and
-# the fix removes both the entry and the mark.
-KNOWN: dict[str, Callable[[str], bool]] = {
-    # P8-6 (P3): replay reads a source-latency defect's detail as written; the write path writes one text
-    "P8-6": lambda line: line.startswith(K.KIND_DEFECT) and "('detail',)" in line,
-    # P8-7 (P3): replay reads a refused round's reason as written; the write path names the first anchor it follows
-    "P8-7": lambda line: line.startswith(K.KIND_ROUND_REFUSED) and "('reason',)" in line
-    or line.startswith(K.KIND_ROUND_REFUSED) and "('output', 'published_at')" in line,
-}
+# Disagreements known to be open, each a finding of issue #37 with its open fix: a module's test fails on any other
+# disagreement, and the fix removes the entry. None is open: P8-6 and P8-7, found here at the pass-8 pin c37d048, were
+# fixed by PR #90.
+KNOWN: dict[str, Callable[[str], bool]] = {}
 
 
 def unknown(found: list[str]) -> list[str]:
@@ -362,12 +356,6 @@ def registration_disagreements(tmp_path: Path) -> list[str]:
 def test_invariant_3_registration(tmp_path: Path) -> None:
     found = unknown(registration_disagreements(tmp_path))
     assert not found, "\n".join(found[:20]) + f"\n({len(found)} in all)"
-
-
-@pytest.mark.xfail(strict=True, reason="P8-7 (P3): a refused round's reason is read as written; fix pending")
-def test_invariant_3_p8_7_a_refused_round_names_the_anchor_it_follows(tmp_path: Path) -> None:
-    found = [line for line in registration_disagreements(tmp_path) if KNOWN["P8-7"](line)]
-    assert not found, "\n".join(found)
 
 
 # Adjudication --------------------------------------------------------------------------------------------------
@@ -409,12 +397,6 @@ def adjudication_disagreements(tmp_path: Path) -> list[str]:
 def test_invariant_3_adjudication(tmp_path: Path) -> None:
     found = unknown(adjudication_disagreements(tmp_path))
     assert not found, "\n".join(found[:20]) + f"\n({len(found)} in all)"
-
-
-@pytest.mark.xfail(strict=True, reason="P8-6 (P3): a source-latency defect's detail is read as written; fix pending")
-def test_invariant_3_p8_6_a_defect_carries_the_text_its_registry_writes(tmp_path: Path) -> None:
-    found = [line for line in adjudication_disagreements(tmp_path) if KNOWN["P8-6"](line)]
-    assert not found, "\n".join(found)
 
 
 # Point in time -------------------------------------------------------------------------------------------------
