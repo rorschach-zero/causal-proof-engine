@@ -43,7 +43,7 @@ from cpe.registration.records import (
 )
 from cpe.registration.seeds import derive_seed
 from cpe.schemas import ArmVersion, EventSpec, Forecast, effective_cutoff
-from cpe.schemas.common import Payload, require_identifier, require_keys, require_mapping
+from cpe.schemas.common import Payload, as_persisted, require_identifier, require_keys, require_mapping
 
 
 SlotStatus = Literal["filled", "open", "abstention", "baseline"]
@@ -104,20 +104,6 @@ class _State:
     refused_rounds: dict[str, BeaconOutput] = field(default_factory=dict)
     local_anchors: tuple[Anchor, ...] = ()  # read with the snapshot, never by a decision under the ledger's lock
     pending_anchors: tuple[Anchor, ...] = ()  # attempts not yet confirmed, read with the snapshot
-
-
-def _payload_of(value: ArmVersion | CutoffCorrection | BaseRate | ClusterRegistration | VoidRequest
-                | ConfirmatoryRegister | CalibrationRecord | BeaconOutput | CandidateEntry | Forecast
-                | ClaimPreregistration) -> Payload:
-    """The payload a write would persist, for validation in full as replay will read it: a directly constructed
-    object that bypasses its schema is refused before anything is written, never committed as a row that every
-    later replay refuses (issue #37, Codex 5). An object whose fields cannot be serialised is refused alike."""
-    try:
-        return value.to_payload()
-    except Refusal:
-        raise
-    except Exception as error:
-        raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
 
 
 def _consumption_closure(version_id: str, versions: dict[str, ArmVersion]) -> set[str]:
@@ -509,7 +495,7 @@ class RegistrationRegistry:
     # arm versions -------------------------------------------------------------------------------------------
 
     def register_arm_version(self, version: ArmVersion) -> Record:
-        version = ArmVersion.from_payload(_payload_of(version))
+        version = as_persisted(version, ArmVersion.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             admit_arm_version(state, version)
@@ -531,7 +517,7 @@ class RegistrationRegistry:
         correction amends the version's declared cutoff and evidence in place; after it, the version and every
         version that consumes it are withdrawn from further registrations and the claim consequence (RC-150)
         is item 3's."""
-        correction = CutoffCorrection.from_payload(_payload_of(correction))
+        correction = as_persisted(correction, CutoffCorrection.from_payload)
         registered_under = False
 
         def decide(state: _State, now: datetime) -> Write:
@@ -548,7 +534,7 @@ class RegistrationRegistry:
     # candidate log ------------------------------------------------------------------------------------------
 
     def log_candidate(self, entry: CandidateEntry) -> Record:
-        entry = CandidateEntry.from_payload(_payload_of(entry))  # validated in full, a naive time is a Refusal
+        entry = as_persisted(entry, CandidateEntry.from_payload)  # validated in full, a naive time is a Refusal
 
         def decide(state: _State, now: datetime) -> Write:
             admit_candidate(state, entry, now)
@@ -566,7 +552,7 @@ class RegistrationRegistry:
     # clusters and events ------------------------------------------------------------------------------------
 
     def commit_base_rate(self, rate: BaseRate) -> Record:
-        rate = BaseRate.from_payload(_payload_of(rate))
+        rate = as_persisted(rate, BaseRate.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             admit_base_rate(state, rate)
@@ -577,7 +563,7 @@ class RegistrationRegistry:
     def register_cluster(self, registration: ClusterRegistration) -> Record:
         """Write the registration record, decided against its own receipt (RC-87, RC-138). Validated as replay
         will read it, so every time is compared in UTC as it is persisted (issue #37, Codex 6)."""
-        registration = ClusterRegistration.from_payload(_payload_of(registration))
+        registration = as_persisted(registration, ClusterRegistration.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             admit_cluster(state, registration, now)
@@ -594,7 +580,7 @@ class RegistrationRegistry:
 
     def request_void(self, request: VoidRequest) -> Record:
         """Logged with its receipt time; it changes no state (RC-85, RC-87)."""
-        request = VoidRequest.from_payload(_payload_of(request))
+        request = as_persisted(request, VoidRequest.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             admit_void_request(state, request)
@@ -608,7 +594,7 @@ class RegistrationRegistry:
         """Admit a forecast, validated in full as its payload will be replayed. A receipt inside the issuance
         window fills its (event, arm, slot); one outside the window is kept, labelled by its receipt, and fills
         nothing (RC-75, RC-87)."""
-        forecast = Forecast.from_payload(_payload_of(forecast))
+        forecast = as_persisted(forecast, Forecast.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             return KIND_FORECAST, admit_forecast(state, forecast), forecast.to_payload()
@@ -667,7 +653,7 @@ class RegistrationRegistry:
         """A claim is recorded after its question set is fixed and before its evaluation period begins; its
         fields are then fixed (``18`` M-8). Validated in full as its payload will be replayed; its calibration
         record identifier is reserved for it alone (``18`` M-1 (i))."""
-        claim = ClaimPreregistration.from_payload(_payload_of(claim))
+        claim = as_persisted(claim, ClaimPreregistration.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             if claim.population_kind != "fixed_question_set":
@@ -689,7 +675,7 @@ class RegistrationRegistry:
     def anchor_confirmatory_register(self, register: ConfirmatoryRegister) -> Record:
         """Phase 1's one register, written once, before any beacon output exists and before the evaluation period
         of every claim it lists, naming registered claims only (RC-311, RC-315)."""
-        register = ConfirmatoryRegister.from_payload(_payload_of(register))
+        register = as_persisted(register, ConfirmatoryRegister.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             if state.register is not None:
@@ -734,7 +720,7 @@ class RegistrationRegistry:
     def record_calibration(self, calibration: CalibrationRecord) -> Record:
         """One record per claim, bound both ways, recorded before the claim's evaluation period and before any
         beacon round (RC-304, RC-309)."""
-        calibration = CalibrationRecord.from_payload(_payload_of(calibration))
+        calibration = as_persisted(calibration, CalibrationRecord.from_payload)
 
         def decide(state: _State, now: datetime) -> Write:
             claim = state.claims.get(calibration.claim_id)
@@ -766,7 +752,7 @@ class RegistrationRegistry:
         for the record is refused; the seed is SHA-256(record ‖ value), derived here and never supplied
         (RC-187, RC-304, RC-311).
         """
-        output = BeaconOutput.from_payload(_payload_of(output))
+        output = as_persisted(output, BeaconOutput.from_payload)
         seed = ""
         refusal: Refusal | None = None
 

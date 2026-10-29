@@ -28,7 +28,7 @@ from cpe.ledger import Ledger, Record
 from cpe.ledger.kinds import KIND_ROW as KIND_ROW
 from cpe.ledger.kinds import POINT_IN_TIME_KINDS, owned
 from cpe.schemas.common import (
-    payload_of,
+    as_persisted,
     Payload,
     require_identifier,
     require_json,
@@ -150,7 +150,7 @@ class PointInTimeStore:
         the same (entity, feature, vintage id) is refused. ``available_at`` must not follow the receipt. Another
         writer on the same ledger that lands the vintage first is read back, not reported as a duplicate id
         (4335189771)."""
-        row = FeatureRow.from_payload(payload_of(row))  # validated as replay will read it; never an untyped crash
+        row = as_persisted(row, FeatureRow.from_payload)  # validated as replay will read it; never an untyped crash
         with self._lock:
             for attempt in range(2):
                 existing = replay_state(self._ledger.records()).rows.get((row.entity, row.feature, row.vintage_id))

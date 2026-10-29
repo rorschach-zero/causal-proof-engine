@@ -43,7 +43,7 @@ from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.ledger.store import Admit
 from cpe.schemas import Capability
-from cpe.schemas.common import payload_of, require_digest
+from cpe.schemas.common import as_persisted, require_digest
 
 log = logging.getLogger("cpe.capability")
 
@@ -298,8 +298,8 @@ class CapabilityGate:
         digest the capability binds. Four recoverable steps: intent, anchor of the intent, commit record, anchor
         of the commit; the change takes effect at the commit record's position once that anchor is confirmed."""
         # validated in full, as it will be replayed; a field that cannot be serialised is a typed refusal (issue #37,
-        # pass 5), as for every registry's input
-        capability = Capability.from_payload(payload_of(capability))
+        # pass 5), as for every registry's input; checked as the plain values the intent persists (pass 7 G1)
+        capability = as_persisted(capability, Capability.from_payload)
         target = promotion_target(capability.capability)
         evidence_digest = digest_of(evidence)
         intent_id = self._intent_id(capability)
