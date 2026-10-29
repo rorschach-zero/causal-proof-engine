@@ -23,7 +23,7 @@ from cpe.adjudication import (
     cluster_knowable_time,
     evaluate,
 )
-from cpe.adjudication.registry import KIND_CONTENT, replay_state
+from cpe.adjudication.registry import KIND_CONTENT, _ledger_id, replay_state
 from cpe.adjudication.rules import Adjudication
 from cpe.canonical import canonical_bytes
 from cpe.errors import Refusal
@@ -222,8 +222,13 @@ def test_a_registry_adjudication_on_a_ledger_that_never_stops_advancing_is_conte
 def test_adjudication_needs_the_rule_of_the_event_source(tmp_path: Path) -> None:
     reg, clock, ledger = registry(tmp_path, 1)
     s = spec(event_id="E3")
-    ledger.append("event_spec", "forged-event", replace(s, predicate=replace(s.predicate, source="none")).to_payload())
-    assert refused(reg.adjudicate, "E3") == "unknown_source"
+    ledger.append("event_spec", _ledger_id("event", "E3"),
+                  replace(s, predicate=replace(s.predicate, source="none")).to_payload())
+    # Since pass 6 Y1 the row itself refuses the ledger, as register_event refuses it (it was "unknown_source" from
+    # the adjudication before): replay admits criteria only under their identifier, after the rule they name.
+    with pytest.raises(Refusal) as refusal:
+        reg.adjudicate("E3")
+    assert refusal.value.reason == "invalid_record" and "unknown_source" in refusal.value.detail
 
 
 def test_replay_refuses_a_payload_that_is_not_a_mapping(tmp_path: Path) -> None:

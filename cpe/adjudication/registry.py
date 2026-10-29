@@ -106,17 +106,20 @@ def replay_state(records: tuple[Record, ...]) -> _State:
         payload = record.payload
         if not isinstance(payload, dict):
             raise Refusal("invalid_payload", f"{record.record_id}: a {record.kind} record carries a mapping")
+        receipt = parse_timestamp(record.receipt_time, "receipt_time")
         if record.kind == KIND_EVENT:
             spec = EventSpec.from_payload(payload)
+            _replayed(record, _ledger_id("event", spec.event_id), lambda: admit_event(state, spec, receipt))
             state.event(spec.event_id).spec = spec
         elif record.kind == KIND_RULE:
             rule = SourceRule.from_payload(payload)
+            _replayed(record, _ledger_id("rule", rule.source_id), lambda: admit_rule(state, rule))
             state.rules[rule.source_id] = rule
         elif record.kind == KIND_CONTENT:
             content = ArchivedContent.from_payload(payload)
-            receipt = parse_timestamp(record.receipt_time, "receipt_time")
             if content.available_at > receipt:  # the bound archive_content enforces online (PR #32 4335196673)
                 raise Refusal("evidence_after_receipt", f"{record.record_id}: content available after its receipt")
+            _replayed(record, _ledger_id("content", content.sha256), lambda: admit_content(state, content))
             state.contents[content.sha256] = (content, receipt)
         elif record.kind == KIND_RECORD:
             resolution = ResolutionRecord.from_payload(payload)
@@ -124,17 +127,22 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             if archived is None:
                 raise Refusal("unknown_content", f"{resolution.record_id} names content the ledger does not hold "
                               "before it")
-            state.event(resolution.event_id).records.append(
-                ReceivedRecord(resolution, parse_timestamp(record.receipt_time, "receipt_time"), archived[0]))
+            received = ReceivedRecord(resolution, receipt, archived[0])
+            _replayed(record, _ledger_id("record", resolution.record_id), lambda: admit_record(state, received))
+            state.event(resolution.event_id).records.append(received)
         elif record.kind == KIND_OBSERVATION:
             observation = AbsenceObservation.from_payload(payload)
+            _replayed(record, _ledger_id("observation", observation.observation_id),
+                      lambda: admit_observation(state, observation, receipt))
             event = state.event(observation.event_id)
             event.observations.append(observation)
-            event.observation_receipts[observation.observation_id] = parse_timestamp(record.receipt_time, "receipt_time")
+            event.observation_receipts[observation.observation_id] = receipt
         elif record.kind == KIND_STATUS:
             status = SourceStatus.from_payload(payload)
-            state.status.setdefault(status.source_id, []).append(
-                (status, parse_timestamp(record.receipt_time, "receipt_time")))
+            # Not checked against its identifier: a ledger written before the UTC read-back holds identifiers formed
+            # from the offset as written (PR #54 review 4353163787); one status per source and instant is.
+            _replayed(record, record.record_id, lambda: admit_status(state, status, receipt))
+            state.status.setdefault(status.source_id, []).append((status, receipt))
         elif record.kind == KIND_DISPOSITION:
             adjudication = Adjudication.from_payload(payload)
             _check_disposition(record, adjudication, state)
@@ -174,13 +182,87 @@ def replay_state(records: tuple[Record, ...]) -> _State:
     return state
 
 
-# Replay admits a disposition, a source-latency defect and a knowable-time correction only as the registry writes them,
-# so that a row written through the ledger by anything else refuses the ledger rather than deciding an outcome or its
-# knowable time (issue #37, pass 5 X2; class W of pass 4 extended, reading P5-R1). Incidents decide nothing and are
-# read as written.
+# Replay admits every row only under the identifier its write path gives it and by the rule that path applies: the
+# criteria, the source rule, the archived content, the records, observations and statuses an outcome is judged
+# against (issue #37, pass 6 Y1), and the disposition, a source-latency defect and a knowable-time correction (pass 5
+# X2). A row written through the ledger by anything else refuses the ledger rather than deciding an outcome or its
+# knowable time (class W of pass 4, reading P5-R1). Incidents decide nothing and are read as written.
 
 def _invalid(record: Record, problem: str) -> Refusal:
     return Refusal("invalid_record", f"{record.kind} {record.record_id} {problem}")
+
+
+def _replayed(record: Record, expected_id: str, admit: Callable[[], None]) -> None:
+    """Replay of a row: written under the identifier its write path gives it, and admitted by the same rule."""
+    if record.record_id != expected_id:
+        raise _invalid(record, "is not written under the identifier its registry gives it")
+    try:
+        admit()
+    except Refusal as refusal:
+        raise _invalid(record, f"would have been refused when written ({refusal.reason}: {refusal.detail})") from None
+
+
+def admit_rule(state: _State, rule: SourceRule) -> None:
+    if rule.source_id in state.rules:
+        raise Refusal("rule_immutable", f"source {rule.source_id} already has a rule")
+
+
+def admit_event(state: _State, spec: EventSpec, receipt: datetime) -> None:
+    """The criteria are recorded once, after the source rule they name and before the issuance window opens."""
+    if state.event(spec.event_id).spec is not None:
+        raise Refusal("event_immutable", f"{spec.event_id} is already registered")
+    if spec.predicate.source not in state.rules:
+        raise Refusal("unknown_source", f"{spec.predicate.source} has no registered source rule (OD5)")
+    if receipt >= spec.issuance_open:  # the receipt is the time that counts (issue #37, C2)
+        raise Refusal("late_registration", f"{spec.event_id}: the criteria must be recorded before the issuance "
+                      "window opens")
+
+
+def admit_content(state: _State, content: ArchivedContent) -> None:
+    if content.source_id not in state.rules:
+        raise Refusal("unknown_source", f"{content.source_id} has no registered source rule (OD5)")
+    if content.sha256 in state.contents:
+        raise Refusal("content_conflict", f"content {content.sha256} is already archived")
+
+
+def admit_record(state: _State, received: ReceivedRecord) -> None:
+    """A record of a registered event and source, whose archived content evaluates to the claim it states, final
+    enough, with the publication time its source promises, and whose evidence precedes its receipt."""
+    record = received.record
+    spec = state.event(record.event_id).spec
+    if spec is None:
+        raise Refusal("unknown_event", f"{record.event_id} has no registered specification")
+    rule = state.rules.get(record.source_id)
+    if rule is None:
+        raise Refusal("unknown_source", f"{record.source_id} has no registered source rule (OD5)")
+    check_record_content(received, spec)
+    check_record_is_final_enough(record, spec, rule)
+    if rule.publishes_evidenced_times and record.evidenced_publication_time is None:
+        raise Refusal("missing_publication_time", f"{record.record_id}: the source evidences publication times")
+    check_record_chronology(received)
+
+
+def admit_observation(state: _State, observation: AbsenceObservation, receipt: datetime) -> None:
+    spec = state.event(observation.event_id).spec
+    if spec is None:
+        raise Refusal("unknown_event", f"{observation.event_id} has no registered specification")
+    if observation.source_id != spec.predicate.source:
+        raise Refusal("wrong_source", f"{observation.source_id} is not the resolution source of {spec.event_id}")
+    if observation.source_id not in state.rules:
+        raise Refusal("unknown_source", f"{observation.source_id} has no registered source rule (OD5)")
+    if observation.observed_at > receipt:
+        raise Refusal("evidence_after_receipt", f"{observation.observation_id}: evidenced after its receipt")
+
+
+def admit_status(state: _State, status: SourceStatus, receipt: datetime) -> None:
+    if status.source_id not in state.rules:
+        raise Refusal("unknown_source", f"{status.source_id} has no registered source rule (OD5)")
+    # One status per source and instant, whatever identifier an earlier version gave a row (PR #54 review 4353163787).
+    if any(held.declared_at == status.declared_at for held, _ in state.status.get(status.source_id, [])):
+        raise Refusal("duplicate_status", f"{status.source_id} already has a status declared at "
+                      f"{timestamp_payload(status.declared_at)}")
+    if status.declared_at > receipt:
+        raise Refusal("evidence_after_receipt", f"the status of {status.source_id}: evidenced after its receipt")
 
 
 def _rule_of(record: Record, state: _State, event_id: str) -> tuple[_EventState, EventSpec, SourceRule]:
@@ -230,15 +312,6 @@ def _check_correction(record: Record, event_id: str, cited_id: str, knowable: da
         raise _invalid(record, "names no record before it that makes the outcome knowable at that time (RC-146)")
 
 
-def _not_after(evidenced: datetime, what: str) -> Callable[[datetime], None]:
-    """An append's admission check: the evidence time is at or before the receipt the append assigns, not an
-    earlier clock sample (H1 review 4334622048)."""
-    def admit(receipt: datetime) -> None:
-        if evidenced > receipt:
-            raise Refusal("evidence_after_receipt", f"{what}: evidenced after its receipt")
-    return admit
-
-
 class AdjudicationRegistry:
     """Writes event specifications, source rules, records, observations and dispositions to the ledger; reads its
     state by replay only; takes every time from the ledger's clock; serialises its own read-decide-write."""
@@ -263,18 +336,10 @@ class AdjudicationRegistry:
                     if existing != spec:
                         raise Refusal("event_immutable", f"{spec.event_id} is registered with other criteria")
                     return
-                if spec.predicate.source not in state.rules:
-                    raise Refusal("unknown_source", f"{spec.predicate.source} has no registered source rule (OD5)")
-
-                def before_the_window(receipt: datetime) -> None:  # the receipt is the time that counts (issue #37, C2)
-                    if receipt >= spec.issuance_open:
-                        raise Refusal("late_registration", f"{spec.event_id}: the criteria must be recorded before "
-                                      "the issuance window opens")
-
-                before_the_window(self._ledger.now())
+                admit_event(state, spec, self._ledger.now())
                 try:
                     self._ledger.append(KIND_EVENT, _ledger_id("event", spec.event_id), spec.to_payload(),
-                                        admit=before_the_window)
+                                        admit=lambda receipt: admit_event(state, spec, receipt))
                     return
                 except Refusal as refusal:
                     if refusal.reason != "duplicate_record_id" or attempt:
@@ -340,34 +405,26 @@ class AdjudicationRegistry:
         record = _as_replayed(record, ResolutionRecord.from_payload)
         with self._lock:
             state = self.state()
-            spec = self._spec(state, record.event_id)
-            rule = state.rules.get(record.source_id)
-            if rule is None:
+            self._spec(state, record.event_id)
+            if record.source_id not in state.rules:
                 raise Refusal("unknown_source", f"{record.source_id} has no registered source rule (OD5)")
             archived = state.contents.get(record.content_digest)
             if archived is None:
                 raise Refusal("unknown_content", f"{record.record_id}: content {record.content_digest} is not archived")
             received = ReceivedRecord(record, self._ledger.now(), archived[0])
-            check_record_content(received, spec)
-            check_record_is_final_enough(record, spec, rule)
-            if rule.publishes_evidenced_times and record.evidenced_publication_time is None:
-                raise Refusal("missing_publication_time", f"{record.record_id}: the source evidences publication times")
-            check_record_chronology(received)
+            admit_record(state, received)
             return self._ledger.append(KIND_RECORD, _ledger_id("record", record.record_id), record.to_payload(),
-                                       admit=lambda receipt: check_record_chronology(replace(received, receipt=receipt)))
+                                       admit=lambda receipt: admit_record(state, replace(received, receipt=receipt)))
 
     def submit_observation(self, observation: AbsenceObservation) -> Record:
         observation = _as_replayed(observation, AbsenceObservation.from_payload)
         with self._lock:
             state = self.state()
-            spec = self._spec(state, observation.event_id)
-            if observation.source_id != spec.predicate.source:
-                raise Refusal("wrong_source", f"{observation.source_id} is not the resolution source of {spec.event_id}")
-            if observation.source_id not in state.rules:
-                raise Refusal("unknown_source", f"{observation.source_id} has no registered source rule (OD5)")
+            self._spec(state, observation.event_id)
+            admit_observation(state, observation, observation.observed_at)  # the rules but the receipt's, early
             return self._ledger.append(KIND_OBSERVATION, _ledger_id("observation", observation.observation_id),
-                                       observation.to_payload(), admit=_not_after(observation.observed_at,
-                                                                                   observation.observation_id))
+                                       observation.to_payload(),
+                                       admit=lambda receipt: admit_observation(state, observation, receipt))
 
     def declare_source_status(self, status: SourceStatus) -> Record:
         """One status per source and declared instant. The status is read as replay reads it, in UTC, before its
@@ -376,17 +433,9 @@ class AdjudicationRegistry:
         status = _as_replayed(status, SourceStatus.from_payload)
         with self._lock:
             state = self.state()
-            if status.source_id not in state.rules:
-                raise Refusal("unknown_source", f"{status.source_id} has no registered source rule (OD5)")
-            # One status per source and instant, whatever identifier an earlier version gave a row: a ledger written
-            # before the UTC read-back holds identifiers formed from the offset as written (PR #54 review
-            # 4353163787).
-            if any(held.declared_at == status.declared_at for held, _ in state.status.get(status.source_id, [])):
-                raise Refusal("duplicate_status", f"{status.source_id} already has a status declared at "
-                              f"{timestamp_payload(status.declared_at)}")
+            admit_status(state, status, status.declared_at)  # the rules but the receipt's, early
             return self._ledger.append(KIND_STATUS, _ledger_id("status", status.source_id, status.declared_at.isoformat()),
-                                       status.to_payload(), admit=_not_after(status.declared_at,
-                                                                             f"the status of {status.source_id}"))
+                                       status.to_payload(), admit=lambda receipt: admit_status(state, status, receipt))
 
     def adjudicate(self, event_id: str) -> Adjudication:
         """Adjudicate the event at the ledger's clock. A final disposition is written once, against the chain head
