@@ -183,13 +183,23 @@ Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68
 | E1 | **P1** | Gate replay took a `gate_epoch` row's epoch identifier as written: a repeated epoch revived a capability signed for it and never presented, acknowledged at `SIM_READ_ONLY` (RC-73, RC-100, RC-123) | PR #75 |
 | A8 | P2 | A clock rollback between `adjudicate`'s clock read and the disposition append wrote `adjudicated_at` after the receipt, so replay refused every later read | PR #77 |
 | B2 | P3 | The import boundary passed `logging.handlers`, `logging.config` and `concurrent.futures` | PR #76 |
-| — | P3 | Test hygiene: six tests could not fail for the reason they name (PR #33 `4335189761` either-reason; the C1 year-999 bare raises; the F-21b clause refused by its window; the T-32 planted object; the T-30 landed-mode no-op; PR #19 `4329836196`'s duplicate loop) | PR #78 |
+| R3 | P3 | A raw `beacon_output` or `beacon_round_refused` row raised `KeyError` on replay (reproduced at the pin) | PR #80 |
+| — | P3 | Test hygiene: six tests could not fail for the reason they name (PR #33 `4335189761` either-reason; the C1 year-999 bare raises; the F-21b clause refused by its window; the T-32 planted object; the T-30 landed-mode no-op; PR #19 `4329836196`'s duplicate loop) | PR #79 (supersedes #78) |
 
 **Codex pass 6**: automatic review `5702392824` of the whole-tree PR #73, three P1 badges.
 - 6-1: Y1, reproduced (PR #74).
-- 6-2: `RegistrationRegistry.state()` exposes sealed forecasts. **Specification question**, recorded since pass 2 (§11.5). `Ledger.records()` exposes the same rows, so it is a question of the consumer boundary.
+- 6-2: `RegistrationRegistry.state()` exposes sealed forecasts. First recorded as the specification question open since pass 2; **decided by the coordinator as a P2 defect** with reading P6-R2 (§11.4). PR #81: `state()` redacts the forecasts of events whose issuance window is open; the unredacted `_state()` is internal to replay.
 - 6-3: a gate check's persisted wall time above its receipt did not bound other registries' receipts. **Reproduced, P1.** PR #77: `Ledger.append(observed=)` keeps the maximum in an `observed_walls` table, reloaded at open.
 - Codex did not answer the readings or the read-only items of the request.
+
+**Closed replay (PR #80, reading P6-R1).** Every replay is closed: `cpe/ledger/kinds.py` names every record kind by module; each replay re-validates its own kinds, skips the others' and refuses an unknown kind (`unknown_kind`). Admission rules were added for `void_request`, `integrity_incident`, `gate_abort`, `gate_commit` and `gate_check`. Deviation for the owner: a `gate_check`'s verdict is not recomputed on replay, because `replay_gate` takes the caller's trusted prefix.
+
+**Codex reviews of the pass-6 fix PRs** (one each, no fix rounds):
+- #74, #75, #76, #77, #79 and #80: no findings.
+- #78, `4416169908` (P2): on Python 3.14 `strftime` pads year 999, so the C1 test's pinned `invalid_timestamp` failed there. **Reproduced** on Python 3.14.6; #78 was closed unmerged and superseded by #79, which uses a literal stamp.
+- #81: <PENDING>.
+
+**Merged** on 2026-10-29: #74 (`3704aab`), #75 (`f957507`), #77 (`6035777`), #76 (`1651f4e`), #79 (`3927321`), #80 (`60895af`). #81 is open. The pass-7 pin is `main` after #79, #80 and #81 (coordinator).
 
 **Pass 6 is not passed: Y1, E1 and 6-3 are reproduced P1s.**
 
@@ -228,6 +238,8 @@ Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68
   - (b) An epoch row must be a fresh rotation: canonical identifier, an epoch id never seen before on the ledger (PR #75).
   - (c) The observed-wall mark is ledger-local, like P5-R2's retired times: a JSONL restore rebuilds receipts only, and the gate still bounds itself by its replayed readings (PR #77).
   - (d) The disposition append refuses a receipt below its adjudication time (`clock_rollback`) (PR #77).
+- **P6-R1 (coordinator-approved): replay is closed in every module** (PR #80). Each replay re-validates its own record kinds, skips the kinds of other modules and refuses an unknown kind. A `gate_check`'s verdict is not recomputed (the caller's trusted prefix decides it).
+- **P6-R2 (coordinator): the public snapshot never carries a sealed forecast; the unredacted snapshot is internal to replay** (PR #81).
 
 ### 11.5 Specification questions, for the owner
 
@@ -240,7 +252,7 @@ From pass 1:
 - **S4.** A record published inside the window but received after an absence-based NO was stored is logged only as a `receipt_lag` incident, not as a contradiction of the stored disposition (the question of PR #18 `4329838021`).
 
 From pass 2:
-- **`RegistrationRegistry.state()` exposure.** It returns forecast values before the issuance close, while `forecasts_of()` refuses the same read (RC-109). Is it restricted to trusted internal callers?
+- **`RegistrationRegistry.state()` exposure.** It returned forecast values before the issuance close, while `forecasts_of()` refused the same read (RC-109). **Decided in pass 6** (Codex 6-2, coordinator): a P2 defect, fixed by PR #81 under reading P6-R2; no longer open.
 - **Questions already open in the handoff**, still unresolved:
   - the exact input bundle the Jev record's digest binds;
   - whether covering anchors must precede evaluation periods;
