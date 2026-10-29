@@ -10,6 +10,7 @@ import pytest
 
 from cpe.capability.records import gate_ledger_id
 from cpe.capability import ACTIONS, CapabilityGate, ManualTimeSource
+from cpe.capability.timesource import ClockReading
 from cpe.capability.records import KIND_COMMIT, CommitRecord
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
@@ -31,8 +32,7 @@ def test_4333626167_a_lower_commit_after_an_unanchored_higher_one_aborts(rig: Ri
     def first_gate_commits() -> None:  # lands after the second gate's intent anchor, before its step 3
         intent_id = next(i for i, x in rig.gate.state().intents.items() if x.capability.nonce == "high")
         anchor = rig.ledger.local_anchors()[-1]
-        reading = rig.gate.state().baseline
-        assert reading is not None
+        reading = ClockReading(rig.clock.now(), rig.time.monotonic(), rig.time.boot_id())  # the other gate's own
         rig.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", intent_id),
                           CommitRecord(intent_id, anchor.prefix_length, anchor.digest, reading).to_payload())
 
@@ -131,8 +131,7 @@ def test_4333626194_a_start_up_abort_skips_an_intent_another_gate_has_committed(
     anchor = rig.ledger.local_anchors()[-1]
 
     def first_gate_commits(intent_id: str) -> None:
-        reading = rig.gate.state().baseline
-        assert reading is not None
+        reading = ClockReading(rig.clock.now(), rig.time.monotonic(), rig.time.boot_id())  # the other gate's own
         record = CommitRecord(intent_id, anchor.prefix_length, anchor.digest, reading)
         rig.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", intent_id), record.to_payload())
 
