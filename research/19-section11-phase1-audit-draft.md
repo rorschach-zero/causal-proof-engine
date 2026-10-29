@@ -282,6 +282,8 @@ Ratings are the coordinator's (2026-10-29). The distinct P1s are P8-1, P8-2 (= 8
 - #89, #90, #91, #93 and #94: no findings.
 - No review claimed a nonexistent commit.
 
+**Merged** by the coordinator: #88 (`69a6cd0`), #89 (`251188e`), #90 (`d411b03`), #91 (`ed899d8`), #97 (`e5126e1`), #94 (`29854fa`), #93 (`e8b445a`) and #98 (`811ba9d`). #92 and #95 were superseded. Every reproduced finding of pass 8 is fixed on `main` at `811ba9d`.
+
 **Pass 8 is not passed: P8-1, P8-2 (= 8-3), 8-1 and 8-2 are reproduced P1s.**
 
 ### 11.4 Deviations and readings, for the owner
@@ -422,4 +424,6 @@ Pass 7, at `c55e4ce`, is not passed: G1 and I1 (Claude) and 7-1 and 7-4 (Codex) 
 
 Pass 8, at `c37d048`, is not passed: P8-1 and P8-2 (Claude), 8-1 and 8-2 (Codex; 8-3 is P8-2) are reproduced P1s (fixes in PRs #89, #94 and #97).
 
-<PENDING: the merges of #89, #90, #91, #93, #94, #97 and #98; the pass-8 report on #37; the owner's decision on pass 9; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+**Pass 9** is pinned at `main` `811ba9d6bd13996cec72da62c0179d1baf71c6f2`, the merge of #98, under the owner's continuing authorisation. A fresh session (session 11) runs the Claude side and extends the invariants. Codex pass 9 is the automatic review of a new whole-tree PR.
+
+<PENDING: the pass-8 report on #37; the number of the pass-9 whole-tree PR; pass 9 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
