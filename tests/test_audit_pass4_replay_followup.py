@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pytest
 
+from cpe.canonical import digest_of
 from cpe.capability import CapabilityGate
 from cpe.capability.records import KIND_COMMIT, KIND_EPOCH, KIND_INTENT, CommitRecord, EpochRecord, IntentRecord
 from cpe.capability.records import intent_ledger_id
@@ -83,7 +84,8 @@ def test_an_epoch_recorded_without_its_release_replays_under_the_running_one(tmp
     assert EpochRecord.from_payload(epoch.to_payload()) == epoch
     with pytest.raises(Refusal):
         EpochRecord.from_payload({**epoch.to_payload(), "release_digest": "not-a-digest"})
-    rig.ledger.append(KIND_EPOCH, "legacy-epoch", epoch.to_payload())
+    # under the identifier the gate has always written (since pass 6 E1, replay requires it)
+    rig.ledger.append(KIND_EPOCH, f"gate-epoch:{digest_of([str(epoch.index), str(epoch.epoch)])}", epoch.to_payload())
     assert rig.gate.state().epoch == 7 and rig.gate.state().epoch_release is None
 
 
