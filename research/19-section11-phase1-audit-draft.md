@@ -195,11 +195,10 @@ Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68
 **Closed replay (PR #80, reading P6-R1).** Every replay is closed: `cpe/ledger/kinds.py` names every record kind by module; each replay re-validates its own kinds, skips the others' and refuses an unknown kind (`unknown_kind`). Admission rules were added for `void_request`, `integrity_incident`, `gate_abort`, `gate_commit` and `gate_check`. Deviation for the owner: a `gate_check`'s verdict is not recomputed on replay, because `replay_gate` takes the caller's trusted prefix.
 
 **Codex reviews of the pass-6 fix PRs** (one each, no fix rounds):
-- #74, #75, #76, #77, #79 and #80: no findings.
+- #74, #75, #76, #77, #79, #80 and #81: no findings.
 - #78, `4416169908` (P2): on Python 3.14 `strftime` pads year 999, so the C1 test's pinned `invalid_timestamp` failed there. **Reproduced** on Python 3.14.6; #78 was closed unmerged and superseded by #79, which uses a literal stamp.
-- #81: <PENDING>.
 
-**Merged** on 2026-10-29: #74 (`3704aab`), #75 (`f957507`), #77 (`6035777`), #76 (`1651f4e`), #79 (`3927321`), #80 (`60895af`). #81 is open. The pass-7 pin is `main` after #79, #80 and #81 (coordinator).
+**Merged** on 2026-10-29: #74 (`3704aab`), #75 (`f957507`), #77 (`6035777`), #76 (`1651f4e`), #79 (`3927321`), #80 (`60895af`), #81 (`c55e4ce`, head `468e97a`, 18:36 UTC). Every reproduced pass-6 finding is fixed on `main` after #81, which is the pass-7 pin if the owner authorises one. Pass-6 report: issue #37 comment `6505239514`.
 
 **Pass 6 is not passed: Y1, E1 and 6-3 are reproduced P1s.**
 
@@ -312,4 +311,12 @@ The owner authorised pass 6 on 2026-10-29 (17:13 UTC, in the chat); it is pinned
 
 Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are reproduced P1s (fixes in PRs #74, #75, #77). Codex pass 5 was not received.
 
-<PENDING: the owner's decision on a further pass; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+**Trend of reproduced P1s**, as the pass-6 auditor records it:
+- pass 1: Claude 1;
+- pass 2: Codex 4, Claude 0, fix-PR reviews 1;
+- pass 3: Claude 1;
+- pass 4: Claude 6, fix-PR reviews 2;
+- pass 5: Claude 3;
+- pass 6: Claude 2, Codex 1 new (6-1 is Y1).
+
+<PENDING: the owner's decision on pass 7; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
