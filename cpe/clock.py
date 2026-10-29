@@ -55,7 +55,8 @@ class ManualClock:
     """A clock the test harness sets and advances; it can also be rolled back to exercise fail-closed paths."""
 
     def __init__(self, start: datetime) -> None:
-        if start.tzinfo is None:
+        # an offset of None is naive too: read as host local time otherwise, as ``set`` refuses it (issue #37, pass 9)
+        if start.tzinfo is None or start.utcoffset() is None:
             raise Refusal("naive_timestamp", "the manual clock needs an aware start time")
         self._now = start.astimezone(timezone.utc)
 
