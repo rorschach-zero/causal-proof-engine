@@ -268,4 +268,6 @@ Pass 4 was not passed (W1 to W3, C1, A7, F5 and two review P1s, fixed in PRs #51
 
 The owner authorised pass 6 on 2026-10-29 (17:13 UTC, in the chat); it is pinned at `main` `1dca8d75ab6f49a82397cd493714d8602131538b`, the merge of #68, which holds every fix of passes 1 to 5.
 
-<PENDING: Codex pass 5 (not received at the pass-6 pin); pass 6 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+**Pass 6, Codex.** The full-tree review runs as Codex's automatic review of PR #73. The branch `audit/pass6-full-tree` (`fc93e11`) is an ours-merge of the pin `1dca8d7` with the empty orphan base `994a014`, opened against `audit/empty-base`. The PR is never merged, and its T-09 is red by construction. The review started at 17:39 UTC. The Claude side of pass 6 is a fresh session (session 8), which classifies the Codex findings.
+
+<PENDING: Codex pass 5 (not received at the pass-6 pin); pass 6 of both auditors with the finding ids; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
