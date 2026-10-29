@@ -472,7 +472,10 @@ class RegistrationRegistry:
         """The replayed state as a reader outside the registry may see it: every forecast of an event whose issuance
         window has not closed at the ledger clock is left out, as ``forecasts_of`` seals it, so that no arm reads
         another's forecast while it can still submit (RC-109; issue #37, pass 6 Codex 6-2, reading P6-R2). The
-        unredacted state is internal to the registry's own decisions."""
+        unredacted state is internal to the registry's own decisions. The forecasts of an event closed at the ledger
+        clock are released with their disclosure row (P8-R2), decided on one clock sample: an event that closes
+        later, or whose forecasts have no disclosure row on the ledger, stays sealed in the snapshot (PR #95 review
+        4418096591)."""
         state = self._state()
         now = self._ledger.now()
         released = [event_id for event_id, spec in state.events.items()
@@ -481,8 +484,8 @@ class RegistrationRegistry:
             for event_id in released:
                 self._disclose(event_id)
             state = self._state()
-            now = self._ledger.now()
-        sealed = {event_id for event_id, spec in state.events.items() if not self._closed(spec, now)}
+        sealed = {event_id for event_id, spec in state.events.items()
+                  if not self._closed(spec, now) or event_id not in state.disclosed}
         state.forecasts = {key: f for key, f in state.forecasts.items() if key[0] not in sealed}
         state.forecasts_by_event = {e: list(fs) for e, fs in state.forecasts_by_event.items() if e not in sealed}
         state.submissions = {key: n for key, n in state.submissions.items() if key[0] not in sealed}

@@ -12,10 +12,12 @@ alternative, a ledger-local mark, was rejected because a restore would lose it. 
 that releases a forecast (``forecasts_of``, ``forecasts_for_baseline``, ``slot_states``, the public ``state``), against
 its own receipt, and admitted on replay by the same rule.
 
-Every test named codex8_1 failed at the pass-8 pin (with the kind name inlined, which the pin does not define)."""
+Every test named codex8_1 failed at the pass-8 pin (with the kind name inlined, which the pin does not define); the
+last test is the gap PR #95's review found (4418096591), which this PR, its successor, closes."""
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -24,10 +26,10 @@ from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
 from cpe.ledger.store import records_from_jsonl
-from cpe.registration import RegistrationRegistry
+from cpe.registration import CandidateEntry, RegistrationRegistry
 from cpe.registration.registry import KIND_DISCLOSURE, _ledger_id
 from tests.test_registration import clock as clock, ledger as ledger, registry as registry  # noqa: F401 (fixtures)
-from tests.test_registration import day, forecast
+from tests.test_registration import day, forecast, registration, spec
 
 READS: dict[str, Callable[[RegistrationRegistry], object]] = {
     "forecasts_of": lambda r: r.forecasts_of("E-1"),
@@ -101,3 +103,34 @@ def test_a_release_row_before_the_close_refuses_replay(registry: RegistrationReg
     with pytest.raises(Refusal) as refused:
         registry.event("E-1")
     assert refused.value.reason == "invalid_record" and "read_before_close" in refused.value.detail
+
+
+def test_a_snapshot_releases_only_what_its_disclosure_rows_cover(registry: RegistrationRegistry, ledger: Ledger,
+                                                                clock: ManualClock) -> None:
+    """PR #95 review 4418096591 (P1, a gap of #95): ``state`` chose the events to release on one clock sample and
+    sealed on a second, so an event that closed between the two was returned without its disclosure row, and after a
+    rollback below its close another arm copied its forecast. The snapshot now decides on one sample and keeps every
+    event without a disclosure row sealed."""
+    registry.log_candidate(CandidateEntry("cand-E-3", "E-3", "src", day(1), "registered", "match"))
+    registry.register_cluster(registration([spec("E-3", cluster_id="C-3", not_before=70, issuance=(20, 60))],
+                                           cluster_id="C-3"))
+    clock.set(day(21))
+    registry.submit_forecast(forecast("E-1"))
+    registry.submit_forecast(forecast("E-3"))  # E-3 closes at day 60
+    clock.set(day(41))
+    sampled = ledger.now
+    samples = 0
+
+    def stepping() -> datetime:  # the clock reaches day 61 after E-1's disclosure is written
+        nonlocal samples
+        samples += 1
+        if samples == 3:
+            clock.set(day(61))
+        return sampled()
+
+    ledger.now = stepping  # type: ignore[method-assign]
+    snapshot = registry.state()
+    ledger.now = sampled  # type: ignore[method-assign]
+    assert sorted(snapshot.forecasts_by_event) == ["E-1"]  # at d5406dd: E-1 and E-3, E-3 without its row
+    clock.set(day(50))
+    registry.submit_forecast(forecast("E-3", "A", "A-1", 0.3))  # E-3's forecast was never released: still eligible
