@@ -40,6 +40,11 @@ def intent_ledger_id(capability: Capability) -> str:
     return f"gate-intent:{digest_of([str(capability.epoch), capability.nonce])}"
 
 
+def epoch_ledger_id(index: int, epoch: int) -> str:
+    """The rotation's identity in the ledger: the gate writes it and replay requires it."""
+    return f"gate-epoch:{digest_of([str(index), str(epoch)])}"
+
+
 @dataclass(frozen=True)
 class EpochRecord:
     """An epoch rotation: at process start, at every demotion and at every clock discontinuity. The gate is at

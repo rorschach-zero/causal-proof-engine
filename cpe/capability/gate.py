@@ -31,6 +31,7 @@ from cpe.capability.records import (
     CommitRecord,
     EpochRecord,
     IntentRecord,
+    epoch_ledger_id,
     intent_ledger_id,
 )
 from cpe.capability.signing import Verifier
@@ -186,7 +187,7 @@ class CapabilityGate:
             reading = baseline if baseline is not None else self._raw_reading(now)
             # the identifier is random (not a secret): unique across restores, which a counter is not (RC-123)
             record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest)
-            return KIND_EPOCH, _ledger_id("gate-epoch", str(record.index), str(record.epoch)), record.to_payload()
+            return KIND_EPOCH, epoch_ledger_id(record.index, record.epoch), record.to_payload()
 
         record = self._append(decide)
         self._try_anchor()
