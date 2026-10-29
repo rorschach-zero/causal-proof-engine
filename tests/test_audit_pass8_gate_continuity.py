@@ -8,7 +8,9 @@ through the ledger under another boot, anchored with its otherwise valid commit,
 records the tolerance it was judged by, and replay refuses an intent or a commit whose reading is not continuous with
 its epoch's baseline; an epoch written before the tolerance was recorded is checked by boot identifier only.
 
-The first three tests failed at the pass-8 pin; the fourth guards the epochs written before."""
+The first three tests failed at the pass-8 pin; the fourth guards the epochs written before; the fifth is the regression
+PR #92's review found (4417733808), which this PR, its successor, fixes: the live gate judges continuity by the epoch's
+recorded tolerance, as replay does."""
 from __future__ import annotations
 
 from datetime import timedelta
@@ -27,10 +29,11 @@ from cpe.capability.records import (
     gate_ledger_id,
     intent_ledger_id,
 )
+from cpe.capability import CapabilityGate
 from cpe.capability.state import replay_gate
 from cpe.capability.timesource import ClockReading
 from cpe.errors import Refusal
-from tests.test_capability import RELEASE, RULES, Rig, issue
+from tests.test_capability import ENV, EVIDENCE, OWNER, RELEASE, RULES, Rig, issue
 
 
 def reading(rig: Rig, boot_id: str | None = None, monotonic_shift: float = 0.0) -> ClockReading:
@@ -102,3 +105,19 @@ def test_an_epoch_written_before_the_tolerance_was_recorded_is_checked_by_boot_o
     with pytest.raises(Refusal) as refused:
         replay_gate(rig.ledger.records(), anchors[-1].prefix_length, RULES, anchors)
     assert "boot id another-boot" in refused.value.detail
+
+
+def test_a_gate_judges_continuity_by_the_tolerance_its_epoch_recorded(tmp_path: Path) -> None:
+    """PR #92 review 4417733808 (P1, a regression of #92): with replay checking the epoch's recorded tolerance and the
+    live gate its own, a lenient gate on a ledger whose epoch a strict gate opened wrote an intent that replay refused,
+    and every gate on the ledger refused every step from then on, a restart included. The live gate now judges by the
+    epoch's tolerance: the slewed promotion is refused as a discontinuity, and the ledger stays readable."""
+    rig = Rig(tmp_path)  # tolerance 1 s
+    lenient = CapabilityGate(rig.ledger, OWNER, rig.time, ENV, RELEASE, 10.0)
+    strict = CapabilityGate(rig.ledger, OWNER, rig.time, ENV, RELEASE, 1.0)  # opens the current epoch
+    rig.time.advance(timedelta(seconds=1), slew=timedelta(seconds=2))
+    with pytest.raises(Refusal) as refused:
+        lenient.promote(issue(strict.state().epoch, "slewed"), EVIDENCE)  # at ce902ba: invalid_gate_ledger
+    assert refused.value.reason == "clock_discontinuity"
+    assert strict.state().level == "RESEARCH_ONLY"  # the ledger reads
+    lenient.demote("after the slew")
