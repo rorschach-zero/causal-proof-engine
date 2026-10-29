@@ -138,7 +138,7 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             if not isinstance(detail, str):
                 raise Refusal("invalid_text", f"{record.record_id}: detail must be a string")
             event = state.event(event_id)
-            _check_defect(record, event_id, defect_id, state)
+            _check_defect(record, event_id, defect_id, detail, state)
             event.defect_record_ids.add(defect_id)
             if event.disposition is not None and defect_id not in {d.record_id for d in event.disposition.defects}:
                 event.disposition = replace(event.disposition,
@@ -284,12 +284,15 @@ def _check_disposition(record: Record, stored: Adjudication, state: _State) -> N
         raise _invalid(record, "is not the adjudication of the records before it (RC-88)")
 
 
-def _check_defect(record: Record, event_id: str, defect_id: str, state: _State) -> None:
+def _check_defect(record: Record, event_id: str, defect_id: str, detail: str, state: _State) -> None:
+    """A defect the registry writes: of a record before it that contradicts the stored disposition, with the text the
+    registry gives it, which the stored disposition then shows (issue #37, pass 8 P8-6)."""
     event, spec, rule = _rule_of(record, state, event_id)
     cited = [r for r in event.records if r.record.record_id == defect_id]
     if record.record_id != _ledger_id("defect", event_id, defect_id) or event.disposition is None or not cited \
-            or not late_contradictions(spec, rule, cited, event.disposition.disposition):
-        raise _invalid(record, "names no record before it that contradicts the stored disposition (RC-88)")
+            or Defect(defect_id, detail) not in late_contradictions(spec, rule, cited, event.disposition.disposition):
+        raise _invalid(record, "names no record before it that contradicts the stored disposition (RC-88), with the "
+                       "text the registry writes")
 
 
 def _check_correction(record: Record, event_id: str, cited_id: str, knowable: datetime, state: _State) -> None:
