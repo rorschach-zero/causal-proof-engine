@@ -99,6 +99,7 @@ class _State:
     # a Phase 1 calibration record was published at that time (RC-311; issue #37, pass 3 F4).
     refused_rounds: dict[str, BeaconOutput] = field(default_factory=dict)
     local_anchors: tuple[Anchor, ...] = ()  # read with the snapshot, never by a decision under the ledger's lock
+    pending_anchors: tuple[Anchor, ...] = ()  # attempts not yet confirmed, read with the snapshot
 
 
 def _payload_of(value: ArmVersion | CutoffCorrection | BaseRate | ClusterRegistration | VoidRequest
@@ -310,8 +311,10 @@ class RegistrationRegistry:
         self.before_write: Callable[[], None] | None = None  # test hook, run between the decision and the write
 
     def state(self) -> _State:
-        state = replay_state(self._ledger.records())
-        state.local_anchors = self._ledger.local_anchors()
+        records, local_anchors, pending_anchors = self._ledger.snapshot()  # one read under the ledger's lock
+        state = replay_state(records)
+        state.local_anchors = local_anchors
+        state.pending_anchors = pending_anchors
         check_anchor_times(state)
         return state
 
@@ -683,10 +686,22 @@ class RegistrationRegistry:
                 raise Refusal("future_round", "a round is supplied after its publication, never before")
             anchored_at = self._anchor_time_covering(state, state.calibration_seq[output.calibration_record_id])
             calibration_late = anchored_at is None or anchored_at >= output.published_at
-            register_late = False
+            register_late = register_pending = False
             if state.register_seq is not None:
                 register_anchored_at = self._anchor_time_covering(state, state.register_seq)
                 register_late = register_anchored_at is None or register_anchored_at >= output.published_at
+                # An unconfirmed anchor attempt covering the register before the round may have landed: the register
+                # is then not known to be late, and nothing that binds is written until the attempt settles (issue
+                # #37, pass 4 R1).
+                register_pending = register_late and any(
+                    anchor.prefix_length >= state.register_seq and parse_timestamp(anchor.published_at) < output.published_at
+                    for anchor in state.pending_anchors)
+            if register_pending:
+                if calibration_late:
+                    raise Refusal("round_before_anchor", "the beacon round must be published after the record's "
+                                  "anchor (RC-182, RC-304)")
+                raise Refusal("anchor_pending", "the anchor of the confirmatory register is not yet confirmed; the "
+                              "round is weighed once it settles (RC-311)")
             if calibration_late:
                 refusal = Refusal("round_before_anchor", "the beacon round must be published after the record's "
                                   "anchor (RC-182, RC-304)")

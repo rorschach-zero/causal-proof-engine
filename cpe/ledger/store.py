@@ -246,6 +246,15 @@ class Ledger:
                 report = verify(self._records_locked(), existing, external=True)
                 if not report.intact:
                     raise Refusal("anchor_conflict", f"the ledger does not verify against the external store: {report.detail}")
+            # Every earlier attempt the reachable store does not hold is disproved: it never landed, so it is
+            # neither an anchor nor a possible one (PR #56 review 4353231816). The attempt staged below carries a
+            # later time, so the high-water mark never falls by this.
+            held_keys = {(a.prefix_length, a.digest) for a in existing}
+            for prefix_length, digest in self._conn.execute(
+                    "SELECT prefix_length, digest FROM pending_anchors").fetchall():
+                if (prefix_length, digest) not in held_keys:
+                    self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
+                                       (prefix_length, digest))
             held = next((a for a in existing if a.prefix_length == self._state.count and a.digest == self._state.head),
                         None)
             if held is not None:  # an earlier attempt landed: settle with the time the store holds, publish nothing
@@ -283,6 +292,23 @@ class Ledger:
     def local_anchors(self) -> tuple[Anchor, ...]:
         with self._lock:
             return self._local_anchors_locked()
+
+    def snapshot(self) -> tuple[tuple[Record, ...], tuple[Anchor, ...], tuple[Anchor, ...]]:
+        """The records, the local anchors and the pending attempts read under one lock, so that no attempt can
+        settle between the reads and vanish from both sets (PR #56 review 4353231824)."""
+        with self._lock:
+            return self._records_locked(), self._local_anchors_locked(), self._pending_anchors_locked()
+
+    def _pending_anchors_locked(self) -> tuple[Anchor, ...]:
+        rows = self._conn.execute(
+            "SELECT prefix_length, digest, published_at FROM pending_anchors ORDER BY prefix_length").fetchall()
+        return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
+
+    def pending_anchors(self) -> tuple[Anchor, ...]:
+        """The anchor attempts not yet confirmed: each may or may not have landed in the external store, so none
+        counts as an anchor, and none may be read as proof that a prefix is unanchored either."""
+        with self._lock:
+            return self._pending_anchors_locked()
 
     def verify(self, external: AnchorStore | None = None) -> VerificationReport:
         """Verify against the external store when given; against the local copy, self-attested, otherwise.
