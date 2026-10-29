@@ -619,20 +619,9 @@ ENTRY_POINTS: list[tuple[str, Callable[[Path], tuple[Ledger, Any]], Callable[[An
 ]
 
 
-# Entry points that fail the invariant at the pass-8 pin c37d048, each a finding of pass 8 (issue #37): a strict expected
-# failure until its fix lands, which removes the entry.
-OPEN_FINDINGS: dict[str, str] = {
-    "CapabilityGate.perform": "P8-1: the action is decided as what it compares equal to and persisted as its text",
-    "check_issuance.event_id": "P8-2: issuable for one event with every output of another",
-    "check_issuance.slot_id": "P8-2: issuable for one slot with every output of another",
-    "check_issuance.arm_versions": "P8-2: issuable with a provider the registered set does not name",
-    "AdjudicationRegistry.adjudicate": "P8-3: a disposition written under one event's identifier for another",
-    **{name: "P8-4: the read answers for the record the argument compares equal to" for name in (
-        "RegistrationRegistry.arm_version", "RegistrationRegistry.event", "RegistrationRegistry.forecasts_of",
-        "RegistrationRegistry.forecasts_for_baseline", "RegistrationRegistry.slot_states",
-        "RegistrationRegistry.claim_status", "RegistrationRegistry.seed_of", "AsOfReader.series", "AsOfReader.row")},
-    "CapabilityGate.__init__": "P8-5: a gate configured for one environment acknowledges another's capability",
-}
+# Entry points that fail the invariant, each a finding of issue #37: a strict expected failure until its fix lands,
+# which removes the entry. None is open: P8-1 to P8-5, found here at the pass-8 pin c37d048, were fixed by PR #89.
+OPEN_FINDINGS: dict[str, str] = {}
 
 
 @pytest.mark.parametrize("name, build, call, text, alias", [
