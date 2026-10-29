@@ -167,9 +167,31 @@ Pinned on 2026-10-29 at `main` after PRs #60, #55, #57, #58, #61, #62, #63, #65 
 
 **Merged** on 2026-10-29 by the coordinator: #66 (`6320cb4`), #67 (`65e3f80`), #69 (`1c49ac5`), #70 (`b25b376`), #71 (`00168e7`), #72 (`b6d52a4`) and #68 (`1dca8d7`). Each open PR was trial-merged onto the new `main` and passed the suite before the next merge. Every reproduced finding of pass 5 is fixed on `main` at `1dca8d75ab6f49a82397cd493714d8602131538b`.
 
-**Codex pass 5**, run by the owner in the web UI: <PENDING: findings and classification.>
+**Codex pass 5**, run by the owner in the web UI: not received by the pass-6 pin; Codex's full-tree review of pass 6 takes its place.
 
 **Pass 5 is not passed: X1, X2 and L1 are reproduced P1s.**
+
+### 11.3c Pass 6, at `1dca8d75ab6f49a82397cd493714d8602131538b`
+
+Authorised by the owner on 2026-10-29 (17:13 UTC) and pinned at the merge of #68, which holds every fix of passes 1 to 5. Records on issue #37: Claude interim `6504124270`, classification of Codex's review `6504609509`.
+
+**Claude** (a fresh session, session 8): `cpe/` and `tools/` read end to end, `tools/mutation_report.py` in full, and `tests/` line by line (the full read by an independent reviewer, every item verified by the auditor). The suite at the pin gives 830 passed.
+
+| # | Severity | Finding | Fixed in |
+|---|---|---|---|
+| Y1 | **P1** | Adjudication replay took `event_spec` and `source_rule` rows as written: a second `event_spec` row replaced the criteria (a YES became `EXPIRED_NO` under a forged deadline), a first `event_spec` received after `issuance_open` was read as registered, and a second `source_rule` replaced the rule (`knowable_at` day 96 became 95). Also Codex 6-1 | PR #74 |
+| E1 | **P1** | Gate replay took a `gate_epoch` row's epoch identifier as written: a repeated epoch revived a capability signed for it and never presented, acknowledged at `SIM_READ_ONLY` (RC-73, RC-100, RC-123) | PR #75 |
+| A8 | P2 | A clock rollback between `adjudicate`'s clock read and the disposition append wrote `adjudicated_at` after the receipt, so replay refused every later read | PR #77 |
+| B2 | P3 | The import boundary passed `logging.handlers`, `logging.config` and `concurrent.futures` | PR #76 |
+| — | P3 | Test hygiene: six tests could not fail for the reason they name (PR #33 `4335189761` either-reason; the C1 year-999 bare raises; the F-21b clause refused by its window; the T-32 planted object; the T-30 landed-mode no-op; PR #19 `4329836196`'s duplicate loop) | PR #78 |
+
+**Codex pass 6**: automatic review `5702392824` of the whole-tree PR #73, three P1 badges.
+- 6-1: Y1, reproduced (PR #74).
+- 6-2: `RegistrationRegistry.state()` exposes sealed forecasts. **Specification question**, recorded since pass 2 (§11.5). `Ledger.records()` exposes the same rows, so it is a question of the consumer boundary.
+- 6-3: a gate check's persisted wall time above its receipt did not bound other registries' receipts. **Reproduced, P1.** PR #77: `Ledger.append(observed=)` keeps the maximum in an `observed_walls` table, reloaded at open.
+- Codex did not answer the readings or the read-only items of the request.
+
+**Pass 6 is not passed: Y1, E1 and 6-3 are reproduced P1s.**
 
 ### 11.4 Deviations and readings, for the owner
 
@@ -201,6 +223,11 @@ Pinned on 2026-10-29 at `main` after PRs #60, #55, #57, #58, #61, #62, #63, #65 
 
 - **Class W extended to forecast, disposition and knowable-correction rows (reading P5-R1; coordinator, 2026-10-29).** Replay admits every row that sets what a forecast is judged against, every disposition, correction and defect only by the rule its write path applies; a row the registry would have refused refuses the ledger (PRs #70, #71). A disposition is recomputed on replay from the state it was appended against; a correction must be at a time its named record evidences. Incident rows decide nothing and are read as written.
 - **The clock bound of a staged anchor attempt survives its disproof and a reopen (reading P5-R2; coordinator, 2026-10-29).** The disproved row is still cleared (§9.1 stands); its staged time stays in the anchor high-water mark (PR #69).
+- **Pass 6 readings** (session 8; for the owner, none changes a document):
+  - (a) P5-R1 extended to every adjudication row kind (criteria, rule, content, records, observations, statuses); status rows are checked for one status per source and instant rather than by identifier, because of PR #54's legacy offsets (PR #74).
+  - (b) An epoch row must be a fresh rotation: canonical identifier, an epoch id never seen before on the ledger (PR #75).
+  - (c) The observed-wall mark is ledger-local, like P5-R2's retired times: a JSONL restore rebuilds receipts only, and the gate still bounds itself by its replayed readings (PR #77).
+  - (d) The disposition append refuses a receipt below its adjudication time (`clock_rollback`) (PR #77).
 
 ### 11.5 Specification questions, for the owner
 
@@ -256,7 +283,8 @@ From pass 3 (issue #37 comment `6348183848`), Q1 to Q14:
 - **Unreachable on any ledger the registries write:**
   - the `duplicate_record_id` mapping of `anchor_confirmatory_register`;
   - the second `commit_in_doubt` of `promote`;
-  - the `unknown_source` of `submit_observation`.
+  - the `unknown_source` of `submit_observation`;
+  - from pass 6: `calibration_record_exists` in `record_calibration`, and the `unknown_source` guards of `AdjudicationRegistry.adjudicate` and `_rule_of` after PR #74.
 
 None of these changes a result.
 
@@ -270,4 +298,6 @@ The owner authorised pass 6 on 2026-10-29 (17:13 UTC, in the chat); it is pinned
 
 **Pass 6, Codex.** The full-tree review runs as Codex's automatic review of PR #73. The branch `audit/pass6-full-tree` (`fc93e11`) is an ours-merge of the pin `1dca8d7` with the empty orphan base `994a014`, opened against `audit/empty-base`. The PR is never merged, and its T-09 is red by construction. The review started at 17:39 UTC. The Claude side of pass 6 is a fresh session (session 8), which classifies the Codex findings.
 
-<PENDING: Codex pass 5 (not received at the pass-6 pin); pass 6 of both auditors with the finding ids; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are reproduced P1s (fixes in PRs #74, #75, #77). Codex pass 5 was not received.
+
+<PENDING: the owner's decision on a further pass; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
