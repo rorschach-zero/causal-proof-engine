@@ -1,6 +1,6 @@
 # 21 AI-driven scientific advances 2023 to 2026, and what CPE should borrow (NOTE)
 
-Status: `NOTE`, 2026-10-29, written on `main` at `c37d048` by the coordinator's research task on the owner's
+Status: `NOTE`, 2026-10-29, written on `main` at `69a6cd0` by the coordinator's research task on the owner's
 request ("look at all the scientific advancements because of AI online, in math, physics, biology, as an
 inspiration for what we are trying to accomplish"). Documentation only. It changes no specification, no
 decision and no roadmap item; where it proposes a practice, the proposal is labelled and goes to the owner.

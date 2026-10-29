@@ -1,6 +1,6 @@
 # 22 Objective and feasibility: 4,000 to 400,000 in ten years (PROPOSED)
 
-Status: `PROPOSED`, 2026-10-29, written on `main` at `c37d048` by the coordinator at the owner's request. It
+Status: `PROPOSED`, 2026-10-29, written on `main` at `69a6cd0` by the coordinator at the owner's request. It
 records the owner's objective as stated, puts the arithmetic and the documented comparators next to it, and
 proposes what each phase must show and when the project stops. Nothing here changes a specification, a
 decision or a roadmap item; every proposal is labelled and goes to the owner (`AGENTS.md` §1, §8). No order, no
