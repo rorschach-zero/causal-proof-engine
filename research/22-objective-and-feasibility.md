@@ -24,10 +24,23 @@ makes the hypothesis testable, phase by phase.
 
 ## 2. The arithmetic
 
-`REPRODUCED` by the Codex review (`15` section F, PR #2, its arithmetic probe): 100x in ten years is
-100^(1/10) − 1 = 58.49 % compounded per year, if all capital is invested at the start and costs and taxes are ignored. If 1,000
-is invested in year one and 3,000 at the start of year two, the constant rate that reaches 400,000 is 64.08 %.
-If all 4,000 waits one year, the nine-year rate is 66.81 %. Later deployment needs more.
+`REPRODUCED` (re-derived in the session that wrote this note, 2026-10-29, by the command below; the same three
+figures were first reported by the Codex review, `15` section F, PR #2): 100x in ten years is 100^(1/10) − 1 =
+58.4893 % compounded per year, if all capital is invested at the start and costs and taxes are ignored. If 1,000
+is invested in year one and 3,000 at the start of year two, the constant rate r that solves
+1000(1+r)^10 + 3000(1+r)^9 = 400,000 is 64.0786 %. If all 4,000 waits one year, the nine-year rate is
+100^(1/9) − 1 = 66.8101 %. Later deployment needs more.
+
+```
+$ python3 -c "print(100**0.1-1, 100**(1/9)-1)"
+0.5848931924611136 0.6681005372000588
+$ python3 -c "
+lo,hi=0.0,2.0
+for _ in range(200):
+    m=(lo+hi)/2; lo,hi=(lo,m) if 1000*(1+m)**10+3000*(1+m)**9>400000 else (m,hi)
+print((lo+hi)/2)"
+0.6407858...
+```
 
 `UNVERIFIED` (figures from general knowledge, not checked against a primary source in this session; the
 verification path is the published annual letters and the fund's documented history, to be added to `14` if
@@ -41,9 +54,12 @@ ever documented, from a start capital of 4,000, for ten years.
 `HYPOTHESIS`. Long-term, concentrated positions change the shape of the arithmetic but not its demand. A 100x
 decade built from multi-year holdings means a handful of positions each of which must multiply several-fold,
 and a hit rate on them that venture investors, who see hundreds of companies and lose most bets, do not reach.
-`15` section F shows the sensitivity: with ten-fold winners and losers at 0.3, the equal-weight cycle table
-needs between 7 % and 45 % of winners per cycle depending on the cycle count, and the table is not an
-achievable portfolio distribution once costs, correlation, timing and path dependence enter.
+`REPRODUCED` (same session, formula f = (100^(1/n) − L) / (W − L) for the winner share f per cycle under the
+equal-weight cycle model of `15` section F, with n cycles, winners at W and losers at L): with ten-fold winners
+and losers at 0.3, three cycles need 44.76 % winners per cycle and five cycles 22.80 %; the 7.45 % figure that
+`07` §7 item 1 quotes belongs to thirty-fold winners over five cycles, a different payoff assumption. Under
+none of these assumptions is the table an achievable portfolio distribution once costs, correlation, timing and
+path dependence enter (`15` section F).
 
 ## 3. What the foundation already says about the gap between forecasting and returns
 
@@ -59,10 +75,12 @@ separate questions, each with its own failure mode:
    trim-versus-hold trade-off: selling half at 10x and holding the rest to 100x yields 55x; holding everything
    yields 100x or a collapse.
 3. How large may the position be? `07` §1 to §3: fractional Kelly on the worst case of the credal interval, a
-   gross cap, a per-position cap, a worst-case loss limit and a cash floor. Under the pilot limits of `07` §3
-   (1,000 capital, at most 8 positions, 20 % per position, worst-case loss per position 15 %, cash floor 10 %),
-   a 58 % compounded return is not reachable by construction; the limits exist so that the first error is
-   survivable, not so that the objective is met in the pilot.
+   gross cap, a per-position cap, a worst-case loss limit and a cash floor. The pilot limits of `07` §3 (1,000
+   capital, at most 8 positions, 20 % per position, worst-case loss per position 15 %, cash floor 10 %) bound
+   exposure and downside, not upside: 15 % of capital in one position that returns 10x over two years, with the
+   rest in cash, is 2.35x on the whole and about 53 % per year without breaking any of them (`REPRODUCED`, same
+   session). The limits therefore do not decide the objective; they exist so that the first error is survivable.
+   What they do decide is how much skill is needed per decision, which §6 asks Phase 5 to derive.
 4. Is the chain identifiable at all? `18` §2: the confirmatory claim cannot be about causal truth; it can be
    about forecast skill on a fixed question set. Each link of a multi-order chain multiplies the uncertainty of
    the previous one, and the evidence for a long chain arrives only when its last link resolves.
