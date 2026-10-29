@@ -13,6 +13,7 @@ from cpe.canonical import JsonValue, canonical_bytes
 from cpe.clock import Clock, format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger.anchor import Anchor, AnchorStore
+from cpe.ledger.kinds import GATE_KINDS, KIND_EPOCH
 from cpe.ledger.record import Record, entry_digest
 from cpe.ledger.replay import LedgerState, VerificationReport, replay, verify
 from cpe.schemas.common import require_identifier
@@ -173,7 +174,7 @@ class Ledger:
             return
         try:
             external = {(anchor.prefix_length, anchor.digest): anchor for anchor in self._anchor_store.anchors()}
-        except Refusal:
+        except Exception:  # any failure of the store or its transport is unreachable, as for the gate (pass 7 7-3)
             return
         for prefix_length, digest, published_at in pending:
             held = external.get((prefix_length, digest))
@@ -382,6 +383,7 @@ class Ledger:
         replay(ordered)
         if len({record.record_id for record in ordered}) != len(ordered):  # the writer never holds two (issue #37)
             raise Refusal("duplicate_record_id", "the export holds a record identifier twice")
+        observed = _persisted_wall(ordered)
         ledger = cls(path, clock, external, faults)
         if ledger.state.count != 0:
             raise Refusal("restore_target_not_empty", "restore needs an empty ledger")
@@ -400,13 +402,35 @@ class Ledger:
                         "INSERT OR REPLACE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
                         (anchor.prefix_length, anchor.digest, anchor.published_at),
                     )
+            if observed is not None:  # the wall times the records persist bound the restored clock too (pass 7 7-1)
+                ledger._conn.execute("INSERT INTO observed_walls (id, observed_at) VALUES (1, ?) ON CONFLICT(id) DO "
+                                     "UPDATE SET observed_at = MAX(observed_at, excluded.observed_at)", (observed,))
             ledger._conn.execute("COMMIT")
         except BaseException:
             ledger._conn.execute("ROLLBACK")
             raise
         ledger._state = replay(ledger.records())
         ledger._anchor_high_water = ledger._load_anchor_high_water()
+        ledger._observed_high_water = ledger._load_observed_high_water()
         return ledger, ledger.verify(external)
+
+
+def _persisted_wall(records: Iterable[Record]) -> str | None:
+    """The latest wall time a gate record persists (the reading of a check, intent, abort or commit, the baseline of an
+    epoch): the bound ``append``'s ``observed`` kept on the ledger that wrote them, which may exceed the records'
+    receipts after a rollback. The times are in the export, so a restore keeps the bound (``17`` item 2 "Clock",
+    RC-37, RC-65; issue #37, pass 7 Codex 7-1). A malformed time is a typed refusal."""
+    latest: datetime | None = None
+    for record in records:
+        if record.kind not in GATE_KINDS:
+            continue
+        payload = record.payload
+        reading = payload.get("baseline" if record.kind == KIND_EPOCH else "reading") if isinstance(payload, dict) else None
+        if not isinstance(reading, dict) or "wall" not in reading:
+            raise Refusal("invalid_record", f"{record.record_id}: a gate record persists its clock reading")
+        wall = parse_timestamp(reading["wall"], "wall")
+        latest = wall if latest is None else max(latest, wall)
+    return None if latest is None else format_timestamp(latest)
 
 
 def records_from_jsonl(text: str) -> tuple[Record, ...]:
