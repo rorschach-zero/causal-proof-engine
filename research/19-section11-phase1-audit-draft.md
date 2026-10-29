@@ -266,4 +266,6 @@ Pass 3 was not passed (open P1: F4, fixed in PR #48). The owner authorised one b
 
 Pass 4 was not passed (W1 to W3, C1, A7, F5 and two review P1s, fixed in PRs #51 to #65). Pass 5, at `b34c721`, is not passed by the Claude auditor: X1, X2 and L1 are reproduced P1s (fixes in PRs #69 to #71).
 
-<PENDING: Codex pass 5; the owner's decision on a further pass; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+The owner authorised pass 6 on 2026-10-29 (17:13 UTC, in the chat); it is pinned at `main` `1dca8d75ab6f49a82397cd493714d8602131538b`, the merge of #68, which holds every fix of passes 1 to 5.
+
+<PENDING: Codex pass 5 (not received at the pass-6 pin); pass 6 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
