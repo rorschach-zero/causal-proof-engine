@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from cpe.clock import ManualClock
+from cpe.clock import ManualClock, format_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, HarnessAnchorStore, Ledger
 from cpe.ledger.anchor import UnavailableAnchorStore
@@ -192,5 +192,9 @@ def test_4329707427_memory_and_disk_agree_after_a_refused_publish(tmp_path: Path
         unreachable.append("event", "late", {})
     unreachable.close()
     cleared = Ledger(path, clock, _Refusing())  # a reachable store that provably lacks the anchor clears the row
-    cleared.append("event", "late", {})
-    assert cleared.local_anchors() == () and cleared._anchor_high_water == ""
+    # The staged time still bounds the clock: 17 item 2 "Clock" (issue #37, pass 5 L1; reading P5-R2). Until pass 5
+    # this test expected the late append to be admitted and the mark to be empty.
+    assert cleared.pending_anchors() == () and cleared.local_anchors() == ()
+    with pytest.raises(Refusal):
+        cleared.append("event", "late", {})
+    assert cleared._anchor_high_water == format_timestamp(attempt)

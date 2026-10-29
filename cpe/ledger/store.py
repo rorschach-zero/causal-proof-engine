@@ -38,6 +38,10 @@ CREATE TABLE IF NOT EXISTS pending_anchors (
     published_at TEXT NOT NULL,
     PRIMARY KEY (prefix_length, digest)
 );
+CREATE TABLE IF NOT EXISTS retired_attempts (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    published_at TEXT NOT NULL
+);
 """
 
 
@@ -126,13 +130,25 @@ class Ledger:
             return self._records_locked()
 
     def _load_anchor_high_water(self) -> str:
-        """Over every anchor row on disk, published and pending alike: a publication time staged before the
-        external publish bounds the clock whatever became of that publish. Read from disk after every outcome,
-        so that memory and disk never disagree."""
+        """Over every anchor row on disk, published, pending and retired alike: a publication time staged before the
+        external publish bounds the clock whatever became of that publish, after the attempt is settled or
+        disproved too (issue #37, pass 5 L1). Read from disk after every outcome, so that memory and disk never
+        disagree."""
         row = self._conn.execute(
             "SELECT MAX(published_at) FROM (SELECT published_at FROM anchors UNION ALL "
-            "SELECT published_at FROM pending_anchors)").fetchone()
+            "SELECT published_at FROM pending_anchors UNION ALL SELECT published_at FROM retired_attempts)").fetchone()
         return row[0] if row is not None and row[0] is not None else ""
+
+    def _retire_pending(self, prefix_length: int, digest: str) -> None:
+        """Delete a settled or disproved attempt, keeping its staged time as a bound of the clock: the time was
+        persisted as a wall-time reading, and a clock below it fails closed whatever became of the publish (``17``
+        item 2 "Clock"). Reopening a ledger whose attempt the store disproved admitted a receipt below it (issue
+        #37, pass 5 L1)."""
+        self._conn.execute(
+            "INSERT INTO retired_attempts (id, published_at) SELECT 1, published_at FROM pending_anchors "
+            "WHERE prefix_length = ? AND digest = ? ON CONFLICT(id) DO UPDATE SET published_at = "
+            "MAX(published_at, excluded.published_at)", (prefix_length, digest))
+        self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?", (prefix_length, digest))
 
     def _reconcile_pending_anchors(self) -> None:
         """Settle every pending row against a reachable external store: a row the store holds becomes a local
@@ -153,7 +169,7 @@ class Ledger:
             if held is not None:
                 self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
                                    (prefix_length, digest, held.published_at))
-            self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?", (prefix_length, digest))
+            self._retire_pending(prefix_length, digest)
         self._anchor_high_water = self._load_anchor_high_water()
 
     def _server_time(self) -> str:
@@ -260,15 +276,13 @@ class Ledger:
                     self._conn.execute(
                         "INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
                         (prefix_length, digest, settled.published_at))
-                self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
-                                   (prefix_length, digest))
+                self._retire_pending(prefix_length, digest)
             held = next((a for a in existing if a.prefix_length == self._state.count and a.digest == self._state.head),
                         None)
             if held is not None:  # an earlier attempt landed: settle with the time the store holds, publish nothing
                 self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
                                    (held.prefix_length, held.digest, held.published_at))
-                self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
-                                   (held.prefix_length, held.digest))
+                self._retire_pending(held.prefix_length, held.digest)
                 self._anchor_high_water = self._load_anchor_high_water()
                 return held
             anchor = Anchor(self._state.count, self._state.head, published_at)
@@ -284,8 +298,7 @@ class Ledger:
                 raise
             self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
                                (anchor.prefix_length, anchor.digest, anchor.published_at))
-            self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
-                               (anchor.prefix_length, anchor.digest))
+            self._retire_pending(anchor.prefix_length, anchor.digest)
             self._anchor_high_water = self._load_anchor_high_water()
             row = self._conn.execute("SELECT prefix_length, digest, published_at FROM anchors WHERE prefix_length = ?",
                                      (anchor.prefix_length,)).fetchone()
