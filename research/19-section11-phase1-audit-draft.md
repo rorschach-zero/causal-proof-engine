@@ -237,6 +237,53 @@ Ratings by the coordinator (2026-10-29, 19:35 UTC):
 
 **Pass 7 is not passed: four reproduced P1s (Codex 7-1 and 7-4, Claude G1 and I1).**
 
+### 11.3e Pass 8, at `c37d04899c3f0c821825f7aee09ff79c900eb02a`
+
+Pinned at the merge of #86 (issue #37 comment `6506588507`). Records on issue #37: Claude interim `6507356684`, Codex findings and classification `6507769580`. The suite at the pin gives 918 passed (Python 3.13.17 and 3.11.17).
+
+**Claude** (a fresh session, session 10):
+- Read all of `cpe/` and `tools/`, `tools/mutation_report.py` in full, and the four workflows.
+- An independent reviewer read `tests/` line by line, verified by mutation.
+- PR #88 (merged at `69a6cd0`) adds four generic invariants, run at the end of every test:
+  1. **write-replay:** returned values equal replay, and the memory, disk and reopen marks agree;
+  2. **write-restore:** a restored export gives the same records, anchors, clock floor and module states;
+  3. **raw-row refusal:** replay of a prefix plus one row accepts the row if and only if the write path writes it. This is checked for every kind, every one-field perturbation, and the row moved before its prerequisites;
+  4. **persisted-input equivalence:** a look-alike `str` argument decides as its plain text at every public entry point.
+- Invariants 1 and 2 hold at the pin. The failures of 3 and 4 at the pin are the findings below.
+
+| # | Severity | Finding | Fixed in |
+|---|---|---|---|
+| P8-1 | **P1** | `CapabilityGate.perform` with a look-alike action (`"sim_execution"` comparing equal to `"research"`) was admitted at `RESEARCH_ONLY` and persisted as admitted (T-33) | PR #89 |
+| P8-2 | **P1** | `check_issuance` was issuable for E-1 with every output and the Jev record of E-2, through a look-alike `event_id`; likewise for `slot_id` and the provider keys (T-28, RC-17, RC-75) | PR #89 |
+| P8-3 | P2 | `adjudicate` given a look-alike event id wrote another event's disposition, and the ledger became unreadable | PR #89 |
+| P8-4 | P2 | Registration and point-in-time reads answered for the alias; `seed_of` gave another record's seed (RC-187) | PR #89 |
+| P8-5 | P2 | A gate configured with a look-alike environment acknowledged another environment's capability | PR #89 |
+| P8-6 | P3 | Replay read a defect's detail as written | PR #90 |
+| P8-7 | P3 | Replay read a refused round's reason as written | PR #90 |
+| — | P3 | Test hygiene: the commit-after-abort replay rule had no test; six second-row tests were refused by their forged identifier first; bare raises and either-reason asserts | PR #91 |
+
+Found while fixing P8-1 to P8-5: `Ledger.append` kept the caller's kind and identifier objects (same root, PR #89).
+
+**Codex**: automatic review `5704079167` of the whole-tree PR #87 (head `7f7690a`), four findings, all reproduced at the pin.
+
+| # | Codex id | Severity | Finding | Fixed in |
+|---|---|---|---|---|
+| 8-1 | `4417203533` | **P1** (class C) | Reads that released sealed forecasts after the close persisted no bound, so after a rollback another arm submitted inside the window it had already seen (RC-109) | PR #97, supersedes #95 |
+| 8-2 | `4417203540` | **P1** (class W) | Replay never checked an intent's reading against the epoch baseline, so an intent under another boot id conferred its level (RC-73, RC-100) | PR #94, supersedes #92 |
+| 8-3 | `4417203550` | **P1** | Three look-alike provider keys made one output count three times; same root as P8-2 | PR #89 |
+| 8-4 | `4417203557` | P2 | The idempotency check of `register_event` compared `True == 1` | PR #93 |
+
+Ratings are the coordinator's (2026-10-29). The distinct P1s are P8-1, P8-2 (= 8-3), 8-1 and 8-2.
+
+**Reviews of the pass-8 fix PRs** (one each, no fix rounds):
+- #88, `4417450701` (P2): the post-write wrapper of the invariants dropped keyword arguments. Valid; fixed in the follow-up PR #98.
+- #92, `4417733808`: **a P1 regression of #92**, reproduced. Replay judged drift by the epoch's recorded tolerance and the live gate by its own, so two gates with different tolerances made the ledger unreadable. #92 was closed unmerged and superseded by #94, where the live gate also judges by the epoch's tolerance.
+- #95, `4418096591`: **a P1 gap of #95**, reproduced. `state()` sealed on a second clock sample, so an event that closed in between was released without a disclosure row. #95 was closed unmerged and superseded by #97, which decides on one sample and keeps undisclosed events sealed.
+- #89, #90, #91, #93 and #94: no findings.
+- No review claimed a nonexistent commit.
+
+**Pass 8 is not passed: P8-1, P8-2 (= 8-3), 8-1 and 8-2 are reproduced P1s.**
+
 ### 11.4 Deviations and readings, for the owner
 
 - **An `OPEN` member with an evidenced public occurrence** (pass 2, Codex 3). `17` defines `knowable_at` = min(publication, public occurrence, deadline + window) for an outcome, but does not say what an undecided member carries.
@@ -277,6 +324,10 @@ Ratings by the coordinator (2026-10-29, 19:35 UTC):
 - **P7-R1 (coordinator): restore rebuilds every clock bound the export carries** (Codex 7-1, PR #85). This withdraws pass-6 reading (c) for persisted check times. P5-R2 stands for retired attempt times.
 - **P7-R2 (coordinator): an intent received while its epoch was unanchored confers no level** (Codex 7-4, PR #83). This supersedes the sentence of this section on epochs anchored when an intent was written.
 - **P7-R3 (coordinator): every input is decided as the ledger persists it** (7-2, G1, I1; one root, closed structurally by #84's `as_persisted`).
+- **P8-R1 (coordinator): every validated input is returned as plain text; no caller object survives validation.** This extends P7-R3 from schema objects to bare arguments (PR #89).
+- **P8-R2 (coordinator): the first disclosure of an event's sealed forecasts after its close is a ledger row** (`forecast_disclosure`, one per event, with a golden identifier). Its receipt bounds the clock across reopen and restore. A ledger-local mark was the alternative, rejected because a restore would lose it (PR #97).
+- **Epoch tolerance** (PR #94): each epoch records its slew tolerance as an optional field, as `release_digest` did in #63. Replay and the live gate both judge the epoch's readings by it. Stated limit: epochs written without the field are checked by boot id only.
+- **Invariant 3's free fields** (PR #94): `GATE_FREE` first treated the gate's readings as free, which is how invariant 3 missed 8-2. It is narrowed: the boot id is not free.
 
 ### 11.5 Specification questions, for the owner
 
@@ -356,7 +407,10 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 - pass 4: Claude 6, fix-PR reviews 2;
 - pass 5: Claude 3;
 - pass 6: Claude 2, Codex 1 new (6-1 is Y1);
-- pass 7: Claude 2 (G1, I1), Codex 2 (7-1, 7-4).
+- pass 7: Claude 2 (G1, I1), Codex 2 (7-1, 7-4);
+- pass 8: 4 distinct (Claude 2: P8-1, P8-2; Codex 3: 8-1, 8-2, 8-3, of which 8-3 is P8-2). The fix-PR reviews of pass 8 found 2 P1s in the fixes themselves (#92, #95), both superseded before merge.
+
+As the pass-8 auditor counts them, the reproduced P1s of passes 1 to 8 are 1, 4, 1, 6, 3, 3, 4 and 4.
 
 **Pass 7** is pinned at `main` `c55e4cee65656355850bde32b07059e37d8b523b`, the merge of #81 (coordinator, 2026-10-29); every reproduced finding of passes 1 to 6 is fixed there. A fresh session (session 9) runs the Claude side.
 
@@ -366,4 +420,6 @@ Pass 7, at `c55e4ce`, is not passed: G1 and I1 (Claude) and 7-1 and 7-4 (Codex) 
 - Claude side: a fresh session (session 10). It also opens a PR of invariant tests covering write-replay equivalence, write-restore equivalence, raw-row refusal per record kind, and persisted-input equivalence.
 - Codex: the automatic review of the whole-tree PR #87 (branch `audit/pass8-full-tree`, `7f7690a`).
 
-<PENDING: pass 8 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+Pass 8, at `c37d048`, is not passed: P8-1 and P8-2 (Claude), 8-1 and 8-2 (Codex; 8-3 is P8-2) are reproduced P1s (fixes in PRs #89, #94 and #97).
+
+<PENDING: the merges of #89, #90, #91, #93, #94, #97 and #98; the pass-8 report on #37; the owner's decision on pass 9; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
