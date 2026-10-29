@@ -24,6 +24,9 @@ FORBIDDEN_MODULES: frozenset[str] = frozenset({
     "socket", "ssl", "http", "urllib", "urllib3", "requests", "httpx", "aiohttp", "websocket", "websockets",
     "smtplib", "smtpd", "ftplib", "poplib", "imaplib", "nntplib", "telnetlib", "xmlrpc", "socketserver", "wsgiref",
     "asyncio", "asyncore", "asynchat", "webbrowser", "subprocess", "multiprocessing", "ctypes", "pty",
+    # The modules beneath ``os``, ``subprocess`` and ``socket``: ``posix.system`` spawns a process as ``os.system``
+    # does, and nothing about the name says so (issue #37, pass 5 B1).
+    "posix", "nt", "_posixsubprocess", "_winapi", "_socket", "_ssl",
 })
 # Process-spawning names of os (os.system, os.popen, os.exec*, os.spawn*, os.fork*, os.posix_spawn*).
 FORBIDDEN_OS_NAMES: frozenset[str] = frozenset({

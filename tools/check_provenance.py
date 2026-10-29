@@ -224,9 +224,19 @@ def check(commit_range: str, repo: Path, title: str | None, body: str | None, he
     if title:
         # GitHub writes the pull request title as the body of the merge commit. A title that is one ``Token: value``
         # line is then a git trailer, and the post-merge check refuses the merge commit (main 6233803, issue #37);
-        # refuse the title before the merge instead.
-        findings += trailer_findings(f"Merge pull request\n\n{title.strip()}", "pull request title as merge commit body")
+        # refuse the title before the merge instead, by git's own reading as the post-merge check does: git also
+        # reads ``Fix:`` and ``1Fix: y`` as trailers, which the pattern above does not (issue #37, pass 5 T3).
+        merge_message = f"Merge pull request\n\n{title.strip()}\n"
+        where = "pull request title as merge commit body"
+        findings += trailer_findings(merge_message, where) or git_trailer_findings(
+            git_trailers(merge_message, repo), where)
     return findings
+
+
+def git_trailers(message: str, repo: Path) -> str:
+    """The trailers git reads in ``message``, unfolded, one per line (``git interpret-trailers --parse``)."""
+    return subprocess.run(["git", "-C", str(repo), "interpret-trailers", "--parse"], input=message, check=True,
+                          capture_output=True, text=True).stdout
 
 
 def main(argv: list[str] | None = None) -> int:
