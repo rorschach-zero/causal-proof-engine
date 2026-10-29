@@ -426,17 +426,16 @@ def admit_cluster(state: _State, registration: ClusterRegistration, now: datetim
 
 
 def admit_disclosure(state: _State, event_id: str, now: datetime) -> None:
-    """The first release of an event's sealed forecasts, after its issuance close (RC-109). The row's receipt is the
-    time of the read that released them, so it bounds the clock across reopen and restore: no submission can be
-    received at or before a time at which another arm's forecast was already read (issue #37, pass 8 Codex 8-1,
-    reading P8-R2)."""
+    """The first read of an event that answers as only a closed event can, after its issuance close (RC-109): the
+    release of its sealed forecasts, or, when it has none, the empty release and the abstention of every slot (``18``
+    M-5). The row's receipt is the time of that read, so it bounds the clock across reopen and restore: no submission
+    can be received at or before a time at which another arm's forecast was already read (issue #37, pass 8 Codex 8-1,
+    reading P8-R2), or at which its slot was already reported as an abstention (pass 9 P9-1)."""
     spec = state.events.get(event_id)
     if spec is None:
         raise Refusal("unknown_event", f"{event_id} is not registered")
     if event_id in state.disclosed:
         raise Refusal("disclosed", f"the forecasts of {event_id} are already released")
-    if event_id not in state.forecasts_by_event:
-        raise Refusal("nothing_sealed", f"{event_id} has no forecast to release")
     if not now > spec.issuance_close:
         raise Refusal("read_before_close", "forecasts are sealed until the issuance window has closed (RC-109)")
 
@@ -657,7 +656,7 @@ class RegistrationRegistry:
         try:
             self._write(decide)
         except Refusal as refusal:
-            if refusal.reason not in ("disclosed", "nothing_sealed"):
+            if refusal.reason != "disclosed":
                 raise
 
     def _closed(self, spec: EventSpec, now: datetime) -> bool:
@@ -675,7 +674,7 @@ class RegistrationRegistry:
             raise Refusal("unknown_event", f"{event_id} is not registered")
         if not self._closed(spec, self._ledger.now()):
             raise Refusal("read_before_close", "forecasts are sealed until the issuance window has closed (RC-109)")
-        if event_id in state.forecasts_by_event and event_id not in state.disclosed:
+        if event_id not in state.disclosed:  # an empty release is the close's answer too (issue #37, pass 9 P9-1)
             self._disclose(event_id)
             state = self._state()
         return tuple(state.forecasts_by_event.get(event_id, ()))
@@ -695,8 +694,8 @@ class RegistrationRegistry:
             raise Refusal("unknown_event", f"{event_id} is not registered")
         registration = state.clusters[state.event_cluster[event_id]]
         closed = self._closed(spec, self._ledger.now())
-        if closed and event_id in state.forecasts_by_event and event_id not in state.disclosed:
-            self._disclose(event_id)  # a filled slot's value is released below
+        if closed and event_id not in state.disclosed:
+            self._disclose(event_id)  # a filled slot's value or an abstention is reported below (pass 9 P9-1)
             state = self._state()
         states: list[SlotState] = []
         for arm_id in sorted(registration.arm_versions):
