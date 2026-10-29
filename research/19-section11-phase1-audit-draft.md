@@ -224,7 +224,9 @@ Pinned at the merge of #81; every reproduced finding of passes 1 to 6 is fixed t
 | B3 | P3 | The import boundary passed `_ctypes`, `_bootsubprocess`, `distutils`, `ensurepip`, `venv`, `pydoc` and `compileall` | PR #86 |
 | — | P3 | Test hygiene: 19 tests could not fail for the reason they name (W1 forgeries refused by the commit identifier before the checks ran; forged adjudication rows refused by identifier; cluster-after-e_i also refused by the issuance rule; bare raises and either-reason asserts; replay compared with itself; an armed fault that never fired; an unread clock reading; a cwd-dependent clean check; a missing golden identifier for `beacon_round_refused`; T-15's detail unchecked; one duplicate). Table in PR #86's description | PR #86 |
 
-**Codex reviews of the pass-7 fix PRs:** #83 and #84: no findings; #85 and #86: <PENDING>.
+**Codex reviews of the pass-7 fix PRs** (one each, no fix rounds): #83 (19:09 UTC), #84 (19:16), #85 (19:21) and #86 (19:34) completed with no findings, and none claimed a nonexistent commit.
+
+**Merged** on 2026-10-29 by the coordinator: #83 (`8ca4b87`), #84 (`0c9ed66`), #85 (`aef2084`), #86 (`c37d048`). Every reproduced finding of pass 7 is fixed on `main` after #86, which is the proposed pass-8 pin. Pass-7 report: issue #37 comment `6506567687`.
 
 Ratings by the coordinator (2026-10-29, 19:35 UTC):
 - P1: 7-1 (the precedent of C1, L1 and 6-3), 7-4 (class W), G1 (T-30, `17` item 5) and I1 (T-28, RC-17);
@@ -360,4 +362,4 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 
 Pass 7, at `c55e4ce`, is not passed: G1 and I1 (Claude) and 7-1 and 7-4 (Codex) are reproduced P1s (fixes in PRs #83, #84 and #85).
 
-<PENDING: the merges and reviews of the pass-7 fix PRs; the owner's decision on pass 8; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+<PENDING: the owner's decision on pass 8 (proposed pin: `main` after #86, `c37d048`); "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
