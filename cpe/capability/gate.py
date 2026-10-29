@@ -112,10 +112,12 @@ class CapabilityGate:
         if hook is not None:
             hook()
 
-    def _append(self, decide: Decide, admit: Admit | None = None) -> Record:
+    def _append(self, decide: Decide, admit: Admit | None = None, sampled: datetime | None = None) -> Record:
         """One read-decide-write against the chain head the decision was taken on; a head that moved makes the
         decision recompute on the new state (another writer on the same ledger, this gate or another). ``admit``
-        is checked by the ledger against the receipt the append assigns."""
+        is checked by the ledger against the receipt the append assigns. The reading the decision persists holds
+        the wall time of its clock sample (or ``sampled``, an earlier sample it carries), which the ledger keeps as
+        a bound of every later clock read, of every registry on it (issue #37, pass 6 Codex 6-3)."""
         with self._lock:
             for _ in range(8):
                 state = self.state()
@@ -130,8 +132,10 @@ class CapabilityGate:
                     raise Refusal("clock_rollback", f"server clock {format_timestamp(now)} is below the wall time "
                                   f"{format_timestamp(state.observed)} a persisted check observed (RC-65)")
                 kind, record_id, payload = decide(state, now)
+                observed = now if sampled is None else max(now, sampled)
                 try:
-                    return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit)
+                    return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit,
+                                               observed=observed)
                 except Refusal as refusal:
                     if refusal.reason == "clock_rollback":  # the append's own clock sample (4333626183)
                         log.warning("clock rollback refused: %s", refusal)
@@ -188,7 +192,7 @@ class CapabilityGate:
             record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest)
             return KIND_EPOCH, _ledger_id("gate-epoch", str(record.index), str(record.epoch)), record.to_payload()
 
-        record = self._append(decide)
+        record = self._append(decide, sampled=None if baseline is None else baseline.wall)
         self._try_anchor()
         return record
 

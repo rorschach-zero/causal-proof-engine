@@ -426,9 +426,17 @@ class AdjudicationRegistry:
                     return fresh
                 # One record: the disposition with its defects and incidents embedded; nothing to lose between
                 # a commit and a side row.
+                def adjudicated_by_receipt(receipt: datetime) -> None:
+                    # The disposition names the time it was adjudicated, which replay requires at or before its
+                    # receipt: a clock stepped back between the two would write a row every later reader refuses
+                    # (issue #37, pass 6 A8). The rollback is refused, as the ledger refuses one below its mark.
+                    if receipt < now:
+                        raise Refusal("clock_rollback", f"{event_id}: the clock fell below the adjudication time "
+                                      f"{timestamp_payload(now)} before the disposition was received")
+
                 try:
                     self._ledger.append(KIND_DISPOSITION, _ledger_id("disposition", event_id), fresh.to_payload(),
-                                        expected_head=state.head)
+                                        expected_head=state.head, admit=adjudicated_by_receipt)
                 except Refusal as refusal:
                     if refusal.reason != "stale_head":
                         raise
