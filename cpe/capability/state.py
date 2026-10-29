@@ -71,6 +71,7 @@ class GateState:
     # an earlier one after a rollback; the time it observed bounds the clock as its receipt does (RC-65, issue #37).
     observed: datetime | None = None
     epoch_release: str | None = None  # the release the current epoch was opened under, when recorded
+    epoch_tolerance: float | None = None  # the slew tolerance of the current epoch, when recorded
 
     def observe(self, reading: ClockReading) -> None:
         if self.observed is None or reading.wall > self.observed:
@@ -89,6 +90,21 @@ class GateState:
     @property
     def unanchored_commits(self) -> tuple[str, ...]:
         return tuple(i for i in self.commits if i not in self.effective)
+
+
+def discontinuity(reading: ClockReading, state: GateState) -> str | None:
+    """Why ``reading`` is not continuous with the current epoch's baseline, or None: the protected operation takes no
+    step on such a reading but rotates the epoch (``CapabilityGate._reading``; RC-73, RC-100). Another boot identifier
+    is a discontinuity; so is a wall-minus-monotonic offset that drifted from the baseline's by more than the epoch's
+    recorded tolerance (issue #37, pass 8 Codex 8-2)."""
+    base = state.baseline
+    if base is None:
+        return "has no epoch baseline"
+    if reading.boot_id != base.boot_id:
+        return f"was read under boot id {reading.boot_id}, not the epoch's {base.boot_id}"
+    if state.epoch_tolerance is not None and abs(reading.offset() - base.offset()) > state.epoch_tolerance:
+        return "was read after the clock drifted beyond the epoch's tolerance"
+    return None
 
 
 def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules: GateRules,
@@ -117,6 +133,8 @@ def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules:
         problem = "names an epoch other than the current one"
     elif not any(prefix >= state.epoch_seq and published <= receipt for (prefix, _), published in anchors.items()):
         problem = "was received before its epoch was anchored"
+    else:
+        problem = discontinuity(intent.reading, state)
     # Whether it was a promotion is not re-checked here: a commit that does not raise the gate refuses the ledger.
     if problem is not None:
         raise Refusal("invalid_gate_ledger", f"intent {intent.intent_id} {problem}")
@@ -145,6 +163,8 @@ def _check_commit(record: Record, commit: CommitRecord, state: GateState, hashes
             problem = "cites no published anchor of a prefix covering its intent"
         elif anchors[(commit.intent_anchor_prefix, commit.intent_anchor_digest)] > parse_timestamp(record.receipt_time):
             problem = "cites an anchor published after the commit was received"
+        else:
+            problem = discontinuity(commit.reading, state)
     if problem is not None:
         raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} {problem}")
 
@@ -179,6 +199,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
             state.epoch, state.epoch_index, state.epoch_seq = epoch.epoch, epoch.index, record.seq
             state.baseline = epoch.baseline
             state.epoch_release = epoch.release_digest
+            state.epoch_tolerance = epoch.tolerance
             state.observe(epoch.baseline)
             state.epoch_anchored = record.seq <= anchored_prefix
             state.level = FLOOR

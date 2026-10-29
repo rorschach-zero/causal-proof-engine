@@ -168,13 +168,17 @@ class CapabilityGate:
         which invalidates every outstanding capability until the owner signs for the new epoch (RC-73, RC-100)."""
         reading = self._raw_reading(now)
         base = state.baseline
+        # The tolerance the epoch recorded, which replay applies: a gate on the same ledger with another tolerance
+        # judges the epoch as its opener did, so that no step it takes is one replay refuses (issue #37, pass 8, PR
+        # #92 review 4417733808). An epoch that recorded none is judged by this gate's.
+        tolerance = state.epoch_tolerance if state.epoch_tolerance is not None else self._tolerance
         if base is not None:
             detail = ""
             if reading.boot_id != base.boot_id:
                 detail = f"boot id {base.boot_id} became {reading.boot_id}"
-            elif abs(reading.offset() - base.offset()) > self._tolerance:
+            elif abs(reading.offset() - base.offset()) > tolerance:
                 detail = (f"wall-minus-monotonic drifted {reading.offset() - base.offset():.3f}s from the epoch "
-                          f"baseline (tolerance {self._tolerance}s)")
+                          f"baseline (tolerance {tolerance}s)")
             if detail:
                 self._rotate(f"discontinuity:{detail}", reading)
                 log.warning("clock discontinuity, re-authorisation required: %s", detail)
@@ -189,7 +193,8 @@ class CapabilityGate:
         def decide(state: GateState, now: datetime) -> Write:
             reading = baseline if baseline is not None else self._raw_reading(now)
             # the identifier is random (not a secret): unique across restores, which a counter is not (RC-123)
-            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest)
+            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest,
+                                 float(self._tolerance))
             return KIND_EPOCH, epoch_ledger_id(record.index, record.epoch), record.to_payload()
 
         record = self._append(decide, sampled=None if baseline is None else baseline.wall)

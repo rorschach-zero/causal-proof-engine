@@ -423,13 +423,15 @@ def test_invariant_3_point_in_time(tmp_path: Path) -> None:
 # The gate --------------------------------------------------------------------------------------------------------
 
 # The fields of a gate row the gate itself may write with any value: the clock readings (the time source's), an epoch's
-# identifier (drawn at random), its reason and release (the running release's), an abort's reason, and a check's
+# identifier (drawn at random), its reason, release and tolerance (the running gate's), an abort's reason, and a check's
 # subject, verdict and reason, which replay does not recompute (reading P6-R1).
 GATE_FREE: dict[str, tuple[tuple[Any, ...], ...]] = {
-    K.KIND_EPOCH: (("baseline",), ("epoch",), ("reason",), ("release_digest",)),
-    K.KIND_INTENT: (("reading",),),
+    K.KIND_EPOCH: (("baseline",), ("epoch",), ("reason",), ("release_digest",), ("tolerance",)),
+    # an intent's and a commit's reading is continuous with the epoch's baseline: its boot identifier is not free, and
+    # a time is free only within the tolerance, which the perturbations below may exceed (issue #37, pass 8 Codex 8-2)
+    K.KIND_INTENT: (("reading", "wall"), ("reading", "monotonic")),
     K.KIND_ABORT: (("reading",), ("reason",)),
-    K.KIND_COMMIT: (("reading",),),
+    K.KIND_COMMIT: (("reading", "wall"), ("reading", "monotonic")),
     K.KIND_CHECK: (("reading",), ("subject",), ("verdict",), ("reason",)),
 }
 
