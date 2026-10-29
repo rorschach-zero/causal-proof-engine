@@ -1,0 +1,27 @@
+# Secrets and local configuration: never commit credentials (see AGENTS.md)
+.env
+.env.*
+*.pem
+*.key
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# Lean
+.lake/
+
+# Editors and OS
+.vscode/
+.idea/
+.DS_Store
+
+# Mutation testing (mutmut working copy)
+mutants/

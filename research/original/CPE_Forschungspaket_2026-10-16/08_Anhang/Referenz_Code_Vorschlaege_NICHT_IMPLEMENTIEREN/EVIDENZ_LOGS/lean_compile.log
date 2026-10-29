@@ -1,0 +1,17 @@
+date: 2026-10-16T05:33:51Z
+elan: elan 4.2.4 (227caca13 2026-08-25)
+lean-toolchain: leanprover/lean4:v4.35.0
+mathlib rev: cfc55fc58714a59dc06e6e79edc6d1d95140d3c2
+--- BetThreshold.lean
+exit=0
+--- RiskBudget.lean
+'CPE.growth_min_at_lower_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CPE.portfolio_worst_loss_le_budget' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CPE.implication_prob_le' depends on axioms: [propext, Classical.choice, Quot.sound]
+'CPE.eprocess_factor_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
+exit=0
+--- Broken.lean (negative control, must fail)
+CpeProofs/Broken.lean:3:30: error: linarith failed to find a contradiction
+case mp
+p : ℝ
+exit=1
