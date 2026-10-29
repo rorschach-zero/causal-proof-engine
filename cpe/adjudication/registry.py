@@ -2,6 +2,7 @@
 replay."""
 from __future__ import annotations
 
+import json
 import threading
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -23,9 +24,9 @@ from cpe.adjudication.rules import (
     earliest_public_occurrence,
     late_contradictions,
 )
-from cpe.canonical import digest_of
+from cpe.canonical import canonical_bytes, digest_of
 from cpe.clock import parse_timestamp
-from cpe.schemas.common import Payload, timestamp_payload
+from cpe.schemas.common import Payload, require_identifier, require_keys, timestamp_payload
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.schemas.event import EventSpec
@@ -62,7 +63,9 @@ def _as_replayed(value: _Persisted, from_payload: Callable[[object], _T]) -> _T:
         raise
     except Exception as error:
         raise Refusal("invalid_object", f"{type(value).__name__} cannot be serialised: {error!r}") from None
-    return from_payload(payload)
+    # Through the canonical form the ledger persists: a ``str`` subclass that compares and hashes like one value
+    # while its text names another is read here as its text, the value replay will read (PR #54 review 4353163782).
+    return from_payload(json.loads(canonical_bytes(payload)))
 
 
 def _ledger_id(prefix: str, *parts: str) -> str:
@@ -135,23 +138,30 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             adjudication = Adjudication.from_payload(payload)
             state.event(adjudication.event_id).disposition = adjudication
         elif record.kind == KIND_DEFECT:
-            event_id, defect_id, detail = payload["event_id"], payload["record_id"], payload["detail"]
-            assert isinstance(event_id, str) and isinstance(defect_id, str) and isinstance(detail, str)
+            require_keys(payload, KIND_DEFECT, frozenset({"event_id", "record_id", "detail"}), frozenset())
+            event_id = require_identifier(payload["event_id"], "event_id")
+            defect_id = require_identifier(payload["record_id"], "record_id")
+            detail = payload["detail"]
+            if not isinstance(detail, str):
+                raise Refusal("invalid_text", f"{record.record_id}: detail must be a string")
             event = state.event(event_id)
             event.defect_record_ids.add(defect_id)
             if event.disposition is not None and defect_id not in {d.record_id for d in event.disposition.defects}:
                 event.disposition = replace(event.disposition,
                                             defects=event.disposition.defects + (Defect(defect_id, detail),))
         elif record.kind == KIND_KNOWABLE:
-            event_id, knowable = payload["event_id"], parse_timestamp(payload["knowable_at"], "knowable_at")
-            assert isinstance(event_id, str)
+            require_keys(payload, KIND_KNOWABLE, frozenset({"event_id", "knowable_at", "record_id"}), frozenset())
+            event_id = require_identifier(payload["event_id"], "event_id")
+            require_identifier(payload["record_id"], "record_id")
+            knowable = parse_timestamp(payload["knowable_at"], "knowable_at")
             event = state.event(event_id)
             if event.disposition is not None and event.disposition.knowable_at is not None \
                     and knowable < event.disposition.knowable_at:
                 event.disposition = replace(event.disposition, knowable_at=knowable)
         elif record.kind == KIND_INCIDENT:
-            event_id = payload["event_id"]
-            assert isinstance(event_id, str)
+            if "event_id" not in payload:
+                raise Refusal("missing_field", f"{record.record_id}: an integrity incident names its event")
+            event_id = require_identifier(payload["event_id"], "event_id")
             incident = Incident.from_payload({k: v for k, v in payload.items() if k != "event_id"})
             event = state.event(event_id)
             if event.disposition is not None and (incident.kind, incident.reference_id) not in {
@@ -251,8 +261,18 @@ class AdjudicationRegistry:
             def admit(receipt: datetime) -> None:
                 if content.available_at > receipt:
                     raise Refusal("evidence_after_receipt", f"content {content.sha256} is available after its receipt")
-            return self._ledger.append(KIND_CONTENT, _ledger_id("content", content.sha256), content.to_payload(),
-                                       admit=admit)
+            record_id = _ledger_id("content", content.sha256)
+            try:
+                return self._ledger.append(KIND_CONTENT, record_id, content.to_payload(), admit=admit)
+            except Refusal as refusal:
+                if refusal.reason != "duplicate_record_id":
+                    raise
+            # Another writer on the same ledger archived the same digest first: read it back, as register_rule and
+            # register_event do (issue #37, pass 3; the class of D2).
+            landed = self.state().contents.get(content.sha256)
+            if landed is None or landed[0] != content:
+                raise Refusal("content_conflict", f"content {content.sha256} is archived with another attestation")
+            return next(r for r in self._ledger.records() if r.record_id == record_id)
 
     def submit_record(self, record: ResolutionRecord) -> Record:
         """Admit a record that names archived content; the content must evaluate, under the registered predicate,
@@ -295,8 +315,15 @@ class AdjudicationRegistry:
         (issue #37, pass 4 A6); the identifier format is unchanged."""
         status = _as_replayed(status, SourceStatus.from_payload)
         with self._lock:
-            if status.source_id not in self.state().rules:
+            state = self.state()
+            if status.source_id not in state.rules:
                 raise Refusal("unknown_source", f"{status.source_id} has no registered source rule (OD5)")
+            # One status per source and instant, whatever identifier an earlier version gave a row: a ledger written
+            # before the UTC read-back holds identifiers formed from the offset as written (PR #54 review
+            # 4353163787).
+            if any(held.declared_at == status.declared_at for held, _ in state.status.get(status.source_id, [])):
+                raise Refusal("duplicate_status", f"{status.source_id} already has a status declared at "
+                              f"{timestamp_payload(status.declared_at)}")
             return self._ledger.append(KIND_STATUS, _ledger_id("status", status.source_id, status.declared_at.isoformat()),
                                        status.to_payload(), admit=_not_after(status.declared_at,
                                                                              f"the status of {status.source_id}"))
@@ -377,7 +404,13 @@ class AdjudicationRegistry:
                                  "record_id": earliest[1]})
             stored = replace(stored, knowable_at=earliest[0])
         known = {(i.kind, i.reference_id) for i in stored.incidents}
+        # A receipt lag is a fact about a record, whatever decided the member. An incident about how the member was
+        # decided (a late publication, an observer outage) belongs to the stored disposition only when the fresh
+        # adjudication decided it the same way (issue #37, pass 4).
+        same_decision = (fresh.disposition, fresh.deciding_record_id) == (stored.disposition, stored.deciding_record_id)
         for incident in fresh.incidents:
+            if incident.kind != "receipt_lag" and not same_decision:
+                continue
             if (incident.kind, incident.reference_id) not in known:
                 self._ledger.append(KIND_INCIDENT, _ledger_id("incident", event_id, incident.kind, incident.reference_id),
                                     {"event_id": event_id, **incident.to_payload()})
