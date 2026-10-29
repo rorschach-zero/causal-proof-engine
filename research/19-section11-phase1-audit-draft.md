@@ -362,4 +362,8 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 
 Pass 7, at `c55e4ce`, is not passed: G1 and I1 (Claude) and 7-1 and 7-4 (Codex) are reproduced P1s (fixes in PRs #83, #84 and #85).
 
-<PENDING: the owner's decision on pass 8 (proposed pin: `main` after #86, `c37d048`); "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+**Pass 8** is pinned at `main` `c37d04899c3f0c821825f7aee09ff79c900eb02a`, the merge of #86 (issue #37 comment `6506588507`). It runs under the owner's continuing authorisation of 2026-10-29: the owner is informed after each pass and can stop the audit.
+- Claude side: a fresh session (session 10). It also opens a PR of invariant tests covering write-replay equivalence, write-restore equivalence, raw-row refusal per record kind, and persisted-input equivalence.
+- Codex: the automatic review of the whole-tree PR #87 (branch `audit/pass8-full-tree`, `7f7690a`).
+
+<PENDING: pass 8 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
