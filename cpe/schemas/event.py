@@ -19,6 +19,7 @@ from typing import Literal, cast, get_args
 from cpe.canonical import JsonValue
 from cpe.errors import Refusal
 from cpe.schemas.common import (
+    identifier_list,
     Payload,
     optional_timestamp,
     require_identifier,
@@ -202,7 +203,7 @@ class EventSpec:
             "issuance_close": timestamp_payload(self.issuance_close),
             "evidence_cutoff": timestamp_payload(self.evidence_cutoff),
             "reference_class_id": self.reference_class_id,
-            "scoring_slots": list(self.scoring_slots),
+            "scoring_slots": identifier_list(self.scoring_slots, "scoring_slots"),
             "primary_slot": self.primary_slot,
         }
         if self.falsifier_observable_from is not None:
@@ -275,7 +276,7 @@ class ClusterRecord:
     def to_payload(self) -> Payload:
         return {
             "cluster_id": self.cluster_id,
-            "member_event_ids": list(self.member_event_ids),
-            "pre_declared_void": list(self.pre_declared_void),
+            "member_event_ids": identifier_list(self.member_event_ids, "member_event_ids"),
+            "pre_declared_void": identifier_list(self.pre_declared_void, "pre_declared_void"),
         }
 

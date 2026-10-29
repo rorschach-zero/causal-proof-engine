@@ -8,6 +8,8 @@ from typing import Literal, cast
 from cpe.errors import Refusal
 from cpe.schemas import ClusterRecord, EventSpec
 from cpe.schemas.common import (
+    identifier_list,
+    require_text,
     Payload,
     require_date,
     require_digest,
@@ -49,7 +51,7 @@ class CandidateEntry:
         return cls(require_identifier(m["candidate_id"], "candidate_id"), require_identifier(m["event_id"], "event_id"),
                    require_identifier(m["source_id"], "source_id"), require_timestamp(m["listed_at"], "listed_at"),
                    cast(CandidateDecision, _choice(m["decision"], "decision", ("registered", "rejected", "sampled-out"))),
-                   str(m["reason"]))
+                   require_text(m["reason"], "reason"))
 
     def to_payload(self) -> Payload:
         return {"candidate_id": self.candidate_id, "event_id": self.event_id, "source_id": self.source_id,
@@ -116,7 +118,7 @@ class VoidRequest:
         m = require_mapping(payload, "VoidRequest")
         require_keys(m, "VoidRequest", _VOID_KEYS, frozenset())
         return cls(require_identifier(m["request_id"], "request_id"), require_identifier(m["event_id"], "event_id"),
-                   str(m["reason"]))
+                   require_text(m["reason"], "reason"))
 
     def to_payload(self) -> Payload:
         return {"request_id": self.request_id, "event_id": self.event_id, "reason": self.reason}
@@ -227,8 +229,8 @@ class ClaimPreregistration:
             "claim_id": self.claim_id, "population_kind": self.population_kind, "question_set_id": self.question_set_id,
             "holder_id": self.holder_id, "question_set_fixed_at": timestamp_payload(self.question_set_fixed_at),
             "period_start": timestamp_payload(self.period_start), "period_end": timestamp_payload(self.period_end),
-            "weighting": self.weighting, "family_order": list(self.family_order),
-            "validity_class_ids": list(self.validity_class_ids), "calibration_record_id": self.calibration_record_id,
+            "weighting": self.weighting, "family_order": identifier_list(self.family_order, "family_order"),
+            "validity_class_ids": identifier_list(self.validity_class_ids, "validity_class_ids"), "calibration_record_id": self.calibration_record_id,
         }
 
 
@@ -244,8 +246,8 @@ class ConfirmatoryRegister:
     confirmatory_claim_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
-        if self.s_max < 1:
-            raise Refusal("invalid_register", "S_max is at least 1")
+        if isinstance(self.s_max, bool) or not isinstance(self.s_max, int) or self.s_max < 1:
+            raise Refusal("invalid_register", "S_max is an integer of at least 1")
         if len(self.confirmatory_claim_ids) > self.s_max:
             raise Refusal("invalid_register", "the register lists at most S_max confirmatory claims")
 
@@ -258,7 +260,7 @@ class ConfirmatoryRegister:
 
     def to_payload(self) -> Payload:
         return {"register_id": self.register_id, "s_max": self.s_max,
-                "confirmatory_claim_ids": list(self.confirmatory_claim_ids)}
+                "confirmatory_claim_ids": identifier_list(self.confirmatory_claim_ids, "confirmatory_claim_ids")}
 
 
 _CALIBRATION_KEYS = frozenset({
