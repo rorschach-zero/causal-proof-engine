@@ -141,6 +141,31 @@ Authorised by the owner after pass 3, and pinned at the merge of PR #50 on `f775
 
 **Pass 4 is not passed: W1, W2, W3 and C1 are reproduced P1s** (F5 re-rated P1 with them). A new pass follows at a new pin once the fixes are merged.
 
+### 11.3b Pass 5, at `b34c7212ca688d72611c3fd09b4eba170f94b44b`
+
+Pinned on 2026-10-29 at `main` after PRs #60, #55, #57, #58, #61, #62, #63, #65 and #64 (#56 and #59 superseded): every reproduced defect of passes 1 to 4 and of the fix-PR reviews is fixed there (issue #37 comment `6502230845`).
+
+**Claude** (a fresh audit session; issue #37 comment `6502823989`): every module of `cpe/` and `tools/` read at the pin (`tools/mutation_report.py` at structure level), `ci.yml` and `pr-text.yml`. Every suspected defect written as a pytest test on a `git archive` of the pin (Python 3.13.17), where the existing suite passes; every test below fails there. Classified by the coordinator on 2026-10-29.
+
+| # | Severity | Finding | Fixed in |
+|---|---|---|---|
+| X1 | **P1** | Registration replay took forecast rows as written: a second row for a filled slot replaced its value (RC-75), a row under another arm version filled the slot (RC-96); the rows a forecast is judged against (cluster registration, candidate, arm version, correction, base rate) likewise | PR #70 |
+| X2 | **P1** | Adjudication replay took disposition, knowable-correction and defect rows as written: a second disposition row turned `RESOLVED_NO` into `RESOLVED_YES` (RC-88), a correction naming no record lowered `knowable_at` (RC-146) | PR #71 |
+| L1 | **P1** | Reopening a ledger cleared a disproved anchor attempt and its staged time with it, so a record was admitted below a persisted wall time (`17` item 2 "Clock"; the C1 precedent). `test_4329707427` had encoded the drop; its expectation is changed | PR #69 |
+| R2 | P2 | An anchor landing between a registration snapshot and its append was not seen (an anchor moves no chain head): a round was recorded as refused against stale anchors and every later read refused the ledger | PR #67 |
+| T3 | P3 | The pull request title pre-check missed titles git reads as trailers (`Fix:`, `1Fix: y`), which then fail T-09 on `main` (the incident of comment `6500990530`) | PR #66 |
+| B1 | P3 | The import boundary did not forbid `posix` (nor `nt`, `_posixsubprocess`, `_winapi`, `_socket`, `_ssl`) | PR #66 |
+| — | P3 | A text evidence cutoff and a text capability expiry raised `AttributeError`; raw registration rows of an unknown version or event raised `KeyError` | PRs #68, #70 |
+
+**Codex reviews of the pass-5 fix PRs:**
+- PR #66: no findings.
+- PR #67, `4415215845` (P1 badge): claims commit `d47a396` with a Codex identity and a session footer. **Not reproduced**: no such object in the repository; the PR's commit carries the owner identity and no trailer; the provenance check reports 0 findings. A reviewer artifact, as `4414429436`.
+- PRs #68 to #71: <PENDING>.
+
+**Codex pass 5**, run by the owner in the web UI: <PENDING: findings and classification.>
+
+**Pass 5 is not passed: X1, X2 and L1 are reproduced P1s.**
+
 ### 11.4 Deviations and readings, for the owner
 
 - **An `OPEN` member with an evidenced public occurrence** (pass 2, Codex 3). `17` defines `knowable_at` = min(publication, public occurrence, deadline + window) for an outcome, but does not say what an undecided member carries.
@@ -168,6 +193,9 @@ Authorised by the owner after pass 3, and pinned at the merge of PR #50 on `f775
 - **Release continuity per epoch** (PR #63; coordinator's reading). Each epoch is replayed under the release that opened it, and a gate acts only in an epoch its own release opened: an older release still running refuses every action with `stale_release` until its own start rotates the epoch. Neither 17 item 5 nor RC-74, RC-103 or RC-123 states upgrade continuity.
 - **A ledger already holding a refused-round row written under the old R1 is refused on replay** (PR #63, `4353380358`). Such a row is the R1 defect itself.
 - **The canonical form takes plain containers only** (PR #55): a subclass is refused even when it serialises faithfully.
+
+- **Class W extended to forecast, disposition and knowable-correction rows (reading P5-R1; coordinator, 2026-10-29).** Replay admits every row that sets what a forecast is judged against, every disposition, correction and defect only by the rule its write path applies; a row the registry would have refused refuses the ledger (PRs #70, #71). A disposition is recomputed on replay from the state it was appended against; a correction must be at a time its named record evidences. Incident rows decide nothing and are read as written.
+- **The clock bound of a staged anchor attempt survives its disproof and a reopen (reading P5-R2; coordinator, 2026-10-29).** The disproved row is still cleared (§9.1 stands); its staged time stays in the anchor high-water mark (PR #69).
 
 ### 11.5 Specification questions, for the owner
 
@@ -231,4 +259,6 @@ None of these changes a result.
 
 Pass 3 was not passed (open P1: F4, fixed in PR #48). The owner authorised one bounded re-verification pass, pass 4.
 
-<PENDING: "passed at <PASS4_SHA>: neither auditor reproduced a P1", or the reproduced P1s, their fixes and the owner's decision on a further pass.>
+Pass 4 was not passed (W1 to W3, C1, A7, F5 and two review P1s, fixed in PRs #51 to #65). Pass 5, at `b34c721`, is not passed by the Claude auditor: X1, X2 and L1 are reproduced P1s (fixes in PRs #69 to #71).
+
+<PENDING: Codex pass 5; the owner's decision on a further pass; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
