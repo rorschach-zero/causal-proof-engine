@@ -137,7 +137,8 @@ class Ledger:
     def _reconcile_pending_anchors(self) -> None:
         """Settle every pending row against a reachable external store: a row the store holds becomes a local
         anchor; a row the store provably lacks is cleared; without a reachable store every row stays pending,
-        still bounding the clock and never counting as a local anchor. Nothing else clears a pending row."""
+        still bounding the clock and never counting as a local anchor. Only ``anchor()`` settles a pending row
+        besides this, in the same way."""
         if self._anchor_store is None:
             return
         pending = self._conn.execute("SELECT prefix_length, digest, published_at FROM pending_anchors").fetchall()
@@ -232,8 +233,9 @@ class Ledger:
         before the records it covers. The attempt is staged as a pending row before the external publish and
         settled after it, so that a process dying between the two leaves the publication time on disk; a refused
         or failed publish leaves the row pending, since a refusal does not prove the store did not commit, and
-        only open-time reconciliation against a reachable store confirms or clears it. A published row at the
-        same prefix is never replaced: a repeat attempt is staged beside it.
+        only a reachable store confirms or clears it: at open, or at the next anchor, which settles every earlier
+        attempt the store holds and clears every one it lacks. A published row at the same prefix is never
+        replaced: a repeat attempt is staged beside it.
         """
         if self._anchor_store is None:
             raise Refusal("no_anchor_store", "this ledger has no anchor store")
@@ -246,15 +248,20 @@ class Ledger:
                 report = verify(self._records_locked(), existing, external=True)
                 if not report.intact:
                     raise Refusal("anchor_conflict", f"the ledger does not verify against the external store: {report.detail}")
-            # Every earlier attempt the reachable store does not hold is disproved: it never landed, so it is
-            # neither an anchor nor a possible one (PR #56 review 4353231816). The attempt staged below carries a
-            # later time, so the high-water mark never falls by this.
-            held_keys = {(a.prefix_length, a.digest) for a in existing}
+            # Every earlier attempt is settled against the reachable store, as reconciliation at open settles it: one
+            # the store holds becomes a local anchor with the time the store holds (PR #63 review 4414429445); one
+            # it does not hold is disproved, never landed, and is neither an anchor nor a possible one (PR #56
+            # review 4353231816). The attempt staged below carries a later time, so the high-water mark never falls.
+            held_by_key = {(a.prefix_length, a.digest): a for a in existing}
             for prefix_length, digest in self._conn.execute(
                     "SELECT prefix_length, digest FROM pending_anchors").fetchall():
-                if (prefix_length, digest) not in held_keys:
-                    self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
-                                       (prefix_length, digest))
+                settled = held_by_key.get((prefix_length, digest))
+                if settled is not None:
+                    self._conn.execute(
+                        "INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                        (prefix_length, digest, settled.published_at))
+                self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?",
+                                   (prefix_length, digest))
             held = next((a for a in existing if a.prefix_length == self._state.count and a.digest == self._state.head),
                         None)
             if held is not None:  # an earlier attempt landed: settle with the time the store holds, publish nothing
