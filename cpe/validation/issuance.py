@@ -78,6 +78,10 @@ def check_issuance(event_id: str, arm_versions: Mapping[str, str], outputs: Sequ
     for it; every output must be a forecast for ``slot_id`` (RC-75, RC-89)."""
     event_id = require_identifier(event_id, "event_id")
     slot_id = require_identifier(slot_id, "slot_id")
+    if not isinstance(arm_versions, Mapping):  # typed, never an AttributeError (issue #37, pass 3)
+        raise Refusal("invalid_provider_set", "arm_versions maps each provider to its arm version")
+    if isinstance(outputs, (str, bytes)) or not isinstance(outputs, Sequence):  # issue #37, pass 4
+        raise Refusal("invalid_outputs", "outputs is a sequence of research outputs")
     versions = {require_identifier(provider, "provider"): require_identifier(version, f"arm_versions[{provider}]")
                 for provider, version in arm_versions.items()}
     if len(versions) != PROVIDER_COUNT:

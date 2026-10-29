@@ -72,7 +72,8 @@ class CapabilityGate:
     def __init__(self, ledger: Ledger, verifier: Verifier, time_source: TimeSource, environment: str,
                  release_digest: str, slew_tolerance_seconds: float) -> None:
         try:  # NaN or inf would disable RC-73, RC-100; an integer beyond the float range raises (issue #37)
-            finite = math.isfinite(slew_tolerance_seconds)
+            finite = isinstance(slew_tolerance_seconds, (int, float)) and not isinstance(slew_tolerance_seconds, bool) \
+                and math.isfinite(slew_tolerance_seconds)
         except OverflowError:
             finite = False
         if not finite or slew_tolerance_seconds <= 0:
@@ -230,7 +231,7 @@ class CapabilityGate:
             reading = self._reading(state, now)
             if self._stale_release(state):
                 verdict = ("refused", "stale_release")
-            elif action not in ACTIONS:
+            elif not isinstance(action, str) or action not in ACTIONS:  # an unhashable action is unknown too
                 verdict = ("refused", "unknown_action")
             elif state.epoch_unanchored:
                 verdict = ("refused", "epoch_unanchored")

@@ -10,6 +10,7 @@ from datetime import datetime
 
 from cpe.errors import Refusal
 from cpe.schemas.common import (
+    identifier_list,
     Payload,
     optional_timestamp,
     require_digest,
@@ -56,6 +57,6 @@ class ResearchOutput:
             "event_id": self.event_id,
             "forecast": self.forecast.to_payload(),
             "reasoning_digest": self.reasoning_digest,
-            "evidence_ids": list(self.evidence_ids),
+            "evidence_ids": identifier_list(self.evidence_ids, "evidence_ids"),
             "claimed_produced_at": timestamp_payload(self.claimed_produced_at),
         }

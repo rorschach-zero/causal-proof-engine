@@ -103,7 +103,8 @@ class _State:
 
 
 def _payload_of(value: ArmVersion | CutoffCorrection | BaseRate | ClusterRegistration | VoidRequest
-                | ConfirmatoryRegister | CalibrationRecord | BeaconOutput) -> Payload:
+                | ConfirmatoryRegister | CalibrationRecord | BeaconOutput | CandidateEntry | Forecast
+                | ClaimPreregistration) -> Payload:
     """The payload a write would persist, for validation in full as replay will read it: a directly constructed
     object that bypasses its schema is refused before anything is written, never committed as a row that every
     later replay refuses (issue #37, Codex 5). An object whose fields cannot be serialised is refused alike."""
@@ -401,7 +402,7 @@ class RegistrationRegistry:
     # candidate log ------------------------------------------------------------------------------------------
 
     def log_candidate(self, entry: CandidateEntry) -> Record:
-        entry = CandidateEntry.from_payload(entry.to_payload())  # validated in full, a naive time is a Refusal
+        entry = CandidateEntry.from_payload(_payload_of(entry))  # validated in full, a naive time is a Refusal
 
         def decide(state: _State, now: datetime) -> Write:
             if entry.event_id in state.forecasts_by_event:
@@ -497,7 +498,7 @@ class RegistrationRegistry:
         """Admit a forecast, validated in full as its payload will be replayed. A receipt inside the issuance
         window fills its (event, arm, slot); one outside the window is kept, labelled by its receipt, and fills
         nothing (RC-75, RC-87)."""
-        forecast = Forecast.from_payload(forecast.to_payload())
+        forecast = Forecast.from_payload(_payload_of(forecast))
 
         def decide(state: _State, now: datetime) -> Write:
             spec = state.events.get(forecast.event_id)
@@ -572,7 +573,7 @@ class RegistrationRegistry:
         """A claim is recorded after its question set is fixed and before its evaluation period begins; its
         fields are then fixed (``18`` M-8). Validated in full as its payload will be replayed; its calibration
         record identifier is reserved for it alone (``18`` M-1 (i))."""
-        claim = ClaimPreregistration.from_payload(claim.to_payload())
+        claim = ClaimPreregistration.from_payload(_payload_of(claim))
 
         def decide(state: _State, now: datetime) -> Write:
             if claim.population_kind != "fixed_question_set":

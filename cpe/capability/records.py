@@ -27,6 +27,13 @@ GATE_KINDS = frozenset({KIND_EPOCH, KIND_INTENT, KIND_ABORT, KIND_COMMIT, KIND_C
 EpochReason = str  # "start", "demotion:<reason>", "discontinuity:<detail>"
 
 
+def _text(value: object, field: str) -> str:
+    """A text field of a gate record, refused rather than coerced when it is not a string (issue #37, pass 3)."""
+    if not isinstance(value, str):
+        raise Refusal("invalid_text", f"{field} must be a string")
+    return value
+
+
 def intent_ledger_id(capability: Capability) -> str:
     """The nonce's identity in the ledger: one intent per (epoch, nonce), enforced by the ledger's unique record
     identifier inside the writer transaction (RC-43). The protected operation writes it and replay requires it."""
@@ -60,7 +67,7 @@ class EpochRecord:
         if index < 1:
             raise Refusal("invalid_epoch", "epoch indices start at 1")
         release = m.get("release_digest")
-        return cls(require_non_negative_int(m["epoch"], "epoch"), index, str(m["reason"]),
+        return cls(require_non_negative_int(m["epoch"], "epoch"), index, _text(m["reason"], "reason"),
                    ClockReading.from_payload(m["baseline"]),
                    None if release is None else require_digest(release, "release_digest"))
 
@@ -107,7 +114,7 @@ class AbortRecord:
     def from_payload(cls, payload: object) -> AbortRecord:
         m = require_mapping(payload, "AbortRecord")
         require_keys(m, "AbortRecord", frozenset({"intent_id", "reason", "reading"}), frozenset())
-        return cls(require_identifier(m["intent_id"], "intent_id"), str(m["reason"]), ClockReading.from_payload(m["reading"]))
+        return cls(require_identifier(m["intent_id"], "intent_id"), _text(m["reason"], "reason"), ClockReading.from_payload(m["reading"]))
 
     def to_payload(self) -> Payload:
         return {"intent_id": self.intent_id, "reason": self.reason, "reading": self.reading.to_payload()}
@@ -152,7 +159,7 @@ class CheckRecord:
     def from_payload(cls, payload: object) -> CheckRecord:
         m = require_mapping(payload, "CheckRecord")
         require_keys(m, "CheckRecord", frozenset({"subject", "verdict", "reason", "reading"}), frozenset())
-        return cls(str(m["subject"]), str(m["verdict"]), str(m["reason"]), ClockReading.from_payload(m["reading"]))
+        return cls(_text(m["subject"], "subject"), _text(m["verdict"], "verdict"), _text(m["reason"], "reason"), ClockReading.from_payload(m["reading"]))
 
     def to_payload(self) -> Payload:
         return {"subject": self.subject, "verdict": self.verdict, "reason": self.reason, "reading": self.reading.to_payload()}

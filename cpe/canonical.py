@@ -19,10 +19,24 @@ SHA256_HEX_LENGTH = 64
 ZERO_DIGEST = "0" * SHA256_HEX_LENGTH
 
 
+def _check_text(text: str, path: str) -> None:
+    """A string is a sequence of Unicode scalar values. A surrogate code point has no UTF-8 form, and its ASCII
+    escape is the escape of a pair: ``chr(0xD800) + chr(0xDC00)`` and ``chr(0x10000)`` had one canonical form, one
+    digest, and as dictionary keys one key, the second value silently replacing the first (issue #37, pass 4 K1,
+    K2)."""
+    try:
+        text.encode("utf-8")
+    except UnicodeEncodeError:
+        raise Refusal("surrogate_code_point", f"{path} holds a surrogate code point, which is not text") from None
+
+
 def _check_json(value: object, path: str, active: frozenset[int] = frozenset()) -> None:
     """Refuse anything that is not plain, finite, acyclic JSON data; ``active`` holds the containers on the current
     path, so a value that contains itself is a typed refusal rather than a RecursionError."""
-    if value is None or isinstance(value, (bool, str)):
+    if value is None or isinstance(value, bool):
+        return
+    if isinstance(value, str):
+        _check_text(value, path)
         return
     if isinstance(value, int):
         try:
@@ -37,6 +51,10 @@ def _check_json(value: object, path: str, active: frozenset[int] = frozenset()) 
             raise Refusal("non_finite_number", f"{path} is {value!r}")
         return
     if isinstance(value, (list, dict)):
+        if type(value) not in (list, dict):
+            # A subclass can serialise other than it iterates: a list whose ``__iter__`` shows nothing was digested
+            # as [] whatever it held (issue #37, pass 3 C-d). Only plain containers are JSON data here.
+            raise Refusal("not_json", f"{path} is a {type(value).__name__}, not a plain list or dict")
         if id(value) in active:
             raise Refusal("cyclic_value", f"{path} contains itself")
         inner = active | {id(value)}
@@ -47,6 +65,7 @@ def _check_json(value: object, path: str, active: frozenset[int] = frozenset()) 
         for key, item in value.items():
             if not isinstance(key, str):
                 raise Refusal("non_string_key", f"{path} has key {key!r}")
+            _check_text(key, f"{path} key")
             _check_json(item, f"{path}.{key}", inner)
         return
     raise Refusal("not_json", f"{path} is of type {type(value).__name__}")

@@ -26,6 +26,7 @@ from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.schemas.common import (
+    payload_of,
     Payload,
     require_identifier,
     require_json,
@@ -148,7 +149,7 @@ class PointInTimeStore:
         the same (entity, feature, vintage id) is refused. ``available_at`` must not follow the receipt. Another
         writer on the same ledger that lands the vintage first is read back, not reported as a duplicate id
         (4335189771)."""
-        row = FeatureRow.from_payload(row.to_payload())  # validated as replay will read it
+        row = FeatureRow.from_payload(payload_of(row))  # validated as replay will read it; never an untyped crash
         with self._lock:
             for attempt in range(2):
                 existing = replay_state(self._ledger.records()).rows.get((row.entity, row.feature, row.vintage_id))
@@ -187,6 +188,8 @@ class AsOfReader:
     def _bounded(self, as_of: datetime | None) -> datetime:
         if as_of is None:
             return self.evidence_cutoff
+        if not isinstance(as_of, datetime):
+            raise Refusal("invalid_timestamp", "as_of must be an aware datetime (issue #37)")
         as_of = parse_timestamp(format_timestamp(as_of), "as_of")  # naive refused, UTC canonical (4335189800)
         if as_of > self.evidence_cutoff:
             raise Refusal("after_evidence_cutoff", f"as-of {timestamp_payload(as_of)} is after the evidence cutoff "

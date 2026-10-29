@@ -36,4 +36,8 @@ class HarnessVerifier:
 
     def verify(self, message: bytes, signature: str) -> bool:
         # Compared as bytes: ``compare_digest`` refuses a non-ASCII string with a TypeError (issue #37).
-        return hmac.compare_digest(self.sign(message).encode("ascii"), signature.encode("utf-8"))
+        try:
+            presented = signature.encode("utf-8")
+        except UnicodeEncodeError:  # a surrogate code point is no signature (issue #37, pass 3)
+            return False
+        return hmac.compare_digest(self.sign(message).encode("ascii"), presented)
