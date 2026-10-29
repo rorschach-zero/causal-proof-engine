@@ -41,6 +41,7 @@ from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
 from cpe.ledger.store import Admit
 from cpe.schemas import Capability
+from cpe.schemas.common import require_digest
 
 log = logging.getLogger("cpe.capability")
 
@@ -77,6 +78,7 @@ class CapabilityGate:
             finite = False
         if not finite or slew_tolerance_seconds <= 0:
             raise Refusal("invalid_tolerance", "the slew tolerance is a finite positive number of seconds (owner field)")
+        release_digest = require_digest(release_digest, "release_digest")  # recorded with every epoch it opens
         self._ledger = ledger
         self._verifier = verifier
         self._time = time_source
@@ -94,9 +96,16 @@ class CapabilityGate:
         """Replayed from the ledger and its local anchor copy (self-attested; the restore path verifies), every
         intent and commit re-validated against this gate's verifier, environment and release (RC-43, RC-46)."""
         with self._lock:
-            anchors = self._ledger.local_anchors()
+            records, anchors, _ = self._ledger.snapshot()  # one read under the ledger's lock (PR #59 review 4353380381)
             prefix = max((a.prefix_length for a in anchors), default=0)
-            return replay_gate(self._ledger.records(), prefix, self._rules)
+            return replay_gate(records, prefix, self._rules, anchors)
+
+    def _stale_release(self, state: GateState) -> bool:
+        """True while the current epoch was opened by another release: a gate of an earlier release that is still
+        running after a later one rotated the ledger acts on nothing, so that no level the later release's
+        capabilities raised is used by a process that holds no capability for its own release (PR #59 review
+        4353380374). Its own next start rotates the epoch under its release."""
+        return state.epoch_release is not None and state.epoch_release != self._release_digest
 
     def _hook(self, point: str) -> None:
         hook = self.hooks.pop(point, None)
@@ -176,7 +185,7 @@ class CapabilityGate:
         def decide(state: GateState, now: datetime) -> Write:
             reading = baseline if baseline is not None else self._raw_reading(now)
             # the identifier is random (not a secret): unique across restores, which a counter is not (RC-123)
-            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading)
+            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest)
             return KIND_EPOCH, _ledger_id("gate-epoch", str(record.index), str(record.epoch)), record.to_payload()
 
         record = self._append(decide)
@@ -220,7 +229,9 @@ class CapabilityGate:
         def decide(state: GateState, now: datetime) -> Write:
             nonlocal verdict
             reading = self._reading(state, now)
-            if not isinstance(action, str) or action not in ACTIONS:  # an unhashable action is unknown too
+            if self._stale_release(state):
+                verdict = ("refused", "stale_release")
+            elif not isinstance(action, str) or action not in ACTIONS:  # an unhashable action is unknown too
                 verdict = ("refused", "unknown_action")
             elif state.epoch_unanchored:
                 verdict = ("refused", "epoch_unanchored")
@@ -242,6 +253,8 @@ class CapabilityGate:
     def _validate(self, state: GateState, capability: Capability, evidence_digest: str, now: datetime) -> str | None:
         """The reason a presentation is refused, or None. Whole-tuple signature first (RC-62), then the environment,
         release, evidence, expiry, epoch, anchoring and nonce checks."""
+        if self._stale_release(state):
+            return "stale_release"
         if not self._verifier.verify(capability.signed_bytes(), capability.signature):
             return "invalid_signature"
         if capability.environment != self._environment:

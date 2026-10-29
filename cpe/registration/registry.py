@@ -205,7 +205,7 @@ def replay_state(records: tuple[Record, ...]) -> _State:
         elif record.kind == KIND_ROUND_REFUSED:
             assert isinstance(payload, dict)
             output = BeaconOutput.from_payload(payload["output"])
-            _check_refused_round(record, output, state)
+            _check_refused_round(record, output, payload.get("reason"), state)
             state.refused_rounds[output.calibration_record_id] = output
     return state
 
@@ -276,10 +276,12 @@ def _check_beacon(record: Record, output: BeaconOutput, seed: JsonValue, state: 
     return derived
 
 
-def _check_refused_round(record: Record, output: BeaconOutput, state: _State) -> None:
+def _check_refused_round(record: Record, output: BeaconOutput, reason: object, state: _State) -> None:
     _check_round(record, output, state, "round-refused")
     if state.register_seq is None:
         raise _invalid(record, "refuses a round with no register to be anchored before it (RC-311)")
+    if reason not in ("round_before_anchor", "register_not_anchored"):
+        raise _invalid(record, "names no refusal the registry writes")
 
 
 def _anchor_time_covering(anchors: tuple[Anchor, ...], seq: int) -> datetime | None:
@@ -302,6 +304,14 @@ def check_anchor_times(state: _State) -> None:
         if late:
             raise Refusal("invalid_record", f"the round of {calibration_id} was published before an anchor it "
                           "must follow, and no seed is drawn from it (RC-304, RC-311)")
+    for calibration_id, output in state.refused_rounds.items():
+        # A round is recorded as refused only when the register was not anchored before it; a row that says so of a
+        # round the register's anchor preceded would bar a seed the registry would draw (PR #51 review 4353051504).
+        assert state.register_seq is not None  # checked on replay
+        register_anchored_at = _anchor_time_covering(state.local_anchors, state.register_seq)
+        if register_anchored_at is not None and register_anchored_at < output.published_at:
+            raise Refusal("invalid_record", f"the refused round of {calibration_id} was published after the "
+                          "register's anchor, so the registry would not have refused it (RC-311)")
 
 
 class RegistrationRegistry:

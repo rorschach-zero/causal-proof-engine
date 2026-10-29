@@ -175,7 +175,7 @@ def test_every_ledger_the_gate_writes_replays_to_its_state(tmp_path: Path, seed:
         rig.store.available = True
         anchors = rig.ledger.local_anchors()
         prefix = max((a.prefix_length for a in anchors), default=0)
-        assert replay_gate(rig.ledger.records(), prefix, rules) == rig.gate.state()
+        assert replay_gate(rig.ledger.records(), prefix, rules, anchors) == rig.gate.state()
 
 
 # W2, W3, F5: the registration registry -------------------------------------------------------------------------

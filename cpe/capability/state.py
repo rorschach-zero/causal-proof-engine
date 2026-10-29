@@ -33,7 +33,7 @@ from cpe.capability.signing import Verifier
 from cpe.capability.timesource import ClockReading
 from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
-from cpe.ledger import Record
+from cpe.ledger import Anchor, Record
 from cpe.ledger.record import GENESIS_HASH
 
 
@@ -66,6 +66,7 @@ class GateState:
     # The latest wall time any persisted reading observed. A check decided on one clock sample can be received at
     # an earlier one after a rollback; the time it observed bounds the clock as its receipt does (RC-65, issue #37).
     observed: datetime | None = None
+    epoch_release: str | None = None  # the release the current epoch was opened under, when recorded
 
     def observe(self, reading: ClockReading) -> None:
         if self.observed is None or reading.wall > self.observed:
@@ -95,8 +96,8 @@ def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules:
         problem = "carries no valid owner signature"
     elif capability.environment != rules.environment:
         problem = f"names environment {capability.environment!r}"
-    elif capability.release_digest != rules.release_digest:
-        problem = "names another release"
+    elif capability.release_digest != (state.epoch_release or rules.release_digest):
+        problem = "names a release other than its epoch's"
     elif record.record_id != intent_ledger_id(capability) or intent.intent_id != record.record_id:
         problem = "is not written under its nonce's identity"
     elif intent.target_level != promotion_target(capability.capability):
@@ -111,10 +112,13 @@ def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules:
         raise Refusal("invalid_gate_ledger", f"intent {intent.intent_id} {problem}")
 
 
-def _check_commit(record: Record, commit: CommitRecord, state: GateState, hashes: list[str]) -> None:
+def _check_commit(record: Record, commit: CommitRecord, state: GateState, hashes: list[str],
+                  anchors: dict[tuple[int, str], datetime]) -> None:
     """The checks step 3 made before it wrote this commit rather than an abort: the epoch has not rotated since the
-    intent, the commit raises the gate above every commit of the epoch, and it cites an anchor of a prefix that
-    covers the intent and ends at a record of this chain."""
+    intent, the commit raises the gate above every commit of the epoch, and it cites a published anchor, one of the
+    ledger's anchors, of a prefix that covers the intent and ends at a record of this chain; a hash-chain reference
+    to a prefix nobody anchored is not step 2 (PR #51 review 4353051497), and neither is an anchor published after
+    the commit was received (PR #59 review 4353380367)."""
     stored = state.intents[commit.intent_id]
     intent_seq = state.intent_seq[commit.intent_id]
     problem = None
@@ -126,16 +130,21 @@ def _check_commit(record: Record, commit: CommitRecord, state: GateState, hashes
         if rank(stored.target_level) <= rank(max([state.level, *written], key=rank)):
             problem = "does not raise the gate"
         elif not intent_seq <= commit.intent_anchor_prefix < record.seq \
-                or hashes[commit.intent_anchor_prefix - 1] != commit.intent_anchor_digest:
-            problem = "cites no anchor of a prefix covering its intent"
+                or hashes[commit.intent_anchor_prefix - 1] != commit.intent_anchor_digest \
+                or (commit.intent_anchor_prefix, commit.intent_anchor_digest) not in anchors:
+            problem = "cites no published anchor of a prefix covering its intent"
+        elif anchors[(commit.intent_anchor_prefix, commit.intent_anchor_digest)] > parse_timestamp(record.receipt_time):
+            problem = "cites an anchor published after the commit was received"
     if problem is not None:
         raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} {problem}")
 
 
-def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRules) -> GateState:
+def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRules,
+                anchors: tuple[Anchor, ...]) -> GateState:
     """Replay the gate from the ledger records, with ``anchored_prefix`` the length of the longest anchored prefix
-    the caller trusts (the local anchor copy is self-attested; the restore path verifies externally), and every
-    intent and commit re-validated under ``rules``."""
+    the caller trusts and ``anchors`` the anchors it holds (the local anchor copy is self-attested; the restore path
+    verifies externally), and every intent and commit re-validated under ``rules``."""
+    published = {(anchor.prefix_length, anchor.digest): parse_timestamp(anchor.published_at) for anchor in anchors}
     state = GateState()
     hashes: list[str] = []
     for record in records:
@@ -147,6 +156,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
                 raise Refusal("invalid_gate_ledger", f"epoch index {epoch.index} does not follow {state.epoch_index}")
             state.epoch, state.epoch_index, state.epoch_seq = epoch.epoch, epoch.index, record.seq
             state.baseline = epoch.baseline
+            state.epoch_release = epoch.release_digest
             state.observe(epoch.baseline)
             state.epoch_anchored = record.seq <= anchored_prefix
             state.level = FLOOR
@@ -172,7 +182,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
                 raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} without a pending intent")
             if stored.capability.epoch != state.epoch:
                 raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} after its epoch rotated")
-            _check_commit(record, commit, state, hashes)
+            _check_commit(record, commit, state, hashes, published)
             state.commits[commit.intent_id] = commit
             state.commit_seq[commit.intent_id] = record.seq
             state.observe(commit.reading)

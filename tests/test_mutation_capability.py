@@ -255,7 +255,7 @@ def test_a_ledger_that_never_stops_advancing_is_contended(rig: Rig) -> None:
 
 def malformed(rig: Rig, kind: str, payload: Any) -> str:
     rig.ledger.append(kind, f"forged:{len(rig.ledger.records())}", payload)
-    return reason_of(lambda: replay_gate(rig.ledger.records(), 0, RULES))
+    return reason_of(lambda: replay_gate(rig.ledger.records(), 0, RULES, rig.ledger.local_anchors()))
 
 
 def genuine_intent(rig: Rig, nonce: str, reading: ClockReading) -> str:
@@ -287,14 +287,14 @@ def test_replay_names_every_malformed_gate_ledger(tmp_path: Path) -> None:
     r = fresh("commit-after-abort")
     i2 = genuine_intent(r, "y", reading)
     r.ledger.append(KIND_ABORT, "forged-abort-2", AbortRecord(i2, "gone", reading).to_payload())
-    assert replay_gate(r.ledger.records(), 0, RULES).aborted == {i2: "gone"}
+    assert replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors()).aborted == {i2: "gone"}
     assert malformed(r, KIND_COMMIT, CommitRecord(i2, 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("abort-after-commit")
     i3 = genuine_intent(r, "z", reading)
     anchor = r.ledger.anchor()
     r.ledger.append(KIND_COMMIT, "forged-commit-3",
                     CommitRecord(i3, anchor.prefix_length, anchor.digest, reading).to_payload())
-    assert i3 in replay_gate(r.ledger.records(), 0, RULES).commits
+    assert i3 in replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors()).commits
     assert malformed(r, KIND_ABORT, AbortRecord(i3, "late", reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("old-epoch")
     i4 = genuine_intent(r, "w", reading)
