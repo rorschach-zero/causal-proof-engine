@@ -4,13 +4,14 @@ name: CI
 # Actions are pinned by commit: actions/checkout v4 = 11d5960a, actions/setup-python v5 = a26af69b.
 #
 # Runs: every pull request head (opened, synchronize, reopened) and every push to main run all six jobs. An edit of a
-# pull request's title or description runs the T-09 job alone, because only the pull request text changed; the five
-# code jobs keep the result of the head's last code run. A new push to a pull request cancels the still-running jobs
+# pull request's title or description does not run this workflow: it runs pr-text.yml, whose single job re-checks the
+# pull request text under its own check name, so the six results recorded here for a head are never replaced by a
+# skipped run (a skipped job reports success to GitHub). A new push to a pull request cancels the still-running jobs
 # of the head it supersedes; runs on main are never cancelled, so every merge keeps its own record.
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, edited]
+    types: [opened, synchronize, reopened]
   push:
     branches: [main]
 
@@ -18,13 +19,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}-${{ github.event.action == 'edited' && 'text' || 'code' }}
+  group: ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   checks:
     name: typing, tests, fixture, import boundary (Python ${{ matrix.python-version }})
-    if: github.event_name != 'pull_request' || github.event.action != 'edited'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -54,7 +54,6 @@ jobs:
 
   restore-container:
     name: restore from a clean checkout in a container (T-08)
-    if: github.event_name != 'pull_request' || github.event.action != 'edited'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
@@ -110,7 +109,6 @@ jobs:
 
   archive:
     name: research/original unchanged by manifest and tree (T-41)
-    if: github.event_name != 'pull_request' || github.event.action != 'edited'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -121,7 +119,6 @@ jobs:
 
   lean:
     name: retained Lean lemmas and the known-false lemma on the pinned toolchain (T-40)
-    if: github.event_name != 'pull_request' || github.event.action != 'edited'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
