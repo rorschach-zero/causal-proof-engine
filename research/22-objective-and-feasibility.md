@@ -48,8 +48,10 @@ the owner wants them verified): long-run documented track records sit far below 
 Hathaway, about 20 % per year over five decades. The best public long-only managers over twenty-year windows,
 about 25 to 30 %. Renaissance Technologies' Medallion fund, the best documented result, about 66 % gross and 39 %
 net of fees over three decades, with hundreds of scientists, proprietary data and a hard capacity limit that
-forces it to return capital. The objective therefore asks for a net return at or above the best gross return
-ever documented, from a start capital of 4,000, for ten years.
+forces it to return capital. The objective's 58.49 % is therefore above the best documented net return and
+below the best documented gross return, from a start capital of 4,000, for ten years; since the engine's own
+costs are carried outside the capital (§7), the comparison that matters is the net one, and taxes on the
+owner's side, which this note does not model, raise the gross return the capital itself must earn.
 
 `HYPOTHESIS`. Long-term, concentrated positions change the shape of the arithmetic but not its demand. A 100x
 decade built from multi-year holdings means a handful of positions each of which must multiply several-fold,
@@ -120,21 +122,28 @@ result exists, in the sense of `21` lesson 2: a decision rule chosen after the o
 | 2 ingest, Jev, Design C, first registered events | ≥ 100 registered events, anchors verified from a second machine | every event carries a market- or consensus-implied comparator at registration; every long chain is registered as dated milestones | if fewer than 100 events can be registered with comparators in 12 months, the question set is not fit for the objective; revise Q before Phase 4 |
 | 3 SIM read-only | 7 days of readbacks, token-leak audit | none | as in `20` |
 | 4 three-model adapters and fusion | three independent round-1 outputs per event | blinding and source-locking demonstrated by a leak test; reasoning-overlap metric (`12` R9) below a pre-registered ceiling | if the three outputs are not independent by the metric, do not count them as three |
-| 5 evaluation, certificates, no orders | 150 resolved events, design selection, independent review | the pre-calibrated fixed-horizon test of `18` §6 on the registered comparator; a skill estimate with its interval; the share of resolved milestones that confirmed their chain | if the skill interval excludes the effect the objective needs (see §6), stop the investment path and keep the research path |
+| 5 evaluation, certificates, no orders | 150 resolved events, design selection, independent review | the pre-calibrated fixed-horizon test of `18` §6 on the registered comparator; a skill estimate with its interval; the share of resolved milestones that confirmed their chain; a pre-registered forecast-to-payoff model (§6) evaluated on the same events | two separate rules: (research) if the skill interval excludes any improvement over the comparator, the forecasting claim fails; (investment) if the forecast-to-payoff model, applied under the `07` limits to the resolved events, excludes the compounding the objective needs (§6), stop the investment path and keep the research path |
 | 6 promoter and self-improvement | first promotion recorded end to end | none | as in `12` |
 | 7 SIM execution | 60 days, zero duplicate orders | realised SIM return against the registered comparator, net of modelled costs | if the SIM return over the registered horizon does not exceed the comparator by the pre-registered margin, no live pilot |
 | live pilot (not in `12`; `07` §3 limits) | owner decision | a pre-registered pilot protocol with a hash deposited outside CPE (`21` lesson 2), monthly ruin report (`07` §3) | drawdown beyond the pre-registered limit, or two consecutive annual reviews below the comparator, ends the pilot |
 
 ## 6. The effect the objective needs, stated so that Phase 5 can test it
 
-`HYPOTHESIS`, to be made exact in Phase 2 when the question set and the comparator exist. The objective needs,
-over the long run, a per-decision edge large enough that the Kelly-sized portfolio of `07` compounds at about
-58 % net. Phase 5 should state, before the confirmatory cohort opens, the minimum skill (Brier improvement
-against the comparator, or the equivalent in the fixed-horizon test of `18` §6) that would make that compounding
-plausible under the `07` limits, and the skill at which the investment path is abandoned. Both numbers are
-derived from the calibration work of Phase 4, not chosen by taste. Until then, this document records only the
-qualitative requirement: a skill so large that it has no documented precedent, measured so strictly that the
-owner would believe it against the base rate.
+`HYPOTHESIS`, to be made exact in Phase 2 when the question set and the comparator exist. Forecast skill alone
+does not identify the return: the same probabilities and the same Brier scores are compatible with different
+entry prices, conditional payoffs and holding periods, and therefore with different Kelly allocations and
+returns under the same limits; `18` §6 confines its claim to forecast skill on Q and says nothing about
+investment value. The investment stop rule therefore needs an explicit, pre-registered forecast-to-payoff
+model: for each registered event, the instrument or basket the chain points at, the entry price and date
+implied by the forecast's registration time, the payoff conditional on each outcome, the holding period, and
+the costs; the model is applied, under the `07` limits, to the events as they resolve, and its realised and
+projected compounding is compared with the objective's. Phase 5 should state, before the confirmatory cohort
+opens, (a) for the research path, the minimum skill against the comparator that keeps the forecasting claim,
+and (b) for the investment path, the mapping and the compounding below which the path is abandoned. The two
+rules are kept apart (§5): a forecasting claim can stand while the investment path fails, and the investment
+path never counts as evidence of skill. Until then, this document records only the qualitative requirement: a
+skill so large that it has no documented precedent, measured so strictly that the owner would believe it
+against the base rate, and a payoff mapping validated on the SIM before any capital follows it.
 
 ## 7. What this document does not say
 
@@ -151,3 +160,5 @@ possible. The money that funds the engine's own operation is not part of the 4,0
 - OD-22b: confirm that every registered event carries a market- or consensus-implied comparator from Phase 2 on.
 - OD-22c: confirm that long chains are registered as dated milestones with detection signals.
 - OD-22d: confirm that the engine's operating cost is funded outside the managed capital.
+- OD-22e: confirm that the investment stop rule rests on a pre-registered forecast-to-payoff model (§6), kept
+  apart from the forecasting claim, and that no capital follows the model before it is validated on the SIM.

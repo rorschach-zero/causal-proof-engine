@@ -179,9 +179,10 @@ and `research/19-phase1-handoff.md` sections 1 and 2.
 **Where CPE already matches the precedents.**
 - *Verifiable objective*: an externally fixed question set Q forecast exhaustively, scored by a pre-calibrated
   fixed-horizon test (handoff §2, OD11 (b)), is the analogue of a fixed benchmark scored by a fixed metric.
-- *Future-only evaluation*: the confirmatory cohort is disjoint from the Phase 4 design and burn-in cohort, and
-  parameters freeze before design-cohort measurement (handoff §2). This is GenCast's train/test split and
-  ForecastBench's unresolved-question rule.
+- *Future-only evaluation*: the confirmatory cohort is disjoint from the Phase 4 design and burn-in cohort; the
+  deterministic rule that selects the numerical parameters is anchored before the design cohort is measured,
+  and the parameters themselves are then fixed from that cohort, before the confirmatory cohort opens (handoff
+  §2). This is GenCast's train/test split and ForecastBench's unresolved-question rule.
 - *Time stamps*: the append-only ledger with anchors and four timestamps mirrors operational forecast archives.
 - *Formal methods*: Lean lemmas on a pinned toolchain mirror the kernel check; the FLT case shows CPE also needs a
   statement check, that each Lean statement says what the specification means.
