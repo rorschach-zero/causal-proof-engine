@@ -74,6 +74,7 @@ def registration_identifier(record: Record, earlier: list[Record]) -> str:
         "calibration_record": lambda: identifier("calibration", p["calibration_record_id"]),
         "beacon_output": lambda: identifier("beacon", p["output"]["calibration_record_id"]),
         "beacon_round_refused": lambda: identifier("round-refused", p["output"]["calibration_record_id"]),
+        "forecast_disclosure": lambda: identifier("disclosure", p["event_id"]),
     }[record.kind]()
 
 
@@ -108,12 +109,14 @@ def test_every_registration_record_has_its_golden_identifier(tmp_path: Path) -> 
     with pytest.raises(Refusal) as refused:  # published before the register's anchor: recorded (issue #37, pass 7)
         registry.supply_beacon_output(BeaconOutput("cal-2", "beacon", "round-8", "cd" * 32, reg.day(20)))
     assert refused.value.reason == "round_before_anchor"
+    clock.set(reg.day(41))
+    registry.forecasts_of("E-1")  # the first read after the close: the disclosure row (issue #37, pass 8)
 
     records = list(ledger.records())
     kinds = {r.kind for r in records}
     assert kinds == {"arm_version", "cutoff_correction", "candidate", "base_rate", "cluster_registration",
                      "void_request", "forecast", "claim_preregistration", "confirmatory_register",
-                     "calibration_record", "beacon_output", "beacon_round_refused"}
+                     "calibration_record", "beacon_output", "beacon_round_refused", "forecast_disclosure"}
     for index, record in enumerate(records):
         assert record.record_id == registration_identifier(record, records[:index]), record.kind
 

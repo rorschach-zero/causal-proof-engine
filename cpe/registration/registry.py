@@ -22,6 +22,7 @@ from cpe.ledger.kinds import (
     KIND_CLAIM as KIND_CLAIM,
     KIND_CLUSTER as KIND_CLUSTER,
     KIND_CUTOFF_CORRECTION as KIND_CUTOFF_CORRECTION,
+    KIND_DISCLOSURE as KIND_DISCLOSURE,
     KIND_FORECAST as KIND_FORECAST,
     KIND_REGISTER as KIND_REGISTER,
     KIND_ROUND_REFUSED as KIND_ROUND_REFUSED,
@@ -90,6 +91,7 @@ class _State:
     forecasts: dict[tuple[str, str, str], ReceivedForecast] = field(default_factory=dict)
     forecasts_by_event: dict[str, list[ReceivedForecast]] = field(default_factory=dict)
     submissions: dict[tuple[str, str, str], int] = field(default_factory=dict)
+    disclosed: set[str] = field(default_factory=set)  # events whose sealed forecasts a read has released
     claims: dict[str, ClaimPreregistration] = field(default_factory=dict)
     register: ConfirmatoryRegister | None = None
     register_seq: int | None = None
@@ -191,6 +193,12 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             spec = state.events[forecast.event_id]
             if spec.issuance_open <= received.receipt <= spec.issuance_close:
                 state.forecasts[key] = received  # only a receipt inside the window fills the slot (RC-75, RC-87)
+        elif record.kind == KIND_DISCLOSURE:
+            row = require_mapping(payload, KIND_DISCLOSURE)
+            require_keys(row, KIND_DISCLOSURE, frozenset({"event_id"}), frozenset())
+            event_id = require_identifier(row["event_id"], "event_id")
+            _replayed(record, _ledger_id("disclosure", event_id), lambda: admit_disclosure(state, event_id, receipt))
+            state.disclosed.add(event_id)
         elif record.kind == KIND_CLAIM:
             claim = ClaimPreregistration.from_payload(payload)
             _check_claim(record, claim, state)
@@ -417,6 +425,22 @@ def admit_cluster(state: _State, registration: ClusterRegistration, now: datetim
                               f"{cutoff.isoformat()} of arm {arm_id} (RC-138)")
 
 
+def admit_disclosure(state: _State, event_id: str, now: datetime) -> None:
+    """The first release of an event's sealed forecasts, after its issuance close (RC-109). The row's receipt is the
+    time of the read that released them, so it bounds the clock across reopen and restore: no submission can be
+    received at or before a time at which another arm's forecast was already read (issue #37, pass 8 Codex 8-1,
+    reading P8-R2)."""
+    spec = state.events.get(event_id)
+    if spec is None:
+        raise Refusal("unknown_event", f"{event_id} is not registered")
+    if event_id in state.disclosed:
+        raise Refusal("disclosed", f"the forecasts of {event_id} are already released")
+    if event_id not in state.forecasts_by_event:
+        raise Refusal("nothing_sealed", f"{event_id} has no forecast to release")
+    if not now > spec.issuance_close:
+        raise Refusal("read_before_close", "forecasts are sealed until the issuance window has closed (RC-109)")
+
+
 def admit_forecast(state: _State, forecast: Forecast) -> str:
     """The checks of a submission; returns the ledger identifier the submission is written under."""
     spec = state.events.get(forecast.event_id)
@@ -459,10 +483,20 @@ class RegistrationRegistry:
         """The replayed state as a reader outside the registry may see it: every forecast of an event whose issuance
         window has not closed at the ledger clock is left out, as ``forecasts_of`` seals it, so that no arm reads
         another's forecast while it can still submit (RC-109; issue #37, pass 6 Codex 6-2, reading P6-R2). The
-        unredacted state is internal to the registry's own decisions."""
+        unredacted state is internal to the registry's own decisions. The forecasts of an event closed at the ledger
+        clock are released with their disclosure row (P8-R2), decided on one clock sample: an event that closes
+        later, or whose forecasts have no disclosure row on the ledger, stays sealed in the snapshot (PR #95 review
+        4418096591)."""
         state = self._state()
         now = self._ledger.now()
-        sealed = {event_id for event_id, spec in state.events.items() if not self._closed(spec, now)}
+        released = [event_id for event_id, spec in state.events.items()
+                    if self._closed(spec, now) and event_id in state.forecasts_by_event and event_id not in state.disclosed]
+        if released:
+            for event_id in released:
+                self._disclose(event_id)
+            state = self._state()
+        sealed = {event_id for event_id, spec in state.events.items()
+                  if not self._closed(spec, now) or event_id not in state.disclosed}
         state.forecasts = {key: f for key, f in state.forecasts.items() if key[0] not in sealed}
         state.forecasts_by_event = {e: list(fs) for e, fs in state.forecasts_by_event.items() if e not in sealed}
         state.submissions = {key: n for key, n in state.submissions.items() if key[0] not in sealed}
@@ -612,6 +646,20 @@ class RegistrationRegistry:
 
         return self._write(decide)
 
+    def _disclose(self, event_id: str) -> None:
+        """Write the release of an event's sealed forecasts before a read returns them, decided against the row's own
+        receipt: a clock stepped back to the window between the decision and the append refuses the read (P8-R2). A
+        release another reader wrote first is the same fact; nothing is written twice."""
+        def decide(state: _State, now: datetime) -> Write:
+            admit_disclosure(state, event_id, now)
+            return KIND_DISCLOSURE, _ledger_id("disclosure", event_id), {"event_id": event_id}
+
+        try:
+            self._write(decide)
+        except Refusal as refusal:
+            if refusal.reason not in ("disclosed", "nothing_sealed"):
+                raise
+
     def _closed(self, spec: EventSpec, now: datetime) -> bool:
         """Submissions are eligible up to and including the close; reads open strictly after it, so no read can
         precede a submission at the same server time."""
@@ -627,6 +675,9 @@ class RegistrationRegistry:
             raise Refusal("unknown_event", f"{event_id} is not registered")
         if not self._closed(spec, self._ledger.now()):
             raise Refusal("read_before_close", "forecasts are sealed until the issuance window has closed (RC-109)")
+        if event_id in state.forecasts_by_event and event_id not in state.disclosed:
+            self._disclose(event_id)
+            state = self._state()
         return tuple(state.forecasts_by_event.get(event_id, ()))
 
     def forecasts_for_baseline(self, event_id: str) -> tuple[ReceivedForecast, ...]:
@@ -644,6 +695,9 @@ class RegistrationRegistry:
             raise Refusal("unknown_event", f"{event_id} is not registered")
         registration = state.clusters[state.event_cluster[event_id]]
         closed = self._closed(spec, self._ledger.now())
+        if closed and event_id in state.forecasts_by_event and event_id not in state.disclosed:
+            self._disclose(event_id)  # a filled slot's value is released below
+            state = self._state()
         states: list[SlotState] = []
         for arm_id in sorted(registration.arm_versions):
             for slot_id in spec.scoring_slots:
