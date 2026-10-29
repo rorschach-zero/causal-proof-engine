@@ -42,6 +42,10 @@ CREATE TABLE IF NOT EXISTS retired_attempts (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     published_at TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS observed_walls (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    observed_at TEXT NOT NULL
+);
 """
 
 
@@ -98,6 +102,7 @@ class Ledger:
         self._conn.executescript(_SCHEMA)
         self._state: LedgerState = replay(self.records())
         self._anchor_high_water = self._load_anchor_high_water()
+        self._observed_high_water = self._load_observed_high_water()
         self._reconcile_pending_anchors()
 
     def close(self) -> None:
@@ -138,6 +143,12 @@ class Ledger:
             "SELECT MAX(published_at) FROM (SELECT published_at FROM anchors UNION ALL "
             "SELECT published_at FROM pending_anchors UNION ALL SELECT published_at FROM retired_attempts)").fetchone()
         return row[0] if row is not None and row[0] is not None else ""
+
+    def _load_observed_high_water(self) -> str:
+        """The latest wall time a record persisted from a clock sample taken before its append (``append``'s
+        ``observed``), which may exceed the record's receipt after a rollback between the two."""
+        row = self._conn.execute("SELECT observed_at FROM observed_walls WHERE id = 1").fetchone()
+        return row[0] if row is not None else ""
 
     def _retire_pending(self, prefix_length: int, digest: str) -> None:
         """Delete a settled or disproved attempt, keeping its staged time as a bound of the clock: the time was
@@ -182,13 +193,14 @@ class Ledger:
     def _refuse_rollback(self, stamp: str) -> None:
         """Compared as instants, never as text (issue #37, pass 4 C1); every mark is a canonical timestamp."""
         moment = parse_timestamp(stamp, "server clock")
-        for mark in (self._state.high_water, self._anchor_high_water):
+        for mark in (self._state.high_water, self._anchor_high_water, self._observed_high_water):
             if mark and moment < parse_timestamp(mark, "high-water mark"):
                 raise Refusal("clock_rollback", f"server clock {stamp} is below the high-water mark {mark}")
 
     def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
                admit: Admit | None = None,
-               expected_anchors: tuple[tuple[Anchor, ...], tuple[Anchor, ...]] | None = None) -> Record:
+               expected_anchors: tuple[tuple[Anchor, ...], tuple[Anchor, ...]] | None = None,
+               observed: datetime | None = None) -> Record:
         """Append one record. With ``expected_head``, the append is refused unless the chain head is still that
         digest, so a decision computed from a snapshot cannot land after a record the snapshot did not hold. With
         ``admit``, the receipt time this append assigns is passed to it before the insert, and a refusal it raises
@@ -198,9 +210,14 @@ class Ledger:
         must be persisted keeps the time that decided it (H1 review 4334622032). With ``expected_anchors`` (the local
         anchors and the pending attempts of ``snapshot()``), the append is refused as stale unless they are unchanged
         too: an anchor moves no chain head, and a decision that read the anchors cannot land after one the snapshot
-        did not hold (issue #37, pass 5 R2)."""
+        did not hold (issue #37, pass 5 R2). With ``observed``, the wall time of a clock sample the payload persists
+        and that was taken before this append: it bounds every later clock read and receipt as a receipt does, in the
+        same transaction as the record, so a rollback between the sample and the append cannot let a later record
+        fall below a wall time the ledger already holds (``17`` item 2 "Clock", RC-37, RC-65; issue #37, pass 6
+        Codex 6-3)."""
         require_identifier(kind, "kind")
         require_identifier(record_id, "record_id")
+        observed_stamp = None if observed is None else format_timestamp(observed)
         with self._lock:
             if expected_head is not None and self._state.head != expected_head:
                 raise Refusal("stale_head", "the ledger advanced since the snapshot this record was decided on")
@@ -227,6 +244,10 @@ class Ledger:
                     "VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (seq, record_id, kind, receipt_time, payload_text, record.prev_hash, record.entry_hash),
                 )
+                if observed_stamp is not None:
+                    self._conn.execute(
+                        "INSERT INTO observed_walls (id, observed_at) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET "
+                        "observed_at = MAX(observed_at, excluded.observed_at)", (observed_stamp,))
                 self._faults.hit("before_commit")
                 self._conn.execute("COMMIT")
             except sqlite3.IntegrityError as error:
@@ -237,6 +258,7 @@ class Ledger:
                 raise
             # The record is durable from here. The state change is the committed row; the in-memory state follows it.
             self._state.apply(record)
+            self._observed_high_water = self._load_observed_high_water()
             self._faults.hit("after_commit")
             return record
 

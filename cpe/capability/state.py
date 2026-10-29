@@ -27,6 +27,7 @@ from cpe.capability.records import (
     CommitRecord,
     EpochRecord,
     IntentRecord,
+    epoch_ledger_id,
     intent_ledger_id,
 )
 from cpe.capability.signing import Verifier
@@ -147,6 +148,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
     published = {(anchor.prefix_length, anchor.digest): parse_timestamp(anchor.published_at) for anchor in anchors}
     state = GateState()
     hashes: list[str] = []
+    epochs_seen: set[int] = set()
     for record in records:
         state.head = record.entry_hash
         hashes.append(record.entry_hash)
@@ -154,6 +156,12 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
             epoch = EpochRecord.from_payload(record.payload)
             if epoch.index != state.epoch_index + 1:
                 raise Refusal("invalid_gate_ledger", f"epoch index {epoch.index} does not follow {state.epoch_index}")
+            # A rotation names an epoch no earlier rotation of the ledger named: a repeated identifier would revive
+            # every capability signed for it that was never presented, which the rotation invalidated (RC-73, RC-100,
+            # RC-123; issue #37, pass 6 E1).
+            if record.record_id != epoch_ledger_id(epoch.index, epoch.epoch) or epoch.epoch in epochs_seen:
+                raise Refusal("invalid_gate_ledger", f"epoch record {record.record_id} is not a fresh rotation")
+            epochs_seen.add(epoch.epoch)
             state.epoch, state.epoch_index, state.epoch_seq = epoch.epoch, epoch.index, record.seq
             state.baseline = epoch.baseline
             state.epoch_release = epoch.release_digest
