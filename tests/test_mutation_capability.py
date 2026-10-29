@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from cpe.capability.records import gate_ledger_id
 from cpe.capability import CapabilityGate, HostTimeSource, ManualTimeSource, replay_gate
 from cpe.capability.levels import permits, promotion_target, rank
 from cpe.capability.records import (
@@ -286,13 +287,13 @@ def test_replay_names_every_malformed_gate_ledger(tmp_path: Path) -> None:
     assert malformed(r, KIND_ABORT, AbortRecord("i-unknown", "x", reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("commit-after-abort")
     i2 = genuine_intent(r, "y", reading)
-    r.ledger.append(KIND_ABORT, "forged-abort-2", AbortRecord(i2, "gone", reading).to_payload())
+    r.ledger.append(KIND_ABORT, gate_ledger_id("gate-abort", i2), AbortRecord(i2, "gone", reading).to_payload())
     assert replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors()).aborted == {i2: "gone"}
     assert malformed(r, KIND_COMMIT, CommitRecord(i2, 1, "ab" * 32, reading).to_payload()) == "invalid_gate_ledger"
     r = fresh("abort-after-commit")
     i3 = genuine_intent(r, "z", reading)
     anchor = r.ledger.anchor()
-    r.ledger.append(KIND_COMMIT, "forged-commit-3",
+    r.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", i3),
                     CommitRecord(i3, anchor.prefix_length, anchor.digest, reading).to_payload())
     assert i3 in replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors()).commits
     assert malformed(r, KIND_ABORT, AbortRecord(i3, "late", reading).to_payload()) == "invalid_gate_ledger"

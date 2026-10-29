@@ -28,13 +28,16 @@ from cpe.capability.records import (
     EpochRecord,
     IntentRecord,
     epoch_ledger_id,
+    gate_ledger_id,
     intent_ledger_id,
 )
 from cpe.capability.signing import Verifier
+from cpe.canonical import digest_of
 from cpe.capability.timesource import ClockReading
 from cpe.clock import parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, Record
+from cpe.ledger.kinds import GATE_KINDS, owned
 from cpe.ledger.record import GENESIS_HASH
 
 
@@ -150,6 +153,11 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
     hashes: list[str] = []
     epochs_seen: set[int] = set()
     for record in records:
+        if not owned(record.kind, GATE_KINDS, record.record_id):
+            state.head = record.entry_hash
+            hashes.append(record.entry_hash)
+            continue  # another registry's record on the same ledger
+        prev_head = state.head
         state.head = record.entry_hash
         hashes.append(record.entry_hash)
         if record.kind == KIND_EPOCH:
@@ -179,14 +187,16 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
             state.observe(intent.reading)
         elif record.kind == KIND_ABORT:
             abort = AbortRecord.from_payload(record.payload)
-            if abort.intent_id not in state.intents or abort.intent_id in state.commits:
+            if abort.intent_id not in state.intents or abort.intent_id in state.commits \
+                    or abort.intent_id in state.aborted or record.record_id != gate_ledger_id("gate-abort", abort.intent_id):
                 raise Refusal("invalid_gate_ledger", f"abort of {abort.intent_id} without a pending intent")
             state.aborted[abort.intent_id] = abort.reason
             state.observe(abort.reading)
         elif record.kind == KIND_COMMIT:
             commit = CommitRecord.from_payload(record.payload)
             stored = state.intents.get(commit.intent_id)
-            if stored is None or commit.intent_id in state.aborted or commit.intent_id in state.commits:
+            if stored is None or commit.intent_id in state.aborted or commit.intent_id in state.commits \
+                    or record.record_id != gate_ledger_id("gate-commit", commit.intent_id):
                 raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} without a pending intent")
             if stored.capability.epoch != state.epoch:
                 raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} after its epoch rotated")
@@ -198,5 +208,25 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
                 state.effective.add(commit.intent_id)
                 state.level = stored.target_level  # effective at its ledger position
         elif record.kind == KIND_CHECK:
-            state.observe(CheckRecord.from_payload(record.payload).reading)
+            check = CheckRecord.from_payload(record.payload)
+            _check_check(record, check, prev_head, state)
+            state.observe(check.reading)
     return state
+
+
+def _check_check(record: Record, check: CheckRecord, prev_head: str, state: GateState) -> None:
+    """A check as the gate writes it: under the identifier of the chain head it was decided on (or, for a presentation
+    seen expired at its receipt, of its intent and that receipt), with one of the two verdicts (issue #37, pass 6,
+    reading P6-R1). A check decides no state: it bounds the clock by its reading and is otherwise read as written. Its
+    verdict is not recomputed, because the level it saw counted the commits anchored at that time, which a replay
+    with another trusted prefix cannot know (the reason ``_check_intent`` gives for promotions)."""
+    expected = {gate_ledger_id("gate-check", prev_head)}
+    if check.subject.startswith("presentation:"):
+        nonce = check.subject.removeprefix("presentation:")
+        expected.add(gate_ledger_id("gate-check", f"gate-intent:{digest_of([str(state.epoch), nonce])}",
+                                    record.receipt_time))
+    if record.record_id not in expected:
+        raise Refusal("invalid_gate_ledger", f"check {record.record_id} is not written under the identifier the gate "
+                      "gives it")
+    if check.verdict not in ("admitted", "refused"):
+        raise Refusal("invalid_gate_ledger", f"check {record.record_id} has verdict {check.verdict!r}")

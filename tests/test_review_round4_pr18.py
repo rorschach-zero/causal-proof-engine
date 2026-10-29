@@ -60,8 +60,8 @@ def test_4329838030_a_retry_after_the_disposition_commit_adds_no_duplicate_defec
 
 def test_4329838013_replay_ignores_records_of_other_kinds_whatever_their_payload(tmp_path: Path) -> None:
     reg, clock, ledger = registry(tmp_path, 50)
-    ledger.append("other_registry_kind", "other:1", 7)
-    ledger.append("another_kind", "other:2", "scalar")
+    ledger.append("forecast", "other:1", 7)  # another registry's kinds, whatever their payload
+    ledger.append("gate_check", "other:2", "scalar")
     assert reg.state().events["E"].spec is not None
     clock.set(day(120))
     reg.submit_observation(observation(110))

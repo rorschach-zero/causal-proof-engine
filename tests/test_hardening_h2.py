@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from cpe.capability.records import gate_ledger_id
 from cpe.capability import ACTIONS, CapabilityGate, ManualTimeSource
 from cpe.capability.records import KIND_COMMIT, CommitRecord
 from cpe.clock import ManualClock
@@ -32,7 +33,7 @@ def test_4333626167_a_lower_commit_after_an_unanchored_higher_one_aborts(rig: Ri
         anchor = rig.ledger.local_anchors()[-1]
         reading = rig.gate.state().baseline
         assert reading is not None
-        rig.ledger.append(KIND_COMMIT, f"gate-commit-simulated:{intent_id[-8:]}",
+        rig.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", intent_id),
                           CommitRecord(intent_id, anchor.prefix_length, anchor.digest, reading).to_payload())
 
     def second_gate_presents_a_lower_capability() -> None:
@@ -133,7 +134,7 @@ def test_4333626194_a_start_up_abort_skips_an_intent_another_gate_has_committed(
         reading = rig.gate.state().baseline
         assert reading is not None
         record = CommitRecord(intent_id, anchor.prefix_length, anchor.digest, reading)
-        rig.ledger.append(KIND_COMMIT, f"gate-commit-simulated:{intent_id[-8:]}", record.to_payload())
+        rig.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", intent_id), record.to_payload())
 
     SettlingGate.overtake = first_gate_commits
     rig.tick()

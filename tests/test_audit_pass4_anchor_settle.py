@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from cpe.clock import parse_timestamp
+from cpe.pointintime import FeatureRow, PointInTimeStore
 from cpe.registration import BeaconOutput, RegistrationRegistry
 from tests.test_audit_registration_p2 import setup
 from tests.test_registration import day
@@ -21,7 +22,7 @@ from tests.test_schemas import HEX
 def test_4414429445_a_larger_anchor_settles_a_held_attempt_without_a_reopen(tmp_path: Path,
                                                                            calibration_settled: bool) -> None:
     ledger, clock, _ = setup(tmp_path, calibration_settled)  # the day-11 anchor is held by the store, pending locally
-    ledger.append("note", "n-1", {"x": 1})  # another record before the retry
+    PointInTimeStore(ledger).ingest(FeatureRow("filler", "f", 1, day(0), day(0), "v1"))  # another record before the retry (a kind replay knows, since pass 6 P6-R1)
     ledger.anchor()  # day 13, a larger prefix
     assert ledger.pending_anchors() == ()  # at bba974d: the held day-11 attempt stayed pending
     held = [a for a in ledger.local_anchors() if parse_timestamp(a.published_at) == day(11)]
@@ -35,7 +36,7 @@ def test_4414429445_a_larger_anchor_settles_a_held_attempt_without_a_reopen(tmp_
 
 def test_a_held_attempt_settles_once_and_the_later_anchor_is_kept(tmp_path: Path) -> None:
     ledger, _, store = setup(tmp_path, True)
-    ledger.append("note", "n-1", {"x": 1})
+    PointInTimeStore(ledger).ingest(FeatureRow("filler", "f", 1, day(0), day(0), "v1"))
     later = ledger.anchor()
     assert [a.prefix_length for a in ledger.local_anchors()] == sorted(a.prefix_length for a in store.anchors())
     assert ledger.local_anchors()[-1] == later

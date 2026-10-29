@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from cpe.pointintime import FeatureRow, PointInTimeStore
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, HarnessAnchorStore, Ledger
@@ -64,7 +65,7 @@ def test_4353231816_a_disproved_attempt_is_no_possible_anchor(tmp_path: Path) ->
     store.lose_next = True
     with pytest.raises(Refusal):
         ledger.anchor()  # never landed; pending locally
-    ledger.append("note", "n-1", {})
+    PointInTimeStore(ledger).ingest(FeatureRow("filler", "f", 1, day(0), day(0), "v1"))  # a kind replay knows (pass 6 P6-R1)
     clock.set(day(13))
     ledger.anchor()  # the register's real anchor, at day 13; the store holds no day-11 attempt
     clock.set(day(14))

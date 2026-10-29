@@ -7,6 +7,12 @@ from dataclasses import dataclass
 from cpe.canonical import digest_of, require_hex_digest
 from cpe.capability.timesource import ClockReading
 from cpe.errors import Refusal
+from cpe.ledger.kinds import GATE_KINDS as GATE_KINDS
+from cpe.ledger.kinds import KIND_ABORT as KIND_ABORT
+from cpe.ledger.kinds import KIND_CHECK as KIND_CHECK
+from cpe.ledger.kinds import KIND_COMMIT as KIND_COMMIT
+from cpe.ledger.kinds import KIND_EPOCH as KIND_EPOCH
+from cpe.ledger.kinds import KIND_INTENT as KIND_INTENT
 from cpe.schemas import Capability
 from cpe.schemas.common import (
     Payload,
@@ -17,12 +23,6 @@ from cpe.schemas.common import (
     require_non_negative_int,
 )
 
-KIND_EPOCH = "gate_epoch"
-KIND_INTENT = "gate_intent"
-KIND_ABORT = "gate_abort"
-KIND_COMMIT = "gate_commit"
-KIND_CHECK = "gate_check"
-GATE_KINDS = frozenset({KIND_EPOCH, KIND_INTENT, KIND_ABORT, KIND_COMMIT, KIND_CHECK})
 
 EpochReason = str  # "start", "demotion:<reason>", "discontinuity:<detail>"
 
@@ -32,6 +32,12 @@ def _text(value: object, field: str) -> str:
     if not isinstance(value, str):
         raise Refusal("invalid_text", f"{field} must be a string")
     return value
+
+
+def gate_ledger_id(prefix: str, *parts: str) -> str:
+    """A ledger identifier of a gate record: the prefix and the digest of its parts. The gate writes it and replay
+    requires it (issue #37, pass 6, reading P6-R1)."""
+    return f"{prefix}:{digest_of(list(parts))}"
 
 
 def intent_ledger_id(capability: Capability) -> str:
