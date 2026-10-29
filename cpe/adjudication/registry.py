@@ -23,7 +23,7 @@ from cpe.adjudication.rules import (
     knowable_times_evidenced,
     late_contradictions,
 )
-from cpe.canonical import digest_of
+from cpe.canonical import canonical_bytes, digest_of
 from cpe.clock import parse_timestamp
 from cpe.schemas.common import Payload, as_persisted, require_identifier, require_keys, timestamp_payload
 from cpe.errors import Refusal
@@ -49,6 +49,13 @@ def _ledger_id(prefix: str, *parts: str) -> str:
     """A ledger identifier for a registry record: the prefix and the digest of its parts, so that an external
     identifier of any admitted length, with any character, yields one identifier within the limit."""
     return f"{prefix}:{digest_of(list(parts))}"
+
+
+def _same(held: EventSpec | SourceRule | ArchivedContent, given: EventSpec | SourceRule | ArchivedContent) -> bool:
+    """Identical persisted content. A dataclass compares ``True`` equal to ``1``, which a registered predicate does not
+    (``json_equal``): an idempotent read-back compares what the ledger holds, byte for byte (issue #37, pass 8 Codex
+    8-4; the point-in-time store's rule of 4335189789)."""
+    return canonical_bytes(held.to_payload()) == canonical_bytes(given.to_payload())
 
 
 @dataclass
@@ -317,7 +324,7 @@ class AdjudicationRegistry:
                 state = self.state()
                 existing = state.event(spec.event_id).spec
                 if existing is not None:
-                    if existing != spec:
+                    if not _same(existing, spec):
                         raise Refusal("event_immutable", f"{spec.event_id} is registered with other criteria")
                     return
                 admit_event(state, spec, self._ledger.now())
@@ -341,7 +348,7 @@ class AdjudicationRegistry:
             for attempt in range(2):  # another writer on the same ledger that lands the rule first is read back
                 existing = self.state().rules.get(rule.source_id)
                 if existing is not None:
-                    if existing != rule:
+                    if not _same(existing, rule):
                         raise Refusal("rule_immutable", f"source {rule.source_id} already has a different rule")
                     return
                 try:
@@ -362,7 +369,7 @@ class AdjudicationRegistry:
                 raise Refusal("unknown_source", f"{content.source_id} has no registered source rule (OD5)")
             existing = state.contents.get(content.sha256)
             if existing is not None:
-                if existing[0] != content:
+                if not _same(existing[0], content):
                     raise Refusal("content_conflict", f"content {content.sha256} is archived with another "
                                   "attestation")
                 return next(r for r in self._ledger.records() if r.record_id == _ledger_id("content", content.sha256))
@@ -379,7 +386,7 @@ class AdjudicationRegistry:
             # Another writer on the same ledger archived the same digest first: read it back, as register_rule and
             # register_event do (issue #37, pass 3; the class of D2).
             landed = self.state().contents.get(content.sha256)
-            if landed is None or landed[0] != content:
+            if landed is None or not _same(landed[0], content):
                 raise Refusal("content_conflict", f"content {content.sha256} is archived with another attestation")
             return next(r for r in self._ledger.records() if r.record_id == record_id)
 
