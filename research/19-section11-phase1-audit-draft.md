@@ -282,7 +282,11 @@ Ratings are the coordinator's (2026-10-29). The distinct P1s are P8-1, P8-2 (= 8
 - #89, #90, #91, #93 and #94: no findings.
 - No review claimed a nonexistent commit.
 
-**Merged** by the coordinator: #88 (`69a6cd0`), #89 (`251188e`), #90 (`d411b03`), #91 (`ed899d8`), #97 (`e5126e1`), #94 (`29854fa`), #93 (`e8b445a`) and #98 (`811ba9d`). #92 and #95 were superseded. Every reproduced finding of pass 8 is fixed on `main` at `811ba9d`.
+**Merged** by the coordinator: #88 (`69a6cd0`), #89 (`251188e`), #90 (`d411b03`), #91 (`ed899d8`), #97 (`e5126e1`), #94 (`29854fa`), #93 (`e8b445a`) and #98 (`811ba9d`). #92 and #95 were superseded. Every reproduced finding of pass 8 is fixed on `main` at `811ba9d`. There the suite gives 976 passed and mypy is clean on 144 source files (Python 3.13.17, local). Codex `4417450701` is fixed by #98. Pass-8 report: issue #37 comment `6509533287`.
+
+For the owner, not findings:
+- *Optional hardening:* `stale_tolerance`, a running gate refusing to act in an epoch another gate opened with a different configured tolerance.
+- *P3 hygiene, not fixed:* `tools/lean_check.sh` writes fixed `/tmp` paths, which concurrent runs on one host clobber. CI is unaffected.
 
 **Pass 8 is not passed: P8-1, P8-2 (= 8-3), 8-1 and 8-2 are reproduced P1s.**
 
@@ -328,7 +332,7 @@ Ratings are the coordinator's (2026-10-29). The distinct P1s are P8-1, P8-2 (= 8
 - **P7-R3 (coordinator): every input is decided as the ledger persists it** (7-2, G1, I1; one root, closed structurally by #84's `as_persisted`).
 - **P8-R1 (coordinator): every validated input is returned as plain text; no caller object survives validation.** This extends P7-R3 from schema objects to bare arguments (PR #89).
 - **P8-R2 (coordinator): the first disclosure of an event's sealed forecasts after its close is a ledger row** (`forecast_disclosure`, one per event, with a golden identifier). Its receipt bounds the clock across reopen and restore. A ledger-local mark was the alternative, rejected because a restore would lose it (PR #97).
-- **Epoch tolerance** (PR #94): each epoch records its slew tolerance as an optional field, as `release_digest` did in #63. Replay and the live gate both judge the epoch's readings by it. Stated limit: epochs written without the field are checked by boot id only.
+- **P8-R3, epoch tolerance** (PR #94; accepted by the coordinator as built): the slew tolerance is a property of the epoch, recorded at rotation as an optional field, as `release_digest` was in #63. Live checks and replay use the recorded value, and every gate start rotates the epoch and records its own. Stated limit: epochs written without the field are checked by boot id only.
 - **Invariant 3's free fields** (PR #94): `GATE_FREE` first treated the gate's readings as free, which is how invariant 3 missed 8-2. It is narrowed: the boot id is not free.
 
 ### 11.5 Specification questions, for the owner
@@ -426,4 +430,4 @@ Pass 8, at `c37d048`, is not passed: P8-1 and P8-2 (Claude), 8-1 and 8-2 (Codex;
 
 **Pass 9** is pinned at `main` `811ba9d6bd13996cec72da62c0179d1baf71c6f2`, the merge of #98, under the owner's continuing authorisation. A fresh session (session 11) runs the Claude side and extends the invariants. Codex pass 9 is the automatic review of a new whole-tree PR.
 
-<PENDING: the pass-8 report on #37; the number of the pass-9 whole-tree PR; pass 9 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+<PENDING: the number of the pass-9 whole-tree PR; pass 9 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
