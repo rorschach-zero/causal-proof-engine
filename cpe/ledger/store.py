@@ -1,0 +1,450 @@
+"""The single transactional writer (SQLite, one process) with anchoring, export and restore."""
+from __future__ import annotations
+
+import json
+import sqlite3
+import threading
+from collections.abc import Callable, Iterable
+from dataclasses import replace
+from datetime import datetime
+from pathlib import Path
+
+from cpe.canonical import JsonValue, canonical_bytes
+from cpe.clock import Clock, format_timestamp, parse_timestamp
+from cpe.errors import Refusal
+from cpe.ledger.anchor import Anchor, AnchorStore
+from cpe.ledger.kinds import GATE_KINDS, KIND_EPOCH
+from cpe.ledger.record import Record, entry_digest
+from cpe.ledger.replay import LedgerState, VerificationReport, replay, verify
+from cpe.schemas.common import require_identifier
+
+_SCHEMA = """
+CREATE TABLE IF NOT EXISTS records (
+    seq INTEGER PRIMARY KEY,
+    record_id TEXT NOT NULL UNIQUE,
+    kind TEXT NOT NULL,
+    receipt_time TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    prev_hash TEXT NOT NULL,
+    entry_hash TEXT NOT NULL UNIQUE
+);
+CREATE TABLE IF NOT EXISTS anchors (
+    prefix_length INTEGER PRIMARY KEY,
+    digest TEXT NOT NULL,
+    published_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS pending_anchors (
+    prefix_length INTEGER NOT NULL,
+    digest TEXT NOT NULL,
+    published_at TEXT NOT NULL,
+    PRIMARY KEY (prefix_length, digest)
+);
+CREATE TABLE IF NOT EXISTS retired_attempts (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    published_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS observed_walls (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    observed_at TEXT NOT NULL
+);
+"""
+
+
+# An admission check on the receipt an append assigns: returns None to admit the record, raises a refusal to refuse
+# it, or returns another record to write in its place at that receipt.
+Admit = Callable[[datetime], "tuple[str, str, JsonValue] | None"]
+
+
+class _DuplicateKey(ValueError):
+    def __init__(self, key: str) -> None:
+        super().__init__(key)
+        self.key = key
+
+
+def _pairs_without_duplicates(pairs: list[tuple[str, JsonValue]]) -> dict[str, JsonValue]:
+    """``json.loads`` keeps the last of duplicate keys silently; an archive line has one reading or none."""
+    mapping: dict[str, JsonValue] = {}
+    for key, value in pairs:
+        if key in mapping:
+            raise _DuplicateKey(key)
+        mapping[key] = value
+    return mapping
+
+
+class FaultInjector:
+    """Arms one failure per named point of the append path; the failure fires once (fault-injection tests)."""
+
+    def __init__(self) -> None:
+        self._armed: dict[str, BaseException] = {}
+
+    def arm(self, point: str, error: BaseException) -> None:
+        self._armed[point] = error
+
+    def hit(self, point: str) -> None:
+        error = self._armed.pop(point, None)
+        if error is not None:
+            raise error
+
+
+class Ledger:
+    """Append-only ledger: one writer, one connection, one lock.
+
+    An append is acknowledged by returning the record. Anything raised before the return is not an
+    acknowledgement, and the caller must treat the record as not admitted until it reads the ledger back.
+    """
+
+    def __init__(self, path: str | Path, clock: Clock, anchor_store: AnchorStore | None = None,
+                 faults: FaultInjector | None = None) -> None:
+        self._clock = clock
+        self._anchor_store = anchor_store
+        self._faults = faults or FaultInjector()
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(str(path), isolation_level=None, check_same_thread=False)
+        self._conn.executescript(_SCHEMA)
+        self._state: LedgerState = replay(self.records())
+        self._anchor_high_water = self._load_anchor_high_water()
+        self._observed_high_water = self._load_observed_high_water()
+        self._reconcile_pending_anchors()
+
+    def close(self) -> None:
+        self._conn.close()
+
+    @property
+    def state(self) -> LedgerState:
+        """A snapshot of the writer's state, taken under the lock; changing it changes nothing in the ledger."""
+        with self._lock:
+            return replace(self._state, kinds=dict(self._state.kinds))
+
+    def now(self) -> datetime:
+        """The server clock, the only time a registry may persist as its own (RC-02); refused, like a receipt,
+        when it is below the high-water mark of receipts and anchors, so a read gate never moves backwards."""
+        moment = self._clock.now()
+        self._refuse_rollback(format_timestamp(moment))
+        return moment
+
+    def state_digest(self) -> str:
+        return self._state.digest()
+
+    def _records_locked(self) -> tuple[Record, ...]:
+        rows = self._conn.execute(
+            "SELECT seq, record_id, kind, receipt_time, payload, prev_hash, entry_hash FROM records ORDER BY seq"
+        ).fetchall()
+        return tuple(Record(row[0], row[1], row[2], row[3], json.loads(row[4]), row[5], row[6]) for row in rows)
+
+    def records(self) -> tuple[Record, ...]:
+        with self._lock:
+            return self._records_locked()
+
+    def _load_anchor_high_water(self) -> str:
+        """Over every anchor row on disk, published, pending and retired alike: a publication time staged before the
+        external publish bounds the clock whatever became of that publish, after the attempt is settled or
+        disproved too (issue #37, pass 5 L1). Read from disk after every outcome, so that memory and disk never
+        disagree."""
+        row = self._conn.execute(
+            "SELECT MAX(published_at) FROM (SELECT published_at FROM anchors UNION ALL "
+            "SELECT published_at FROM pending_anchors UNION ALL SELECT published_at FROM retired_attempts)").fetchone()
+        return row[0] if row is not None and row[0] is not None else ""
+
+    def _load_observed_high_water(self) -> str:
+        """The latest wall time a record persisted from a clock sample taken before its append (``append``'s
+        ``observed``), which may exceed the record's receipt after a rollback between the two."""
+        row = self._conn.execute("SELECT observed_at FROM observed_walls WHERE id = 1").fetchone()
+        return row[0] if row is not None else ""
+
+    def _retire_pending(self, prefix_length: int, digest: str) -> None:
+        """Delete a settled or disproved attempt, keeping its staged time as a bound of the clock: the time was
+        persisted as a wall-time reading, and a clock below it fails closed whatever became of the publish (``17``
+        item 2 "Clock"). Reopening a ledger whose attempt the store disproved admitted a receipt below it (issue
+        #37, pass 5 L1)."""
+        self._conn.execute(
+            "INSERT INTO retired_attempts (id, published_at) SELECT 1, published_at FROM pending_anchors "
+            "WHERE prefix_length = ? AND digest = ? ON CONFLICT(id) DO UPDATE SET published_at = "
+            "MAX(published_at, excluded.published_at)", (prefix_length, digest))
+        self._conn.execute("DELETE FROM pending_anchors WHERE prefix_length = ? AND digest = ?", (prefix_length, digest))
+
+    def _reconcile_pending_anchors(self) -> None:
+        """Settle every pending row against a reachable external store: a row the store holds becomes a local
+        anchor; a row the store provably lacks is cleared; without a reachable store every row stays pending,
+        still bounding the clock and never counting as a local anchor. Only ``anchor()`` settles a pending row
+        besides this, in the same way."""
+        if self._anchor_store is None:
+            return
+        pending = self._conn.execute("SELECT prefix_length, digest, published_at FROM pending_anchors").fetchall()
+        if not pending:
+            return
+        try:
+            external = {(anchor.prefix_length, anchor.digest): anchor for anchor in self._anchor_store.anchors()}
+        except Exception:  # any failure of the store or its transport is unreachable, as for the gate (pass 7 7-3)
+            return
+        for prefix_length, digest, published_at in pending:
+            held = external.get((prefix_length, digest))
+            if held is not None:
+                self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                                   (prefix_length, digest, held.published_at))
+            self._retire_pending(prefix_length, digest)
+        self._anchor_high_water = self._load_anchor_high_water()
+
+    def _server_time(self) -> str:
+        """The server clock as a canonical timestamp, refused when it is below the persisted high-water mark of
+        record receipts and anchor publications."""
+        receipt_time = format_timestamp(self._clock.now())
+        self._refuse_rollback(receipt_time)
+        return receipt_time
+
+    def _refuse_rollback(self, stamp: str) -> None:
+        """Compared as instants, never as text (issue #37, pass 4 C1); every mark is a canonical timestamp."""
+        moment = parse_timestamp(stamp, "server clock")
+        for mark in (self._state.high_water, self._anchor_high_water, self._observed_high_water):
+            if mark and moment < parse_timestamp(mark, "high-water mark"):
+                raise Refusal("clock_rollback", f"server clock {stamp} is below the high-water mark {mark}")
+
+    def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
+               admit: Admit | None = None,
+               expected_anchors: tuple[tuple[Anchor, ...], tuple[Anchor, ...]] | None = None,
+               observed: datetime | None = None) -> Record:
+        """Append one record. With ``expected_head``, the append is refused unless the chain head is still that
+        digest, so a decision computed from a snapshot cannot land after a record the snapshot did not hold. With
+        ``admit``, the receipt time this append assigns is passed to it before the insert, and a refusal it raises
+        refuses the append: a rule that bounds a time by the receipt is checked against the receipt itself, not
+        against an earlier clock sample (PR #23 4330096714, PR #25 4333434011). ``admit`` may instead return another
+        record (kind, identifier, payload), which is written in place of this one at the same receipt: a refusal that
+        must be persisted keeps the time that decided it (H1 review 4334622032). With ``expected_anchors`` (the local
+        anchors and the pending attempts of ``snapshot()``), the append is refused as stale unless they are unchanged
+        too: an anchor moves no chain head, and a decision that read the anchors cannot land after one the snapshot
+        did not hold (issue #37, pass 5 R2). With ``observed``, the wall time of a clock sample the payload persists
+        and that was taken before this append: it bounds every later clock read and receipt as a receipt does, in the
+        same transaction as the record, so a rollback between the sample and the append cannot let a later record
+        fall below a wall time the ledger already holds (``17`` item 2 "Clock", RC-37, RC-65; issue #37, pass 6
+        Codex 6-3)."""
+        kind = require_identifier(kind, "kind")  # the plain text, as the row persists it (issue #37, pass 8)
+        record_id = require_identifier(record_id, "record_id")
+        observed_stamp = None if observed is None else format_timestamp(observed)
+        with self._lock:
+            if expected_head is not None and self._state.head != expected_head:
+                raise Refusal("stale_head", "the ledger advanced since the snapshot this record was decided on")
+            if expected_anchors is not None and expected_anchors != (self._local_anchors_locked(),
+                                                                     self._pending_anchors_locked()):
+                raise Refusal("stale_head", "an anchor settled since the snapshot this record was decided on")
+            receipt_time = self._server_time()
+            if admit is not None:
+                substitute = admit(parse_timestamp(receipt_time, "receipt_time"))
+                if substitute is not None:
+                    kind, record_id, payload = substitute
+                    kind = require_identifier(kind, "kind")
+                    record_id = require_identifier(record_id, "record_id")
+            seq = self._state.count + 1
+            payload_text = canonical_bytes(payload).decode("ascii")
+            canonical_payload: JsonValue = json.loads(payload_text)
+            record = Record(seq, record_id, kind, receipt_time, canonical_payload, self._state.head,
+                            entry_digest(seq, record_id, kind, receipt_time, canonical_payload, self._state.head))
+            self._conn.execute("BEGIN IMMEDIATE")
+            try:
+                self._faults.hit("before_insert")
+                self._conn.execute(
+                    "INSERT INTO records (seq, record_id, kind, receipt_time, payload, prev_hash, entry_hash) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (seq, record_id, kind, receipt_time, payload_text, record.prev_hash, record.entry_hash),
+                )
+                if observed_stamp is not None:
+                    self._conn.execute(
+                        "INSERT INTO observed_walls (id, observed_at) VALUES (1, ?) ON CONFLICT(id) DO UPDATE SET "
+                        "observed_at = MAX(observed_at, excluded.observed_at)", (observed_stamp,))
+                self._faults.hit("before_commit")
+                self._conn.execute("COMMIT")
+            except sqlite3.IntegrityError as error:
+                self._conn.execute("ROLLBACK")
+                raise Refusal("duplicate_record_id", f"{record_id} is already in the ledger") from error
+            except BaseException:
+                self._conn.execute("ROLLBACK")
+                raise
+            # The record is durable from here. The state change is the committed row; the in-memory state follows it.
+            self._state.apply(record)
+            self._observed_high_water = self._load_observed_high_water()
+            self._faults.hit("after_commit")
+            return record
+
+    def export_jsonl(self) -> str:
+        return "".join(canonical_bytes(record.to_payload()).decode("ascii") + "\n" for record in self.records())
+
+    def write_export(self, path: str | Path) -> None:
+        """The canonical bytes, written as bytes: no platform newline translation touches the archive."""
+        Path(path).write_bytes(self.export_jsonl().encode("ascii"))
+
+    def anchor(self) -> Anchor:
+        """Anchor the whole committed prefix: publish externally first, then keep the local copy.
+
+        Before publishing, the chain is verified against every anchor the external store already holds, so that a
+        local history rewritten or truncated below an existing anchor can never pollute the store with a conflicting
+        later anchor; and the clock is checked against the high-water mark, so that an anchor never carries a time
+        before the records it covers. The attempt is staged as a pending row before the external publish and
+        settled after it, so that a process dying between the two leaves the publication time on disk; a refused
+        or failed publish leaves the row pending, since a refusal does not prove the store did not commit, and
+        only a reachable store confirms or clears it: at open, or at the next anchor, which settles every earlier
+        attempt the store holds and clears every one it lacks. A published row at the same prefix is never
+        replaced: a repeat attempt is staged beside it.
+        """
+        if self._anchor_store is None:
+            raise Refusal("no_anchor_store", "this ledger has no anchor store")
+        with self._lock:
+            if self._state.count == 0:
+                raise Refusal("empty_ledger", "nothing to anchor")
+            published_at = self._server_time()
+            existing = self._anchor_store.anchors()
+            if existing:
+                report = verify(self._records_locked(), existing, external=True)
+                if not report.intact:
+                    raise Refusal("anchor_conflict", f"the ledger does not verify against the external store: {report.detail}")
+            # Every earlier attempt is settled against the reachable store, as reconciliation at open settles it: one
+            # the store holds becomes a local anchor with the time the store holds (PR #63 review 4414429445); one
+            # it does not hold is disproved, never landed, and is neither an anchor nor a possible one (PR #56
+            # review 4353231816). The attempt staged below carries a later time, so the high-water mark never falls.
+            held_by_key = {(a.prefix_length, a.digest): a for a in existing}
+            for prefix_length, digest in self._conn.execute(
+                    "SELECT prefix_length, digest FROM pending_anchors").fetchall():
+                settled = held_by_key.get((prefix_length, digest))
+                if settled is not None:
+                    self._conn.execute(
+                        "INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                        (prefix_length, digest, settled.published_at))
+                self._retire_pending(prefix_length, digest)
+            held = next((a for a in existing if a.prefix_length == self._state.count and a.digest == self._state.head),
+                        None)
+            if held is not None:  # an earlier attempt landed: settle with the time the store holds, publish nothing
+                self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                                   (held.prefix_length, held.digest, held.published_at))
+                self._retire_pending(held.prefix_length, held.digest)
+                self._anchor_high_water = self._load_anchor_high_water()
+                return held
+            anchor = Anchor(self._state.count, self._state.head, published_at)
+            self._conn.execute(
+                "INSERT OR REPLACE INTO pending_anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                (anchor.prefix_length, anchor.digest, anchor.published_at),
+            )
+            self._anchor_high_water = self._load_anchor_high_water()
+            try:
+                self._anchor_store.publish(anchor)
+            except BaseException:
+                self._anchor_high_water = self._load_anchor_high_water()
+                raise
+            self._conn.execute("INSERT OR IGNORE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                               (anchor.prefix_length, anchor.digest, anchor.published_at))
+            self._retire_pending(anchor.prefix_length, anchor.digest)
+            self._anchor_high_water = self._load_anchor_high_water()
+            row = self._conn.execute("SELECT prefix_length, digest, published_at FROM anchors WHERE prefix_length = ?",
+                                     (anchor.prefix_length,)).fetchone()
+            return Anchor(row[0], row[1], row[2])
+
+    def _local_anchors_locked(self) -> tuple[Anchor, ...]:
+        rows = self._conn.execute(
+            "SELECT prefix_length, digest, published_at FROM anchors ORDER BY prefix_length").fetchall()
+        return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
+
+    def local_anchors(self) -> tuple[Anchor, ...]:
+        with self._lock:
+            return self._local_anchors_locked()
+
+    def snapshot(self) -> tuple[tuple[Record, ...], tuple[Anchor, ...], tuple[Anchor, ...]]:
+        """The records, the local anchors and the pending attempts read under one lock, so that no attempt can
+        settle between the reads and vanish from both sets (PR #56 review 4353231824)."""
+        with self._lock:
+            return self._records_locked(), self._local_anchors_locked(), self._pending_anchors_locked()
+
+    def _pending_anchors_locked(self) -> tuple[Anchor, ...]:
+        rows = self._conn.execute(
+            "SELECT prefix_length, digest, published_at FROM pending_anchors ORDER BY prefix_length").fetchall()
+        return tuple(Anchor(row[0], row[1], row[2]) for row in rows)
+
+    def pending_anchors(self) -> tuple[Anchor, ...]:
+        """The anchor attempts not yet confirmed: each may or may not have landed in the external store, so none
+        counts as an anchor, and none may be read as proof that a prefix is unanchored either."""
+        with self._lock:
+            return self._pending_anchors_locked()
+
+    def verify(self, external: AnchorStore | None = None) -> VerificationReport:
+        """Verify against the external store when given; against the local copy, self-attested, otherwise.
+
+        Records and anchors are read under the one lock, so the report describes one point in time: no append or
+        anchor can land between the two reads."""
+        with self._lock:
+            records = self._records_locked()
+            if external is not None:
+                return verify(records, external.anchors(), external=True)
+            return verify(records, self._local_anchors_locked(), external=False)
+
+    @classmethod
+    def restore(cls, path: str | Path, clock: Clock, records: Iterable[Record], external: AnchorStore,
+                faults: FaultInjector | None = None) -> tuple[Ledger, VerificationReport]:
+        """Rebuild a ledger from exported records and verify it against the external anchor store.
+
+        The restore refuses to run without an external store: a local anchor copy alone is self-attested, and a
+        restore that trusts it could revive a rewritten history (T-18, RC-34).
+        """
+        ordered = tuple(records)
+        replay(ordered)
+        if len({record.record_id for record in ordered}) != len(ordered):  # the writer never holds two (issue #37)
+            raise Refusal("duplicate_record_id", "the export holds a record identifier twice")
+        observed = _persisted_wall(ordered)
+        ledger = cls(path, clock, external, faults)
+        if ledger.state.count != 0:
+            raise Refusal("restore_target_not_empty", "restore needs an empty ledger")
+        ledger._conn.execute("BEGIN IMMEDIATE")
+        try:
+            for record in ordered:
+                ledger._conn.execute(
+                    "INSERT INTO records (seq, record_id, kind, receipt_time, payload, prev_hash, entry_hash) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (record.seq, record.record_id, record.kind, record.receipt_time,
+                     canonical_bytes(record.payload).decode("ascii"), record.prev_hash, record.entry_hash),
+                )
+            for anchor in external.anchors():
+                if anchor.prefix_length <= len(ordered):
+                    ledger._conn.execute(
+                        "INSERT OR REPLACE INTO anchors (prefix_length, digest, published_at) VALUES (?, ?, ?)",
+                        (anchor.prefix_length, anchor.digest, anchor.published_at),
+                    )
+            if observed is not None:  # the wall times the records persist bound the restored clock too (pass 7 7-1)
+                ledger._conn.execute("INSERT INTO observed_walls (id, observed_at) VALUES (1, ?) ON CONFLICT(id) DO "
+                                     "UPDATE SET observed_at = MAX(observed_at, excluded.observed_at)", (observed,))
+            ledger._conn.execute("COMMIT")
+        except BaseException:
+            ledger._conn.execute("ROLLBACK")
+            raise
+        ledger._state = replay(ledger.records())
+        ledger._anchor_high_water = ledger._load_anchor_high_water()
+        ledger._observed_high_water = ledger._load_observed_high_water()
+        return ledger, ledger.verify(external)
+
+
+def _persisted_wall(records: Iterable[Record]) -> str | None:
+    """The latest wall time a gate record persists (the reading of a check, intent, abort or commit, the baseline of an
+    epoch): the bound ``append``'s ``observed`` kept on the ledger that wrote them, which may exceed the records'
+    receipts after a rollback. The times are in the export, so a restore keeps the bound (``17`` item 2 "Clock",
+    RC-37, RC-65; issue #37, pass 7 Codex 7-1). A malformed time is a typed refusal."""
+    latest: datetime | None = None
+    for record in records:
+        if record.kind not in GATE_KINDS:
+            continue
+        payload = record.payload
+        reading = payload.get("baseline" if record.kind == KIND_EPOCH else "reading") if isinstance(payload, dict) else None
+        if not isinstance(reading, dict) or "wall" not in reading:
+            raise Refusal("invalid_record", f"{record.record_id}: a gate record persists its clock reading")
+        wall = parse_timestamp(reading["wall"], "wall")
+        latest = wall if latest is None else max(latest, wall)
+    return None if latest is None else format_timestamp(latest)
+
+
+def records_from_jsonl(text: str) -> tuple[Record, ...]:
+    records = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            payload = json.loads(line, object_pairs_hook=_pairs_without_duplicates)
+        except _DuplicateKey as error:
+            raise Refusal("invalid_export", f"line {number}: duplicate key {error.key!r}") from None
+        except ValueError as error:  # malformed JSON, or an integer beyond the digit limit (issue #37)
+            raise Refusal("invalid_export", f"line {number}: {error}") from None
+        except RecursionError:  # nested deeper than the parser can walk (issue #37, pass 3)
+            raise Refusal("invalid_export", f"line {number}: nested too deeply") from None
+        records.append(Record.from_payload(payload))
+    return tuple(records)
