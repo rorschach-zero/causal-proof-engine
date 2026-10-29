@@ -187,7 +187,8 @@ class CapabilityGate:
         def decide(state: GateState, now: datetime) -> Write:
             reading = baseline if baseline is not None else self._raw_reading(now)
             # the identifier is random (not a secret): unique across restores, which a counter is not (RC-123)
-            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest)
+            record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest,
+                                 float(self._tolerance))
             return KIND_EPOCH, epoch_ledger_id(record.index, record.epoch), record.to_payload()
 
         record = self._append(decide, sampled=None if baseline is None else baseline.wall)
