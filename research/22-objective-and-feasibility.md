@@ -79,9 +79,12 @@ separate questions, each with its own failure mode:
 3. How large may the position be? `07` §1 to §3: fractional Kelly on the worst case of the credal interval, a
    gross cap, a per-position cap, a worst-case loss limit and a cash floor. The pilot limits of `07` §3 (1,000
    capital, at most 8 positions, 20 % per position, worst-case loss per position 15 %, cash floor 10 %) bound
-   exposure and downside, not upside: 15 % of capital in one position that returns 10x over two years, with the
-   rest in cash, is 2.35x on the whole and about 53 % per year without breaking any of them (`REPRODUCED`, same
-   session). The limits therefore do not decide the objective; they exist so that the first error is survivable.
+   exposure and downside, not upside: 15 % of capital in a position that returns 10x over two years, with the
+   rest in cash, is 2.35x on the whole and about 53 % per year within the position, loss and cash limits
+   (`REPRODUCED`, same session); the mechanism-concentration limit of `07` §3 (at most 40 % of exposure on one
+   first-order mechanism) would require that exposure to be spread over at least three independent mechanisms,
+   which changes the sizing and not the point. The limits therefore do not decide the objective; they exist so
+   that the first error is survivable.
    What they do decide is how much skill is needed per decision, which §6 asks Phase 5 to derive.
 4. Is the chain identifiable at all? `18` §2: the confirmatory claim cannot be about causal truth; it can be
    about forecast skill on a fixed question set. Each link of a multi-order chain multiplies the uncertainty of
