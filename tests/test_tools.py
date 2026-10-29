@@ -192,7 +192,8 @@ def test_4329073620_process_apis_outside_subprocess_are_flagged(tmp_path: Path) 
 
 @pytest.mark.parametrize("bad", ["Fix\n\nco-authored-by: Claude <noreply@anthropic.com>", "Fix\n\nSIGNED-OFF-BY: Codex"])
 def test_4329073579_trailers_are_matched_case_insensitively(bad: str) -> None:
-    assert text_findings(bad, "commit") != []
+    # the trailer pattern itself, not the tool-identity marker the first case also carries (pass 8)
+    assert any(": attribution trailer at line" in finding for finding in text_findings(bad, "commit"))
 
 
 def test_4329073613_a_review_round_is_not_a_reconciliation_label() -> None:
