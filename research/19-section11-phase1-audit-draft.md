@@ -112,14 +112,32 @@ Authorised by the owner after pass 3, and pinned at the merge of PR #50 on `f775
 | W3 | **P1** | A register row after a seeded round was read as the register (`18` §6 M-1, RC-311) | PR #51 |
 | C1 | **P1** | `format_timestamp` wrote a year below 1000 without padding and the high-water mark compared text, so a clock rolled back below year 1000 was admitted (17 item 2). Reachable only with an injected clock; the gate compared instants | PR #52 |
 | T2 | P2 | The provenance check missed trailers git reads in a block with a comment line, or a mixed block led by a git-generated line (T-09) | PR #53 |
-| R1 | P2 | A round supplied while the register's anchor was pending but held by the store was recorded as refused and bound for good; no seed could ever be drawn | PR #56, superseded unmerged by <R1_PR> (below) |
+| R1 | P2 | A round supplied while the register's anchor was pending but held by the store was recorded as refused and bound for good; no seed could ever be drawn | PR #56, superseded unmerged by PR #61 (below) |
 | K1, K2 | P2 | Surrogate code points: two different strings had one canonical form, and two keys merged into one in the ledger | PR #55 |
 | A5 | P2 | The adjudication registry wrote values its own replay refuses (the class of A2 to A4) | PR #54 |
 | A6 | P2 | The status identifier depended on the time zone of the declared instant | PR #54 |
 | A7 | P2 | A disposition corrected on a stale snapshot was returned while the ledger held another | PR #54 |
-| — | P3 | `check_issuance(outputs=None)`; naive datetimes in two adjudication calls; a `late_publication` incident persisted against a VOID its record never decided; surrogates in record identifiers | PRs #57, #58; adjudication P3s pending |
+| — | P3 | `check_issuance(outputs=None)`; naive datetimes in two adjudication calls; a `late_publication` incident persisted against a VOID its record never decided; surrogates in record identifiers | PRs #57, #58, #62 |
 
-**Codex**: run by the owner in the web UI. <PENDING: findings and classification.>
+**Codex reviews of the pass-4 fix PRs** (one review per PR, no fix rounds; a PR with a reproduced P1 regression is superseded, never merged):
+
+| Review finding | Severity | Finding | Outcome |
+|---|---|---|---|
+| `4353051497` (PR #51) | **P1** | A commit citing its intent's own sequence and entry hash, with no intent anchor published, was accepted as step 2 | PR #63 |
+| `4353051510` (PR #51) | P2 | A gate started under a new release could not replay a ledger an earlier release had promoted | PR #63 |
+| `4353051504` (PR #51) | P2 | A raw refused-round row for a round the register's anchor preceded passed replay | PR #63 |
+| `4353163782` (PR #54) | P2 | A `str` subclass mimicking an archived digest passed the content check, and the written record was unreadable | PR #62 |
+| `4353163787` (PR #54) | P2 | A legacy status identifier formed from an offset let a second status of the same instant land | PR #62 |
+| `4353231816` (PR #56) | **P1**, regression of #56 | A disproved pending anchor attempt was trusted; a claim stayed confirmatory although its register was anchored after the round | never landed; PR #56 superseded by PR #61 |
+| `4353231824` (PR #56) | P2 | The local anchors and the pending attempts were read in two calls | PR #61 |
+| `4353380374` (PR #59) | **P1**, regression of #59 | A gate of an earlier release replayed a later release's intent and acted at its level | never landed; PR #59 superseded by PR #63 |
+| `4353380367` (PR #59) | **P1** | An intent anchor published after the commit was accepted as step 2 | PR #63 |
+| `4353380358` (PR #59) | P2 | A refused-round row written under the old R1 made the ledger unreadable once the register anchor settled | PR #61 writes no such row; PR #63 refuses one on replay |
+| `4353380381` (PR #59) | P2 | Gate state read the anchors and the records in two calls | PR #63 |
+| `4414429445` (PR #63) | P2 | A held pending anchor attempt stayed pending after a larger anchor succeeded, so an eligible round was refused `anchor_pending` until the ledger was reopened (origin R1, PR #61; present on `main` `bba974d`) | PR #65 |
+| `4414429436` (PR #63) | — | Claimed a commit `f152594` with a Codex author and a session footer. Not reproducible: the object is absent from the repository, the PR's commits carry the owner's identity and no trailer, and the provenance check reports 0 findings. Recorded as a reviewer artifact | no action |
+
+**Codex pass 4**, run by the owner in the web UI: <PENDING: findings and classification.>
 
 **Pass 4 is not passed: W1, W2, W3 and C1 are reproduced P1s** (F5 re-rated P1 with them). A new pass follows at a new pin once the fixes are merged.
 
@@ -145,7 +163,10 @@ Authorised by the owner after pass 3, and pinned at the merge of PR #50 on `f775
 
 - **Replay re-validates every authority-bearing row, and a forged row refuses the whole ledger** (PR #51; coordinator's design). A party able to append to the ledger can stop every later read but gains no level, status or seed. Not re-checked on replay: the evidence a capability binds (only its digest is on the ledger), whether an intent was a promotion, and whether its epoch was anchored when it was written (replay cannot know the anchors of that moment).
 - **An unconfirmed anchor attempt never makes a refused round bind** (R1): the round is refused `anchor_pending` and weighed again once the attempt settles.
-- **PR #56 was superseded, not merged** (coordinator, 2026-10-22). Its one Codex review reproduced a P1 regression of that PR (`4353231816`: a disproved pending attempt was trusted, and a claim stayed confirmatory although its register was anchored after the round) and a P2 (`4353231824`: two anchor reads raced). The review cap stops fix rounds but never lands a reproduced P1 regression on `main`; R1 and both fixes landed in <R1_PR>.
+- **PR #56 was superseded, not merged** (coordinator, 2026-10-22). Its one Codex review reproduced a P1 regression of that PR (`4353231816`: a disproved pending attempt was trusted, and a claim stayed confirmatory although its register was anchored after the round) and a P2 (`4353231824`: two anchor reads raced). The review cap stops fix rounds but never lands a reproduced P1 regression on `main`; R1 and both fixes landed in PR #61.
+- **PR #59 was superseded, not merged** (coordinator, 2026-10-22). Its one Codex review reproduced a P1 regression of that PR (`4353380374`), a P1 present on `main` (`4353380367`) and two P2s (`4353380358`, `4353380381`). They landed with #59's fixes in PR #63, built on PR #61.
+- **Release continuity per epoch** (PR #63; coordinator's reading). Each epoch is replayed under the release that opened it, and a gate acts only in an epoch its own release opened: an older release still running refuses every action with `stale_release` until its own start rotates the epoch. Neither 17 item 5 nor RC-74, RC-103 or RC-123 states upgrade continuity.
+- **A ledger already holding a refused-round row written under the old R1 is refused on replay** (PR #63, `4353380358`). Such a row is the R1 defect itself.
 - **The canonical form takes plain containers only** (PR #55): a subclass is refused even when it serialises faithfully.
 
 ### 11.5 Specification questions, for the owner
