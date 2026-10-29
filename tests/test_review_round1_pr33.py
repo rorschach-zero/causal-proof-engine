@@ -41,7 +41,9 @@ def test_4335189761_replay_refuses_a_second_record_of_one_vintage(tmp_path: Path
     ledger.append(KIND_ROW, "pit:another-id", rewritten)  # an authentic ledger row under a non-canonical id
     with pytest.raises(Refusal) as refused:
         replay_state(ledger.records())
-    assert refused.value.reason in ("invalid_record_id", "vintage_immutable")
+    # The one record id of a vintage is its canonical id, so a second record of it is always under another id: the
+    # identifier check is the rule that refuses it (issue #37, pass 6: the "either reason" accepted no specific one).
+    assert refused.value.reason == "invalid_record_id"
     with pytest.raises(Refusal):
         store.reader(day(20)).series("E1", "f")
 

@@ -199,9 +199,12 @@ def test_f21_publication_gap_and_f21b_expiry_gap() -> None:
     expired = adjudicate(spec(), rule(), [], [observation(118)], [], day(118))
     t_star_b = cluster_knowable_time([expired])
     assert t_star_b == day(110)
-    assert day(113) >= t_star_b
-    assert classify_forecast(day(113), spec(), day(10), t_star_b) != "eligible"
     assert classify_forecast(day(30), spec(), day(10), t_star_b) == "eligible"
+    # The member's own window closes by e_i <= the deadline, so the exclusion at 113 is shown on a sibling whose window
+    # is still open then (issue #37, pass 6: the member's own forecast at 113 was refused by its window alone).
+    sibling = spec(event_id="E2", deadline=200, not_before=125, issuance=(105, 120))
+    assert classify_forecast(day(113), sibling, day(10), t_star_b) == "late"
+    assert classify_forecast(day(109), sibling, day(10), t_star_b) == "eligible"
 
 
 def test_f24_cluster_f_void_sibling_sets_t_star_for_the_whole_cluster() -> None:
