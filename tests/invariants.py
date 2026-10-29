@@ -24,6 +24,7 @@ that ends before the defect's write.
 """
 from __future__ import annotations
 
+import inspect
 import itertools
 import sqlite3
 import threading
@@ -241,13 +242,17 @@ AFTER: dict[tuple[type, str], Callable[..., list[str]]] = {
 
 def checked(owner: type, name: str, method: Callable[..., Any], problems: list[str]) -> Callable[..., Any]:
     after = AFTER[(owner, name)]
+    signature = inspect.signature(method)
 
     def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         result = method(self, *args, **kwargs)
         if _alone() and getattr(self, "_invariants_quiet", 0) == 0:
             self._invariants_quiet = 1  # the check's own reads are not checked again
             try:
-                problems.extend(after(self, result, *args))
+                # the call's arguments in the method's order, however they were passed (PR #88 review 4417450701)
+                bound = signature.bind(self, *args, **kwargs)
+                bound.apply_defaults()
+                problems.extend(after(self, result, *list(bound.arguments.values())[1:]))
             except Refusal as refusal:  # a ledger that refuses its own replay right after a write
                 problems.append(f"write-replay: {owner.__name__}.{name} left a ledger that refuses replay "
                                 f"({refusal.reason}: {refusal.detail})")

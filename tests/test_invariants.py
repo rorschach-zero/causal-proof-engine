@@ -700,3 +700,15 @@ def test_invariant_1_fails_on_a_returned_value_the_ledger_does_not_hold(tmp_path
     stale = replace(stored, knowable_at=aday(100))
     problems = invariants.AFTER[(AdjudicationRegistry, "adjudicate")](registry, stale, "F")
     assert problems and "knowable_at" in problems[0]
+
+
+def test_invariant_1_checks_a_write_called_with_keyword_arguments(tmp_path: Path) -> None:
+    """PR #88 review 4417450701 (P2): the post-write check took the call's positional arguments only, so a write
+    called by keyword failed in the check after it had completed."""
+    clock = ManualClock(aday(1))
+    registry = AdjudicationRegistry(Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore()))
+    registry.register_rule(rule())
+    registry.register_event(aspec())
+    clock.set(aday(111))
+    registry.submit_observation(observation=observation(110))  # at 69a6cd0: TypeError in the check
+    assert registry.adjudicate(event_id="E").disposition == "RESOLVED_NO"
