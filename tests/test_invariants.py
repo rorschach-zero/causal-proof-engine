@@ -39,6 +39,7 @@ from cpe.adjudication.records import AbsenceObservation, SourceStatus
 from cpe.canonical import JsonValue
 from cpe.capability import CapabilityGate, replay_gate
 from cpe.capability import ManualTimeSource
+from cpe.capability.records import CommitRecord, gate_ledger_id
 from cpe.capability import gate as gate_module
 from cpe.clock import ManualClock, format_timestamp, parse_timestamp
 from cpe.errors import Refusal
@@ -688,3 +689,135 @@ def test_invariant_1_checks_a_write_called_with_keyword_arguments(tmp_path: Path
     clock.set(aday(111))
     registry.submit_observation(observation=observation(110))  # at 69a6cd0: TypeError in the check
     assert registry.adjudicate(event_id="E").disposition == "RESOLVED_NO"
+
+
+# Invariants 5 to 7 (pass 9): the machinery fails on the defects it is for --------------------------------------------
+
+
+def test_invariant_5_fails_on_a_receipt_below_an_anchor_and_on_a_floor_below_a_bound() -> None:
+    """A record received below the publication time of an anchor of a shorter prefix, a gate reading below an earlier
+    receipt, and a ledger whose clock floor is below the latest persisted bound are each a problem."""
+    reading: JsonValue = {"wall": format_timestamp(day(1)), "monotonic": 0.0, "boot_id": "boot-1"}
+    records = chain([("candidate", "a", format_timestamp(day(2)), {}),
+                     ("gate_check", "b", format_timestamp(day(2)), {"reading": reading}),
+                     ("candidate", "c", format_timestamp(day(3)), {})])
+    late_anchor = Anchor(1, records[0].entry_hash, format_timestamp(day(4)))
+    problems = invariants.clock_problems(records, (late_anchor,), format_timestamp(day(3)), "written")
+    assert any("gate_check b has reading" in p for p in problems)  # a sample below the receipt before it
+    assert any("candidate c has receipt" in p for p in problems)  # received below the anchor of a shorter prefix
+    assert any("refuses its clock below" in p for p in problems)  # the floor is under the anchor's time
+    clean = chain([("candidate", "a", format_timestamp(day(2)), {})])
+    assert invariants.clock_problems(clean, (Anchor(1, clean[0].entry_hash, format_timestamp(day(2))),),
+                                     format_timestamp(day(2)), "written") == []
+
+
+def test_invariant_6_fails_on_a_replay_that_skips_the_rule_the_write_path_refuses_by(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Criteria recorded after the issuance window opened are refused online (``late_registration``, pass 1 C2); a
+    replay that admitted rows without their rule would read the same row appended raw (pass 6 Y1)."""
+    clock = ManualClock(aday(1))
+    ledger = Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore())
+    registry = AdjudicationRegistry(ledger)
+    registry.register_rule(rule())
+    clock.set(aday(80))  # after the window of the event opened
+    late = aspec(event_id="LATE")
+    with pytest.raises(Refusal) as refused:
+        registry.register_event(late)
+    assert refused.value.reason == "late_registration"
+    assert invariants.symmetry_problems(registry, "register_event", late, refused.value, tmp_path) == []
+    monkeypatch.setattr(adjudication_module, "_replayed", lambda record, expected_id, admit: None)
+    problems = invariants.symmetry_problems(registry, "register_event", late, refused.value, tmp_path)
+    assert problems and problems[0].startswith("refusal symmetry: AdjudicationRegistry.register_event refused "
+                                               "late_registration")
+
+
+def test_every_write_path_is_covered_by_invariant_6() -> None:
+    """Every public method of the registries and the store that writes a row is wrapped by invariant 6, or is a read,
+    or writes only rows its own refusals never leave unwritten (``adjudicate``: a refused adjudication has no
+    disposition to append)."""
+    wrapped = {f"{owner.__name__}.{name}" for owner, name in invariants.SYMMETRY}
+    reads_or_derived = {
+        "RegistrationRegistry.arm_version", "RegistrationRegistry.event", "RegistrationRegistry.slot_states",
+        "RegistrationRegistry.forecasts_for_baseline", "RegistrationRegistry.claim_status",
+        "RegistrationRegistry.seed_of", "RegistrationRegistry.state", "RegistrationRegistry.candidate_counts",
+        "AdjudicationRegistry.state", "AdjudicationRegistry.adjudicate",
+        "PointInTimeStore.reader", "PointInTimeStore.reader_for",
+    }
+    public = {f"{owner.__name__}.{name}" for owner in (RegistrationRegistry, AdjudicationRegistry, PointInTimeStore)
+              for name, _ in inspect.getmembers(owner, inspect.isfunction) if not name.startswith("_")}
+    assert public - wrapped - reads_or_derived == set()
+
+
+def test_invariant_7_fails_on_a_release_without_its_disclosure_row(tmp_path: Path,
+                                                                   monkeypatch: pytest.MonkeyPatch) -> None:
+    """Pass 8 Codex 8-1: a read that released sealed forecasts after the close persisted nothing."""
+    ledger, _ = registration_ledger(tmp_path / "l.sqlite")
+    registry = RegistrationRegistry(ledger)
+    assert invariants.AFTER[(RegistrationRegistry, "forecasts_of")](registry, (), "E-1") == []  # E-1 is released
+    monkeypatch.setattr(RegistrationRegistry, "_disclose", lambda self, event_id: None)
+    released = registry.forecasts_of("E-2")  # closed at day 40, read at day 45, two forecasts and no row
+    assert released
+    problems = invariants.AFTER[(RegistrationRegistry, "forecasts_of")](registry, released, "E-2")
+    assert problems and "E-2" in problems[0]
+
+
+# Open findings of pass 9 at the pin 811ba9d, each a strict expected failure until its fix lands (the fix removes the
+# mark and its entry in ``invariants.KNOWN_OPEN``).
+
+
+@pytest.mark.xfail(strict=True, reason=invariants.KNOWN_OPEN["disclosure: "])
+@pytest.mark.parametrize("read", ["forecasts_of", "forecasts_for_baseline", "slot_states"])
+def test_p9_1_a_read_that_decided_the_close_bounds_the_clock_when_nothing_is_sealed(tmp_path: Path, read: str) -> None:
+    """E-2 closes at day 40 with no forecast. A read at day 41 answers as only a closed event can (an empty release, or
+    every slot an abstention, ``18`` M-5) and persists nothing; the clock stepped back to day 30, above every receipt,
+    then admits a forecast that fills the slot the read reported as an abstention (RC-109; ``17`` item 2 "Clock")."""
+    clock = ManualClock(day(1))
+    ledger = Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore())
+    registry = RegistrationRegistry(ledger)
+    registry.register_arm_version(arm("A-1", "2026-01-05"))
+    registry.register_arm_version(arm("DESIGN_C-1", "2026-01-01"))
+    registry.register_arm_version(arm("FULL-1", "2026-01-03", ["A-1"]))
+    registry.commit_base_rate(BaseRate("RC-1", 0.2))
+    registry.log_candidate(CandidateEntry("cand-E-2", "E-2", "src", day(1), "registered", "predicate match"))
+    clock.set(day(10))
+    registry.register_cluster(registration([spec("E-2", cluster_id="C-2")], cluster_id="C-2"))
+    clock.set(day(41))
+    result = getattr(registry, read)("E-2")
+    if read == "slot_states":
+        assert {s.arm_id: s.status for s in result}["FULL"] == "abstention"
+    else:
+        assert result == ()
+    assert invariants.AFTER[(RegistrationRegistry, read)](registry, result, "E-2") == []  # at 811ba9d: no row
+    clock.set(day(30))
+    with pytest.raises(Refusal) as refused:
+        registry.submit_forecast(forecast("E-2"))  # at 811ba9d: admitted, filling FULL's slot
+    assert refused.value.reason == "clock_rollback"
+
+
+@pytest.mark.xfail(strict=True, reason=invariants.KNOWN_OPEN["clock: written: gate_"])
+def test_p9_2_a_commit_read_below_a_persisted_wall_time_confers_no_level(tmp_path: Path) -> None:
+    """The protected operation takes no step on a reading below the latest wall time a persisted reading observed: it
+    refuses ``clock_rollback`` (RC-37, RC-65; ``17`` item 2 "Clock"). Replay judges an intent's and a commit's reading
+    by its boot identifier and drift only (pass 8 Codex 8-2), so a commit appended raw with the epoch's start reading,
+    below its own intent's, is read and confers its level: ``perform("sim_read")`` is admitted."""
+    rig = Rig(tmp_path)
+    rig.tick()
+
+    def killed() -> None:
+        raise RuntimeError("the gate stops after its intent anchor")
+
+    rig.gate.hooks["after_intent_anchor"] = killed
+    with pytest.raises(RuntimeError):
+        rig.promote(issue(rig.epoch(), "a"))
+    state = rig.gate.state()
+    (intent_id,) = state.intents
+    stale = state.baseline
+    assert stale is not None and stale.wall < state.intents[intent_id].reading.wall
+    anchor = rig.ledger.local_anchors()[-1]
+    rig.ledger.append(K.KIND_COMMIT, gate_ledger_id("gate-commit", intent_id),
+                      CommitRecord(intent_id, anchor.prefix_length, anchor.digest, stale).to_payload())
+    rig.ledger.anchor()
+    rig.tick()
+    with pytest.raises(Refusal) as refused:
+        rig.gate.perform("sim_read")  # at 811ba9d: admitted at SIM_READ_ONLY
+    assert refused.value.reason == "invalid_gate_ledger"
