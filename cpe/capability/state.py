@@ -91,9 +91,14 @@ class GateState:
         return tuple(i for i in self.commits if i not in self.effective)
 
 
-def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules: GateRules) -> None:
+def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules: GateRules,
+                  anchors: dict[tuple[int, str], datetime]) -> None:
     """The checks the protected operation made before it wrote this intent (``CapabilityGate._validate``), on the
-    record as persisted. The evidence is not on the ledger, only its digest inside the signed capability."""
+    record as persisted. The evidence is not on the ledger, only its digest inside the signed capability. The epoch
+    was anchored when the intent was received: an anchor of a prefix covering the rotation was published at or before
+    the receipt, the anchors the protected operation saw (RC-123: no promotion while demoted-unanchored; issue #37,
+    pass 7 Codex 7-4)."""
+    receipt = parse_timestamp(record.receipt_time)
     capability = intent.capability
     problem = None
     if not rules.verifier.verify(capability.signed_bytes(), capability.signature):
@@ -106,12 +111,13 @@ def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules:
         problem = "is not written under its nonce's identity"
     elif intent.target_level != promotion_target(capability.capability):
         problem = f"targets {intent.target_level}, not the level its capability names"
-    elif capability.expiry <= parse_timestamp(record.receipt_time):
+    elif capability.expiry <= receipt:
         problem = "was received at or after its capability's expiry"
     elif state.epoch_seq is None or capability.epoch != state.epoch:
         problem = "names an epoch other than the current one"
-    # Whether it was a promotion is not re-checked here: the level the operation saw counted only the commits
-    # anchored at that time, which replay cannot know. A commit that does not raise the gate refuses the ledger.
+    elif not any(prefix >= state.epoch_seq and published <= receipt for (prefix, _), published in anchors.items()):
+        problem = "was received before its epoch was anchored"
+    # Whether it was a promotion is not re-checked here: a commit that does not raise the gate refuses the ledger.
     if problem is not None:
         raise Refusal("invalid_gate_ledger", f"intent {intent.intent_id} {problem}")
 
@@ -181,7 +187,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
             intent = IntentRecord.from_payload(record.payload)
             if intent.intent_id in state.intents:
                 raise Refusal("invalid_gate_ledger", f"intent {intent.intent_id} appears twice")
-            _check_intent(record, intent, state, rules)
+            _check_intent(record, intent, state, rules, published)
             state.intents[intent.intent_id] = intent
             state.intent_seq[intent.intent_id] = record.seq
             state.observe(intent.reading)
