@@ -22,6 +22,7 @@ from cpe.adjudication.rules import (
     check_record_content,
     check_record_is_final_enough,
     earliest_public_occurrence,
+    knowable_times_evidenced,
     late_contradictions,
 )
 from cpe.canonical import canonical_bytes, digest_of
@@ -136,6 +137,7 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                 (status, parse_timestamp(record.receipt_time, "receipt_time")))
         elif record.kind == KIND_DISPOSITION:
             adjudication = Adjudication.from_payload(payload)
+            _check_disposition(record, adjudication, state)
             state.event(adjudication.event_id).disposition = adjudication
         elif record.kind == KIND_DEFECT:
             require_keys(payload, KIND_DEFECT, frozenset({"event_id", "record_id", "detail"}), frozenset())
@@ -145,6 +147,7 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             if not isinstance(detail, str):
                 raise Refusal("invalid_text", f"{record.record_id}: detail must be a string")
             event = state.event(event_id)
+            _check_defect(record, event_id, defect_id, state)
             event.defect_record_ids.add(defect_id)
             if event.disposition is not None and defect_id not in {d.record_id for d in event.disposition.defects}:
                 event.disposition = replace(event.disposition,
@@ -152,8 +155,9 @@ def replay_state(records: tuple[Record, ...]) -> _State:
         elif record.kind == KIND_KNOWABLE:
             require_keys(payload, KIND_KNOWABLE, frozenset({"event_id", "knowable_at", "record_id"}), frozenset())
             event_id = require_identifier(payload["event_id"], "event_id")
-            require_identifier(payload["record_id"], "record_id")
+            cited = require_identifier(payload["record_id"], "record_id")
             knowable = parse_timestamp(payload["knowable_at"], "knowable_at")
+            _check_correction(record, event_id, cited, knowable, state)
             event = state.event(event_id)
             if event.disposition is not None and event.disposition.knowable_at is not None \
                     and knowable < event.disposition.knowable_at:
@@ -168,6 +172,62 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                     (i.kind, i.reference_id) for i in event.disposition.incidents}:
                 event.disposition = replace(event.disposition, incidents=event.disposition.incidents + (incident,))
     return state
+
+
+# Replay admits a disposition, a source-latency defect and a knowable-time correction only as the registry writes them,
+# so that a row written through the ledger by anything else refuses the ledger rather than deciding an outcome or its
+# knowable time (issue #37, pass 5 X2; class W of pass 4 extended, reading P5-R1). Incidents decide nothing and are
+# read as written.
+
+def _invalid(record: Record, problem: str) -> Refusal:
+    return Refusal("invalid_record", f"{record.kind} {record.record_id} {problem}")
+
+
+def _rule_of(record: Record, state: _State, event_id: str) -> tuple[_EventState, EventSpec, SourceRule]:
+    event = state.event(event_id)
+    if event.spec is None:
+        raise _invalid(record, f"concerns {event_id}, which has no registered specification before it")
+    rule = state.rules.get(event.spec.predicate.source)
+    if rule is None:
+        raise _invalid(record, "concerns an event whose source has no registered rule before it")
+    return event, event.spec, rule
+
+
+def _check_disposition(record: Record, stored: Adjudication, state: _State) -> None:
+    """The one disposition of its event, equal to the adjudication of the records the ledger held before it, at the
+    time it names: the write path appends it against that chain head, so replay sees exactly the state it was
+    decided on."""
+    event, spec, rule = _rule_of(record, state, stored.event_id)
+    if record.record_id != _ledger_id("disposition", stored.event_id) or event.disposition is not None:
+        raise _invalid(record, "is not the one disposition of its event (RC-88)")
+    now = stored.adjudicated_at
+    if not stored.final or now is None or now > parse_timestamp(record.receipt_time, "receipt_time"):
+        raise _invalid(record, "is no final disposition adjudicated at or before its receipt")
+    held = {status: receipt for status, receipt in state.status.get(rule.source_id, [])
+            if receipt <= spec.logical_finality}
+    try:
+        expected = adjudicate(spec, rule, event.records, event.observations, list(held), now,
+                              event.observation_receipts, held)
+    except Refusal as refusal:
+        raise _invalid(record, f"rests on records the adjudication refuses ({refusal.reason})") from None
+    if expected.to_payload() != stored.to_payload():
+        raise _invalid(record, "is not the adjudication of the records before it (RC-88)")
+
+
+def _check_defect(record: Record, event_id: str, defect_id: str, state: _State) -> None:
+    event, spec, rule = _rule_of(record, state, event_id)
+    cited = [r for r in event.records if r.record.record_id == defect_id]
+    if record.record_id != _ledger_id("defect", event_id, defect_id) or event.disposition is None or not cited \
+            or not late_contradictions(spec, rule, cited, event.disposition.disposition):
+        raise _invalid(record, "names no record before it that contradicts the stored disposition (RC-88)")
+
+
+def _check_correction(record: Record, event_id: str, cited_id: str, knowable: datetime, state: _State) -> None:
+    event, spec, rule = _rule_of(record, state, event_id)
+    cited = [r for r in event.records if r.record.record_id == cited_id]
+    if record.record_id != _ledger_id("knowable", event_id, cited_id) or event.disposition is None or not cited \
+            or knowable not in knowable_times_evidenced(spec, rule, cited[0]):
+        raise _invalid(record, "names no record before it that makes the outcome knowable at that time (RC-146)")
 
 
 def _not_after(evidenced: datetime, what: str) -> Callable[[datetime], None]:

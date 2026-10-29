@@ -297,6 +297,22 @@ def earliest_public_occurrence(spec: EventSpec, rule: SourceRule,
     return min(public) if public else None
 
 
+def knowable_times_evidenced(spec: EventSpec, rule: SourceRule, received: ReceivedRecord) -> frozenset[datetime]:
+    """The knowable times one record can give a stored disposition's correction: its public occurrence when it bears
+    on the predicate (``earliest_public_occurrence``), and, when it is timely and decides, the knowable time of its
+    decision capped at logical finality (the fresh adjudication's). Replay accepts a correction only at one of these
+    times of the record it names (issue #37, pass 5 X2)."""
+    times: set[datetime] = set()
+    public = earliest_public_occurrence(spec, rule, [received])
+    if public is not None:
+        times.add(public[0])
+    if received.publication(rule) <= spec.logical_finality:
+        decision = _decide(received, spec, rule)
+        if decision is not None:
+            times.add(min(decision[1], spec.logical_finality))
+    return frozenset(times)
+
+
 def adjudicate(spec: EventSpec, rule: SourceRule, records: Sequence[ReceivedRecord],
                observations: Sequence[AbsenceObservation], statuses: Sequence[SourceStatus], now: datetime,
                observation_receipts: Mapping[str, datetime] | None = None,
