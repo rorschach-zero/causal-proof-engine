@@ -21,6 +21,7 @@ from cpe.schemas.common import (
     require_keys,
     require_mapping,
     require_non_negative_int,
+    require_non_negative_number,
 )
 
 
@@ -68,25 +69,35 @@ class EpochRecord:
     # later release replays a ledger an earlier one wrote (PR #51 review 4353051510). Absent on epochs written
     # before it was recorded; those are replayed against the running release.
     release_digest: str | None = None
+    # The slew tolerance the gate judged continuity by in the epoch: the intents and commits of the epoch are replayed
+    # against it, as they were checked (issue #37, pass 8 Codex 8-2). Absent on epochs written before it was recorded;
+    # their readings are checked by boot identifier only.
+    tolerance: float | None = None
 
     @classmethod
     def from_payload(cls, payload: object) -> EpochRecord:
         m = require_mapping(payload, "EpochRecord")
         require_keys(m, "EpochRecord", frozenset({"epoch", "index", "reason", "baseline"}),
-                     frozenset({"release_digest"}))
+                     frozenset({"release_digest", "tolerance"}))
         index = require_non_negative_int(m["index"], "index")
         if index < 1:
             raise Refusal("invalid_epoch", "epoch indices start at 1")
-        release = m.get("release_digest")
+        release, tolerance = m.get("release_digest"), m.get("tolerance")
+        if tolerance is not None:
+            tolerance = require_non_negative_number(tolerance, "tolerance")
+            if tolerance <= 0:
+                raise Refusal("invalid_number", "tolerance must be positive")
         return cls(require_non_negative_int(m["epoch"], "epoch"), index, _text(m["reason"], "reason"),
                    ClockReading.from_payload(m["baseline"]),
-                   None if release is None else require_digest(release, "release_digest"))
+                   None if release is None else require_digest(release, "release_digest"), tolerance)
 
     def to_payload(self) -> Payload:
         payload: Payload = {"epoch": self.epoch, "index": self.index, "reason": self.reason,
                             "baseline": self.baseline.to_payload()}
         if self.release_digest is not None:
             payload["release_digest"] = self.release_digest
+        if self.tolerance is not None:
+            payload["tolerance"] = self.tolerance
         return payload
 
 
