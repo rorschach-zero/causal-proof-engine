@@ -334,7 +334,10 @@ class RegistrationRegistry:
         ledger, this registry or another) refuses the append, so the decision is recomputed on the new state.
         ``decide`` runs on a clock sample first, to refuse early, and again on the receipt the append assigns,
         which is the decision written: every "before" bound (e_i, the issuance open, a period start, a listing
-        time) holds for the record's own receipt, not for an earlier sample (issue #37, C1)."""
+        time) holds for the record's own receipt, not for an earlier sample (issue #37, C1). The anchors the decision
+        read are expected unchanged as well: an anchor that lands between the snapshot and the append moves no chain
+        head, and a round recorded as refused for a register the anchor covered would refuse every later replay
+        (issue #37, pass 5 R2)."""
         with self._lock:
             for _ in range(8):
                 state = self.state()
@@ -345,7 +348,8 @@ class RegistrationRegistry:
                     hook()
                 try:
                     return self._ledger.append(kind, record_id, payload, expected_head=state.head,
-                                               admit=lambda receipt: decide(state, receipt))
+                                               admit=lambda receipt: decide(state, receipt),
+                                               expected_anchors=(state.local_anchors, state.pending_anchors))
                 except Refusal as refusal:
                     if refusal.reason != "stale_head":
                         raise
