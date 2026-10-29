@@ -93,8 +93,18 @@ def digest_of(value: JsonValue) -> str:
     return sha256_hex(canonical_bytes(value))
 
 
+def plain_text(value: str) -> str:
+    """The text of ``value`` as a plain ``str``. A subclass can compare equal to, and hash as, a value other than its
+    text, and the ledger persists the text: every check decides on the text, at every entry point, schema object or
+    bare argument (issue #37, pass 7 P7-R3; pass 8 P8-1 to P8-5)."""
+    return str.__str__(value)
+
+
 def require_hex_digest(value: object, field: str) -> str:
     """Accept exactly 64 lowercase hex characters (fixture F-04: ``'z' * 64`` is refused)."""
-    if not isinstance(value, str) or len(value) != SHA256_HEX_LENGTH or any(c not in "0123456789abcdef" for c in value):
+    if not isinstance(value, str):
+        raise Refusal("invalid_digest", f"{field} must be {SHA256_HEX_LENGTH} lowercase hex characters")
+    value = plain_text(value)
+    if len(value) != SHA256_HEX_LENGTH or any(c not in "0123456789abcdef" for c in value):
         raise Refusal("invalid_digest", f"{field} must be {SHA256_HEX_LENGTH} lowercase hex characters")
     return value
