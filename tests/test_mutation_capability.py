@@ -32,6 +32,7 @@ from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
 from cpe.ledger.anchor import UnavailableAnchorStore
+from tests.rows import extended
 from tests.test_capability import BASE, ENV, OWNER, RELEASE, RULES, TOLERANCE, Rig, issue
 from tests.test_review_round2_pr25 import PausingTimeSource
 
@@ -285,17 +286,26 @@ def test_replay_names_every_malformed_gate_ledger(tmp_path: Path) -> None:
     capability = issue(r.epoch(), "x")
     intent = IntentRecord(intent_ledger_id(capability), capability, "SIM_READ_ONLY", reading)
     r.ledger.append(KIND_INTENT, intent.intent_id, intent.to_payload())
-    # under its own identity the second row is a duplicate the ledger refuses; under another it is refused by either check
+    # Under its own identity the second row is a duplicate the ledger refuses, so the rule is reached by replay of the
+    # records with the row added; under another identity it is refused by the identifier first (pass 8).
+    with pytest.raises(Refusal) as twice:
+        replay_gate(extended(r.ledger.records(), KIND_INTENT, intent.intent_id, intent.to_payload()), 0, RULES,
+                    r.ledger.local_anchors())
+    assert "appears twice" in twice.value.detail
     assert malformed(r, KIND_INTENT, intent.to_payload()) == "invalid_gate_ledger"
     r = fresh("abort")
     assert malformed(r, KIND_ABORT, AbortRecord("i-unknown", "x", reading).to_payload(),
                      gate_ledger_id("gate-abort", "i-unknown")) == "invalid_gate_ledger"
     r = fresh("commit-after-abort")
     i2 = genuine_intent(r, "y", reading)
+    intent_anchor = r.ledger.anchor()  # a published anchor covering the intent: the commit below cites it (pass 8)
     r.ledger.append(KIND_ABORT, gate_ledger_id("gate-abort", i2), AbortRecord(i2, "gone", reading).to_payload())
     assert replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors()).aborted == {i2: "gone"}
-    assert malformed(r, KIND_COMMIT, CommitRecord(i2, 1, "ab" * 32, reading).to_payload(),
-                     gate_ledger_id("gate-commit", i2)) == "invalid_gate_ledger"
+    r.ledger.append(KIND_COMMIT, gate_ledger_id("gate-commit", i2),
+                    CommitRecord(i2, intent_anchor.prefix_length, intent_anchor.digest, reading).to_payload())
+    with pytest.raises(Refusal) as after_abort:  # every other check of the commit holds: the abort rule decides
+        replay_gate(r.ledger.records(), 0, RULES, r.ledger.local_anchors())
+    assert "without a pending intent" in after_abort.value.detail
     r = fresh("abort-after-commit")
     i3 = genuine_intent(r, "z", reading)
     anchor = r.ledger.anchor()

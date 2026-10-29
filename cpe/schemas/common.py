@@ -7,7 +7,7 @@ from collections.abc import Callable, Mapping
 from datetime import date, datetime
 from typing import Any, TypeVar, cast
 
-from cpe.canonical import JsonValue, canonical_bytes, require_hex_digest
+from cpe.canonical import JsonValue, canonical_bytes, plain_text, require_hex_digest
 from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 
@@ -37,6 +37,9 @@ def require_keys(payload: Mapping[str, Any], schema: str, required: frozenset[st
 
 
 def require_identifier(value: object, field: str) -> str:
+    """A non-empty trimmed string of bounded length, returned as its plain text (``plain_text``)."""
+    if isinstance(value, str):
+        value = plain_text(value)
     if not isinstance(value, str) or not value or len(value) > MAX_IDENTIFIER_LENGTH or value.strip() != value:
         raise Refusal("invalid_identifier", f"{field} must be a non-empty trimmed string of at most "
                       f"{MAX_IDENTIFIER_LENGTH} characters")
@@ -70,6 +73,7 @@ def require_text(value: object, field: str) -> str:
     """Free text, refused rather than coerced when it is not a string (issue #37, pass 3)."""
     if not isinstance(value, str):
         raise Refusal("invalid_text", f"{field} must be a string")
+    value = plain_text(value)
     try:
         value.encode("utf-8")
     except UnicodeEncodeError:

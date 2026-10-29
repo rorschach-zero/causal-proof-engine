@@ -26,10 +26,12 @@ from cpe.adjudication.registry import (
     KIND_RULE,
     KIND_STATUS,
     _ledger_id,
+    replay_state,
 )
 from cpe.clock import ManualClock
 from cpe.errors import Refusal
 from cpe.ledger import HarnessAnchorStore, Ledger
+from tests.rows import extended
 from tests.test_adjudication import archived, day, observation, record, rule, spec, submit
 
 
@@ -57,8 +59,13 @@ def test_y1_a_second_event_spec_row_does_not_replace_the_criteria(tmp_path: Path
     with pytest.raises(Refusal) as immutable:
         registry.register_event(spec(deadline=90))
     assert immutable.value.reason == "event_immutable"  # the API refuses the rewrite
+    # Under the criteria's own identifier, so that the immutability rule decides, not the identifier (pass 8)
+    second = extended(ledger.records(), KIND_EVENT, _ledger_id("event", "E"), spec(deadline=90).to_payload())
+    with pytest.raises(Refusal) as refused:
+        replay_state(second)  # at 1dca8d7: EXPIRED_NO, the occurrence at 95 judged against a deadline of 90
+    assert "event_immutable" in refused.value.detail
     ledger.append(KIND_EVENT, "event:forged", spec(deadline=90).to_payload())
-    refuses(ledger)  # at 1dca8d7: EXPIRED_NO, the occurrence at 95 judged against a deadline of 90
+    refuses(ledger)  # under another identifier, refused by it
 
 
 def test_y1_an_event_spec_row_received_after_its_issuance_opened_is_not_criteria(tmp_path: Path) -> None:
@@ -79,8 +86,12 @@ def test_y1_a_second_source_rule_row_does_not_replace_the_rule(tmp_path: Path) -
     with pytest.raises(Refusal) as immutable:
         registry.register_rule(rule(public_act=True))
     assert immutable.value.reason == "rule_immutable"
+    second = extended(ledger.records(), KIND_RULE, _ledger_id("rule", "src"), rule(public_act=True).to_payload())
+    with pytest.raises(Refusal) as refused:
+        replay_state(second)  # at 1dca8d7: knowable_at day 95 (the occurrence as a public act), not day 96
+    assert "rule_immutable" in refused.value.detail
     ledger.append(KIND_RULE, "rule:forged", rule(public_act=True).to_payload())
-    refuses(ledger)  # at 1dca8d7: knowable_at day 95 (the occurrence as a public act), not day 96
+    refuses(ledger)  # under another identifier, refused by it
 
 
 def forged_rows() -> dict[str, tuple[str, str, object]]:
