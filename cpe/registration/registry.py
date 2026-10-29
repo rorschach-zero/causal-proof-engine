@@ -141,11 +141,16 @@ def replay_state(records: tuple[Record, ...]) -> _State:
     for record in records:
         state.head = record.entry_hash
         payload = record.payload
+        receipt = parse_timestamp(record.receipt_time)
         if record.kind == KIND_ARM_VERSION:
             version = ArmVersion.from_payload(payload)
+            _replayed(record, _ledger_id("arm-version", version.arm_version_id),
+                      lambda: admit_arm_version(state, version))
             state.arm_versions[version.arm_version_id] = version
         elif record.kind == KIND_CUTOFF_CORRECTION:
             correction = CutoffCorrection.from_payload(payload)
+            _replayed(record, _ledger_id("cutoff-correction", correction.arm_version_id, correction.evidence_id),
+                      lambda: admit_correction(state, correction))
             if state.registrations_under.get(correction.arm_version_id, 0) > 0:
                 # RC-150: withdrawn from further registrations, with every version whose effective cutoff is
                 # composed from the corrected one (RC-156); a replacement version with evidence follows
@@ -156,12 +161,15 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                     version, declared_cutoff=correction.corrected_cutoff, cutoff_evidence_id=correction.evidence_id)
         elif record.kind == KIND_CANDIDATE:
             entry = CandidateEntry.from_payload(payload)
+            _replayed(record, _ledger_id("candidate", entry.candidate_id), lambda: admit_candidate(state, entry, receipt))
             state.candidates[entry.candidate_id] = entry
             state.candidate_by_event[entry.event_id] = entry
         elif record.kind == KIND_CLUSTER:
             registration = ClusterRegistration.from_payload(payload)
+            _replayed(record, _ledger_id("cluster", registration.cluster.cluster_id),
+                      lambda: admit_cluster(state, registration, receipt))
             state.clusters[registration.cluster.cluster_id] = registration
-            state.cluster_registered_at[registration.cluster.cluster_id] = parse_timestamp(record.receipt_time)
+            state.cluster_registered_at[registration.cluster.cluster_id] = receipt
             for spec in registration.events:
                 state.events[spec.event_id] = spec
                 state.event_cluster[spec.event_id] = registration.cluster.cluster_id
@@ -170,10 +178,17 @@ def replay_state(records: tuple[Record, ...]) -> _State:
                     state.registrations_under[consumed] = state.registrations_under.get(consumed, 0) + 1
         elif record.kind == KIND_BASE_RATE:
             rate = BaseRate.from_payload(payload)
+            _replayed(record, _ledger_id("base-rate", rate.reference_class_id), lambda: admit_base_rate(state, rate))
             state.base_rates[rate.reference_class_id] = rate.rate
         elif record.kind == KIND_FORECAST:
             forecast = Forecast.from_payload(payload)
-            received = ReceivedForecast(forecast, record.record_id, parse_timestamp(record.receipt_time))
+            try:
+                expected = admit_forecast(state, forecast)
+            except Refusal as refusal:
+                raise _invalid(record, f"would have been refused when written ({refusal.reason}: {refusal.detail})") \
+                    from None
+            _replayed(record, expected, lambda: None)
+            received = ReceivedForecast(forecast, record.record_id, receipt)
             key = (forecast.event_id, forecast.arm_id, forecast.slot_id)
             state.submissions[key] = state.submissions.get(key, 0) + 1
             state.forecasts_by_event.setdefault(forecast.event_id, []).append(received)
@@ -314,6 +329,110 @@ def check_anchor_times(state: _State) -> None:
                           "register's anchor, so the registry would not have refused it (RC-311)")
 
 
+
+# Admission rules of the rows that set what a forecast is judged against: one function per kind, used by the write path
+# (with the receipt the append assigns) and by replay (with the record's receipt), so that a row written through the
+# ledger by anything else is refused as the registry refused it and never read as authority (issue #37, pass 5 X1,
+# reading P5-R1: class W extended to forecast rows and the rows they depend on).
+
+def admit_arm_version(state: _State, version: ArmVersion) -> None:
+    if version.arm_version_id in state.arm_versions:
+        raise Refusal("arm_version_immutable", f"{version.arm_version_id} is already registered")
+    for consumed in version.consumes:
+        if consumed not in state.arm_versions:
+            raise Refusal("unknown_arm_version", f"{version.arm_version_id} consumes unregistered {consumed}")
+        if consumed in state.withdrawn:
+            raise Refusal("arm_version_withdrawn", f"{version.arm_version_id} consumes withdrawn {consumed}, "
+                          "whose declared cutoff was corrected (RC-150, RC-156)")
+
+
+def admit_correction(state: _State, correction: CutoffCorrection) -> None:
+    if correction.arm_version_id not in state.arm_versions:
+        raise Refusal("unknown_arm_version", correction.arm_version_id)
+    if correction.arm_version_id in state.withdrawn:
+        raise Refusal("arm_version_withdrawn", f"{correction.arm_version_id} is already withdrawn")
+
+
+def admit_candidate(state: _State, entry: CandidateEntry, now: datetime) -> None:
+    if entry.event_id in state.forecasts_by_event:
+        raise Refusal("candidate_after_forecast", f"a forecast on {entry.event_id} already exists (RC-78)")
+    if entry.event_id in state.candidate_by_event:
+        raise Refusal("candidate_exists", f"{entry.event_id} is already in the candidate log")
+    if entry.listed_at > now:
+        raise Refusal("future_listing", f"{entry.candidate_id} is listed after its receipt; a listing time is "
+                      "at or before the entry's receipt (RC-78)")
+
+
+def admit_base_rate(state: _State, rate: BaseRate) -> None:
+    if rate.reference_class_id in state.base_rates:
+        raise Refusal("base_rate_immutable", f"{rate.reference_class_id} already has a committed base rate")
+
+
+def admit_cluster(state: _State, registration: ClusterRegistration, now: datetime) -> None:
+    cluster_id = registration.cluster.cluster_id
+    if cluster_id in state.clusters:
+        raise Refusal("cluster_immutable", f"{cluster_id} is already registered (RC-66)")
+    for spec in registration.events:
+        candidate = state.candidate_by_event.get(spec.event_id)
+        if candidate is None:
+            raise Refusal("no_candidate_entry", f"{spec.event_id} has no prior candidate entry (RC-78)")
+        if candidate.decision != "registered":
+            raise Refusal("candidate_not_registered", f"{spec.event_id} was {candidate.decision}")
+        if spec.event_id in state.events:
+            raise Refusal("event_registered", f"{spec.event_id} is already a member of {state.event_cluster[spec.event_id]}")
+        if now >= spec.earliest_knowable_bound:
+            raise Refusal("registration_after_e_i", f"the registration record would follow e_i of {spec.event_id} (RC-138)")
+        if spec.issuance_open < now:
+            raise Refusal("issuance_before_registration", f"{spec.event_id}'s issuance window opens before the registration record (RC-87)")
+        if spec.reference_class_id not in state.base_rates:
+            raise Refusal("no_base_rate", f"{spec.event_id}'s reference class has no committed base rate (RC-109)")
+    for arm_id, version_id in registration.arm_versions.items():
+        version = state.arm_versions.get(version_id)
+        if version is None:
+            raise Refusal("unknown_arm_version", f"arm {arm_id} names unregistered {version_id}")
+        if version.arm_id != arm_id:
+            raise Refusal("arm_mismatch", f"{version_id} is a version of arm {version.arm_id}, not of {arm_id}")
+        if version_id in state.withdrawn:
+            raise Refusal("arm_version_withdrawn", f"{version_id} is withdrawn from registrations (RC-150)")
+        cutoff = effective_cutoff(version_id, state.arm_versions)
+        for spec in registration.events:
+            if date.fromisoformat(format_timestamp(spec.earliest_knowable_bound)[:10]) <= cutoff:  # UTC
+                raise Refusal("cutoff_after_e_i", f"{spec.event_id}: e_i is not after the effective cutoff "
+                              f"{cutoff.isoformat()} of arm {arm_id} (RC-138)")
+
+
+def admit_forecast(state: _State, forecast: Forecast) -> str:
+    """The checks of a submission; returns the ledger identifier the submission is written under."""
+    spec = state.events.get(forecast.event_id)
+    if spec is None:
+        raise Refusal("before_registration", f"{forecast.event_id} has no registration record (RC-87)")
+    registration = state.clusters[state.event_cluster[forecast.event_id]]
+    if forecast.arm_id == registration.baseline_arm_id:
+        raise Refusal("baseline_not_submittable", "the baseline slot is computed from the committed base rate (RC-109)")
+    expected_version = registration.arm_versions.get(forecast.arm_id)
+    if expected_version is None:
+        raise Refusal("unknown_arm", f"arm {forecast.arm_id} is not pre-registered for {forecast.event_id}")
+    if forecast.arm_version_id != expected_version:
+        raise Refusal("wrong_arm_version", f"{forecast.arm_id} is pre-registered as {expected_version} (RC-96)")
+    if forecast.slot_id not in spec.scoring_slots:
+        raise Refusal("unknown_slot", f"{forecast.slot_id} is not a slot of {forecast.event_id} (RC-89)")
+    key = (forecast.event_id, forecast.arm_id, forecast.slot_id)
+    if key in state.forecasts:
+        raise Refusal("slot_occupied", f"slot {forecast.slot_id} of {forecast.arm_id} on {forecast.event_id} is filled (RC-75)")
+    return _ledger_id("forecast", forecast.event_id, forecast.arm_id, forecast.slot_id,
+                      str(state.submissions.get(key, 0) + 1))
+
+
+def _replayed(record: Record, expected_id: str, admit: Callable[[], object]) -> None:
+    """Replay of a row: written under the identifier its write path gives it, and admitted by the same rule."""
+    if record.record_id != expected_id:
+        raise _invalid(record, "is not written under the identifier its registry gives it")
+    try:
+        admit()
+    except Refusal as refusal:
+        raise _invalid(record, f"would have been refused when written ({refusal.reason}: {refusal.detail})") from None
+
+
 class RegistrationRegistry:
     def __init__(self, ledger: Ledger) -> None:
         self._ledger = ledger
@@ -361,14 +480,7 @@ class RegistrationRegistry:
         version = ArmVersion.from_payload(_payload_of(version))
 
         def decide(state: _State, now: datetime) -> Write:
-            if version.arm_version_id in state.arm_versions:
-                raise Refusal("arm_version_immutable", f"{version.arm_version_id} is already registered")
-            for consumed in version.consumes:
-                if consumed not in state.arm_versions:
-                    raise Refusal("unknown_arm_version", f"{version.arm_version_id} consumes unregistered {consumed}")
-                if consumed in state.withdrawn:
-                    raise Refusal("arm_version_withdrawn", f"{version.arm_version_id} consumes withdrawn {consumed}, "
-                                  "whose declared cutoff was corrected (RC-150, RC-156)")
+            admit_arm_version(state, version)
             return KIND_ARM_VERSION, _ledger_id("arm-version", version.arm_version_id), version.to_payload()
 
         return self._write(decide)
@@ -391,10 +503,7 @@ class RegistrationRegistry:
 
         def decide(state: _State, now: datetime) -> Write:
             nonlocal registered_under
-            if correction.arm_version_id not in state.arm_versions:
-                raise Refusal("unknown_arm_version", correction.arm_version_id)
-            if correction.arm_version_id in state.withdrawn:
-                raise Refusal("arm_version_withdrawn", f"{correction.arm_version_id} is already withdrawn")
+            admit_correction(state, correction)
             registered_under = state.registrations_under.get(correction.arm_version_id, 0) > 0
             return (KIND_CUTOFF_CORRECTION,
                     _ledger_id("cutoff-correction", correction.arm_version_id, correction.evidence_id),
@@ -409,13 +518,7 @@ class RegistrationRegistry:
         entry = CandidateEntry.from_payload(_payload_of(entry))  # validated in full, a naive time is a Refusal
 
         def decide(state: _State, now: datetime) -> Write:
-            if entry.event_id in state.forecasts_by_event:
-                raise Refusal("candidate_after_forecast", f"a forecast on {entry.event_id} already exists (RC-78)")
-            if entry.event_id in state.candidate_by_event:
-                raise Refusal("candidate_exists", f"{entry.event_id} is already in the candidate log")
-            if entry.listed_at > now:
-                raise Refusal("future_listing", f"{entry.candidate_id} is listed after its receipt; a listing time is "
-                              "at or before the entry's receipt (RC-78)")
+            admit_candidate(state, entry, now)
             return KIND_CANDIDATE, _ledger_id("candidate", entry.candidate_id), entry.to_payload()
 
         return self._write(decide)
@@ -433,8 +536,7 @@ class RegistrationRegistry:
         rate = BaseRate.from_payload(_payload_of(rate))
 
         def decide(state: _State, now: datetime) -> Write:
-            if rate.reference_class_id in state.base_rates:
-                raise Refusal("base_rate_immutable", f"{rate.reference_class_id} already has a committed base rate")
+            admit_base_rate(state, rate)
             return KIND_BASE_RATE, _ledger_id("base-rate", rate.reference_class_id), rate.to_payload()
 
         return self._write(decide)
@@ -445,37 +547,8 @@ class RegistrationRegistry:
         registration = ClusterRegistration.from_payload(_payload_of(registration))
 
         def decide(state: _State, now: datetime) -> Write:
-            cluster_id = registration.cluster.cluster_id
-            if cluster_id in state.clusters:
-                raise Refusal("cluster_immutable", f"{cluster_id} is already registered (RC-66)")
-            for spec in registration.events:
-                candidate = state.candidate_by_event.get(spec.event_id)
-                if candidate is None:
-                    raise Refusal("no_candidate_entry", f"{spec.event_id} has no prior candidate entry (RC-78)")
-                if candidate.decision != "registered":
-                    raise Refusal("candidate_not_registered", f"{spec.event_id} was {candidate.decision}")
-                if spec.event_id in state.events:
-                    raise Refusal("event_registered", f"{spec.event_id} is already a member of {state.event_cluster[spec.event_id]}")
-                if now >= spec.earliest_knowable_bound:
-                    raise Refusal("registration_after_e_i", f"the registration record would follow e_i of {spec.event_id} (RC-138)")
-                if spec.issuance_open < now:
-                    raise Refusal("issuance_before_registration", f"{spec.event_id}'s issuance window opens before the registration record (RC-87)")
-                if spec.reference_class_id not in state.base_rates:
-                    raise Refusal("no_base_rate", f"{spec.event_id}'s reference class has no committed base rate (RC-109)")
-            for arm_id, version_id in registration.arm_versions.items():
-                version = state.arm_versions.get(version_id)
-                if version is None:
-                    raise Refusal("unknown_arm_version", f"arm {arm_id} names unregistered {version_id}")
-                if version.arm_id != arm_id:
-                    raise Refusal("arm_mismatch", f"{version_id} is a version of arm {version.arm_id}, not of {arm_id}")
-                if version_id in state.withdrawn:
-                    raise Refusal("arm_version_withdrawn", f"{version_id} is withdrawn from registrations (RC-150)")
-                cutoff = effective_cutoff(version_id, state.arm_versions)
-                for spec in registration.events:
-                    if date.fromisoformat(format_timestamp(spec.earliest_knowable_bound)[:10]) <= cutoff:  # UTC
-                        raise Refusal("cutoff_after_e_i", f"{spec.event_id}: e_i is not after the effective cutoff "
-                                      f"{cutoff.isoformat()} of arm {arm_id} (RC-138)")
-            return KIND_CLUSTER, _ledger_id("cluster", cluster_id), registration.to_payload()
+            admit_cluster(state, registration, now)
+            return KIND_CLUSTER, _ledger_id("cluster", registration.cluster.cluster_id), registration.to_payload()
 
         return self._write(decide)
 
@@ -505,25 +578,7 @@ class RegistrationRegistry:
         forecast = Forecast.from_payload(_payload_of(forecast))
 
         def decide(state: _State, now: datetime) -> Write:
-            spec = state.events.get(forecast.event_id)
-            if spec is None:
-                raise Refusal("before_registration", f"{forecast.event_id} has no registration record (RC-87)")
-            registration = state.clusters[state.event_cluster[forecast.event_id]]
-            if forecast.arm_id == registration.baseline_arm_id:
-                raise Refusal("baseline_not_submittable", "the baseline slot is computed from the committed base rate (RC-109)")
-            expected_version = registration.arm_versions.get(forecast.arm_id)
-            if expected_version is None:
-                raise Refusal("unknown_arm", f"arm {forecast.arm_id} is not pre-registered for {forecast.event_id}")
-            if forecast.arm_version_id != expected_version:
-                raise Refusal("wrong_arm_version", f"{forecast.arm_id} is pre-registered as {expected_version} (RC-96)")
-            if forecast.slot_id not in spec.scoring_slots:
-                raise Refusal("unknown_slot", f"{forecast.slot_id} is not a slot of {forecast.event_id} (RC-89)")
-            key = (forecast.event_id, forecast.arm_id, forecast.slot_id)
-            if key in state.forecasts:
-                raise Refusal("slot_occupied", f"slot {forecast.slot_id} of {forecast.arm_id} on {forecast.event_id} is filled (RC-75)")
-            record_id = _ledger_id("forecast", forecast.event_id, forecast.arm_id, forecast.slot_id,
-                                   str(state.submissions.get(key, 0) + 1))
-            return KIND_FORECAST, record_id, forecast.to_payload()
+            return KIND_FORECAST, admit_forecast(state, forecast), forecast.to_payload()
 
         return self._write(decide)
 
