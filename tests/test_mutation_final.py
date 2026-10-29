@@ -67,7 +67,9 @@ def test_three_forecasts_before_the_window_are_kept(tmp_path: Path) -> None:  # 
     for hour in (1, 2, 3):  # before the window opens: kept, labelled by receipt, filling nothing
         clock.set(reg.day(10) + timedelta(hours=hour))
         registry.submit_forecast(reg.forecast("E-1"))
-    assert len(registry.state().forecasts_by_event["E-1"]) == 3
+    # The replayed state, not the public snapshot, which seals the event's forecasts until its window closes (pass 6
+    # Codex 6-2, reading P6-R2)
+    assert len(registry._state().forecasts_by_event["E-1"]) == 3
 
 
 def test_a_discontinuity_rotates_at_the_reading_that_showed_it(tmp_path: Path) -> None:  # _rotate 2
