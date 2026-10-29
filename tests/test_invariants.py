@@ -78,7 +78,8 @@ from tests.test_registration import arm, day, forecast, registration, spec
 def registration_ledger(path: Path) -> tuple[Ledger, HarnessAnchorStore]:
     """Every registration kind: arm versions (one consuming another), a correction before and one after the first
     registration, candidates, a cluster, a VOID request, the base rate, forecasts inside and outside the window, two
-    claims with their calibration records, the register, a seeded round and a round refused for the register."""
+    claims with their calibration records, the register, a seeded round, a round refused for the register, and the
+    release of an event's forecasts by the first read after its close."""
     clock, store = ManualClock(day(1)), HarnessAnchorStore()
     ledger = Ledger(path, clock, store)
     r = RegistrationRegistry(ledger)
@@ -114,6 +115,7 @@ def registration_ledger(path: Path) -> tuple[Ledger, HarnessAnchorStore]:
     r.submit_forecast(forecast("E-2", "A", "A-1", 0.6))
     clock.set(day(45))
     r.submit_forecast(forecast("E-2"))  # after the close: kept, fills nothing
+    r.forecasts_of("E-1")  # the first read after the close releases E-1's forecasts: a disclosure row (P8-R2)
     return ledger, store
 
 
@@ -326,6 +328,7 @@ REGISTRATION_WRITES: dict[str, Callable[[RegistrationRegistry, JsonValue], objec
     K.KIND_CALIBRATION: lambda r, p: r.record_calibration(CalibrationRecord.from_payload(p)),
     K.KIND_BEACON: lambda r, p: r.supply_beacon_output(BeaconOutput.from_payload(p["output"])),  # type: ignore[index, call-overload]
     K.KIND_ROUND_REFUSED: lambda r, p: r.supply_beacon_output(BeaconOutput.from_payload(p["output"])),  # type: ignore[index, call-overload]
+    K.KIND_DISCLOSURE: lambda r, p: r.forecasts_of(p["event_id"]),  # type: ignore[index, call-overload, arg-type]
 }
 
 
