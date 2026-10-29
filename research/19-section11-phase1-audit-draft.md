@@ -428,6 +428,6 @@ Pass 7, at `c55e4ce`, is not passed: G1 and I1 (Claude) and 7-1 and 7-4 (Codex) 
 
 Pass 8, at `c37d048`, is not passed: P8-1 and P8-2 (Claude), 8-1 and 8-2 (Codex; 8-3 is P8-2) are reproduced P1s (fixes in PRs #89, #94 and #97).
 
-**Pass 9** is pinned at `main` `811ba9d6bd13996cec72da62c0179d1baf71c6f2`, the merge of #98, under the owner's continuing authorisation. A fresh session (session 11) runs the Claude side and extends the invariants. Codex pass 9 is the automatic review of the whole-tree PR #99 (branch `audit/pass9-full-tree`, `bb63897`, an ours-merge of the pin with the empty base). The review started at 22:24 UTC.
+**Pass 9** is pinned at `main` `811ba9d6bd13996cec72da62c0179d1baf71c6f2`, the merge of #98, under the owner's continuing authorisation. A fresh session (session 11) runs the Claude side and extends the invariants. Codex pass 9 is the automatic review of the whole-tree PR #99 (branch `audit/pass9-full-tree`, `bb63897`, an ours-merge of the pin with the empty base). It completed at 22:19 UTC with no findings and no inline comments: **the first clean Codex whole-tree result** of the audit. As in passes 7 and 8, it did not answer items 3 and 4 of the request; session 11 runs those read-only checks.
 
-<PENDING: pass 9 of both auditors; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+<PENDING: pass 9 of the Claude auditor (session 11); "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
