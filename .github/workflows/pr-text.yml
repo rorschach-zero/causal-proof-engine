@@ -1,12 +1,14 @@
 name: pull request text
 
-# T-09 on a pull request whose title or description was edited after its last code run (ci.yml). The one job here
-# re-runs tools/check_provenance.py over the same range with the new text, under its own check name, so the six
-# results ci.yml recorded for the head stay as they are. Actions are pinned by commit as in ci.yml.
+# T-09 on the pull request title and body. ci.yml checks the tree and the commits; this workflow is the only check of
+# the pull request text, and it runs on every pull request event, the edited event included, under its own check
+# name. A text failure is therefore cleared by correcting the text, and a text edit never touches the six results
+# ci.yml recorded for the head. The range is checked again here so that a trailer in a commit message is reported
+# next to the text finding. Actions are pinned by commit as in ci.yml.
 
 on:
   pull_request:
-    types: [edited]
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -17,7 +19,7 @@ concurrency:
 
 jobs:
   text:
-    name: pull request title and body after an edit (T-09)
+    name: pull request title and body (T-09)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -28,7 +30,7 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.13"
-      - name: Pull request text and commits against the head tree
+      - name: Pull request title and body, with the commits of the range
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}

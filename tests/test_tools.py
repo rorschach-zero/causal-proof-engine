@@ -133,17 +133,18 @@ def test_import_boundary_holds_on_the_real_package() -> None:
 # Regression tests for the Codex review of PR #17 (commit d155f56); each fails on d155f56.
 
 
-def test_4329073557_the_provenance_check_reruns_on_pull_request_edits_in_its_own_workflow() -> None:
-    # The edit of a title or description re-runs the provenance check (finding 4329073557), but in pr-text.yml under
-    # its own check name: ci.yml never runs on the edited event, so a text edit cannot put skipped code-check results
-    # on the head in place of a failed code run (PR #60 review).
+def test_4329073557_the_pull_request_text_is_checked_on_every_event_in_its_own_workflow() -> None:
+    # The edit of a title or description re-runs the text check (finding 4329073557). Since PR #60 the text check is
+    # pr-text.yml alone, on every pull request event, under its own check name: ci.yml checks tree and commits only
+    # and never runs on the edited event, so a text edit cannot put skipped code-check results on the head in place
+    # of a failed code run, and a text failure is cleared by correcting the text.
     workflows = Path(__file__).resolve().parents[1] / ".github" / "workflows"
     ci = (workflows / "ci.yml").read_text(encoding="utf-8")
     text = (workflows / "pr-text.yml").read_text(encoding="utf-8")
     assert "pull_request:\n    types: [opened, synchronize, reopened]\n" in ci
-    assert "edited]" not in ci
+    assert "edited]" not in ci and "--title-file" not in ci and "--body-file" not in ci
     assert "\n    if:" not in ci  # no job-level condition: every job runs on every run of ci.yml
-    assert "pull_request:\n    types: [edited]\n" in text
+    assert "pull_request:\n    types: [opened, synchronize, reopened, edited]\n" in text
     assert "python tools/check_provenance.py" in text and "--title-file" in text and "--body-file" in text
     text_job_names = {line.split("name:", 1)[1].strip() for line in text.splitlines() if line.startswith("    name:")}
     ci_job_names = {line.split("name:", 1)[1].strip() for line in ci.splitlines() if line.startswith("    name:")}
