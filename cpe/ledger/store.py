@@ -171,19 +171,26 @@ class Ledger:
                 raise Refusal("clock_rollback", f"server clock {stamp} is below the high-water mark {mark}")
 
     def append(self, kind: str, record_id: str, payload: JsonValue, expected_head: str | None = None,
-               admit: Admit | None = None) -> Record:
+               admit: Admit | None = None,
+               expected_anchors: tuple[tuple[Anchor, ...], tuple[Anchor, ...]] | None = None) -> Record:
         """Append one record. With ``expected_head``, the append is refused unless the chain head is still that
         digest, so a decision computed from a snapshot cannot land after a record the snapshot did not hold. With
         ``admit``, the receipt time this append assigns is passed to it before the insert, and a refusal it raises
         refuses the append: a rule that bounds a time by the receipt is checked against the receipt itself, not
         against an earlier clock sample (PR #23 4330096714, PR #25 4333434011). ``admit`` may instead return another
         record (kind, identifier, payload), which is written in place of this one at the same receipt: a refusal that
-        must be persisted keeps the time that decided it (H1 review 4334622032)."""
+        must be persisted keeps the time that decided it (H1 review 4334622032). With ``expected_anchors`` (the local
+        anchors and the pending attempts of ``snapshot()``), the append is refused as stale unless they are unchanged
+        too: an anchor moves no chain head, and a decision that read the anchors cannot land after one the snapshot
+        did not hold (issue #37, pass 5 R2)."""
         require_identifier(kind, "kind")
         require_identifier(record_id, "record_id")
         with self._lock:
             if expected_head is not None and self._state.head != expected_head:
                 raise Refusal("stale_head", "the ledger advanced since the snapshot this record was decided on")
+            if expected_anchors is not None and expected_anchors != (self._local_anchors_locked(),
+                                                                     self._pending_anchors_locked()):
+                raise Refusal("stale_head", "an anchor settled since the snapshot this record was decided on")
             receipt_time = self._server_time()
             if admit is not None:
                 substitute = admit(parse_timestamp(receipt_time, "receipt_time"))

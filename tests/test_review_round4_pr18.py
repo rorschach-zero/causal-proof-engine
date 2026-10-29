@@ -45,7 +45,7 @@ def test_4329838030_a_retry_after_the_disposition_commit_adds_no_duplicate_defec
             raise RuntimeError("process died after the disposition commit")
         return original(kind, record_id, payload, expected_head, admit)
 
-    ledger.append = dies_on_the_first_defect_row  # type: ignore[method-assign]
+    ledger.append = dies_on_the_first_defect_row  # type: ignore[method-assign, assignment]
     try:
         reg.adjudicate("E")
     except RuntimeError:
