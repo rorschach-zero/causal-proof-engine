@@ -39,6 +39,10 @@ def require_identifier(value: object, field: str) -> str:
     if not isinstance(value, str) or not value or len(value) > MAX_IDENTIFIER_LENGTH or value.strip() != value:
         raise Refusal("invalid_identifier", f"{field} must be a non-empty trimmed string of at most "
                       f"{MAX_IDENTIFIER_LENGTH} characters")
+    try:
+        value.encode("utf-8")  # a surrogate code point is not text: it cannot be stored or signed (issue #37)
+    except UnicodeEncodeError:
+        raise Refusal("invalid_identifier", f"{field} holds a surrogate code point") from None
     return value
 
 
