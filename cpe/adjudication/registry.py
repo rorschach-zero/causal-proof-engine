@@ -30,20 +30,21 @@ from cpe.clock import parse_timestamp
 from cpe.schemas.common import Payload, require_identifier, require_keys, timestamp_payload
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
+from cpe.ledger.kinds import (
+    ADJUDICATION_KINDS,
+    KIND_CONTENT as KIND_CONTENT,
+    KIND_DEFECT as KIND_DEFECT,
+    KIND_DISPOSITION as KIND_DISPOSITION,
+    KIND_EVENT as KIND_EVENT,
+    KIND_INCIDENT as KIND_INCIDENT,
+    KIND_KNOWABLE as KIND_KNOWABLE,
+    KIND_OBSERVATION as KIND_OBSERVATION,
+    KIND_RECORD as KIND_RECORD,
+    KIND_RULE as KIND_RULE,
+    KIND_STATUS as KIND_STATUS,
+    owned,
+)
 from cpe.schemas.event import EventSpec
-
-KIND_EVENT = "event_spec"
-KIND_RULE = "source_rule"
-KIND_RECORD = "resolution_record"
-KIND_OBSERVATION = "absence_observation"
-KIND_STATUS = "source_status"
-KIND_DISPOSITION = "disposition"
-KIND_DEFECT = "source_latency_defect"
-KIND_INCIDENT = "integrity_incident"
-KIND_CONTENT = "resolution_content"
-KIND_KNOWABLE = "knowable_correction"
-KINDS: frozenset[str] = frozenset({KIND_EVENT, KIND_RULE, KIND_RECORD, KIND_OBSERVATION, KIND_STATUS, KIND_DISPOSITION,
-                                   KIND_DEFECT, KIND_INCIDENT, KIND_CONTENT, KIND_KNOWABLE})
 
 
 class _Persisted(Protocol):
@@ -101,7 +102,7 @@ def replay_state(records: tuple[Record, ...]) -> _State:
     state = _State()
     for record in records:
         state.head = record.entry_hash
-        if record.kind not in KINDS:
+        if not owned(record.kind, ADJUDICATION_KINDS, record.record_id):
             continue  # another registry's record on the same ledger, whatever its payload
         payload = record.payload
         if not isinstance(payload, dict):
@@ -176,7 +177,12 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             event_id = require_identifier(payload["event_id"], "event_id")
             incident = Incident.from_payload({k: v for k, v in payload.items() if k != "event_id"})
             event = state.event(event_id)
-            if event.disposition is not None and (incident.kind, incident.reference_id) not in {
+            # Written only beside a stored disposition, under its identifier; what it says decides nothing and is read
+            # as written (pass 5 X2; reading P6-R1)
+            if record.record_id != _ledger_id("incident", event_id, incident.kind, incident.reference_id) \
+                    or event.disposition is None:
+                raise _invalid(record, "is not an incident the registry writes beside a stored disposition")
+            if (incident.kind, incident.reference_id) not in {
                     (i.kind, i.reference_id) for i in event.disposition.incidents}:
                 event.disposition = replace(event.disposition, incidents=event.disposition.incidents + (incident,))
     return state
