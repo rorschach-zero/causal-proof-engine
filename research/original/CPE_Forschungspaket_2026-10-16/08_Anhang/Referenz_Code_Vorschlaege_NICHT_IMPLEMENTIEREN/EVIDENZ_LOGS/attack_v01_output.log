@@ -1,0 +1,40 @@
+=== F1: ledger full-rewrite attack (re-hash whole chain) ===
+verify_chain after hindsight rewrite: True (True == tamper NOT detected)
+
+=== F2: ledger hash is computed with different separators than stored line (works, but fragile) ===
+stored line uses ', ' separators: True -> hash recomputed via canonical dumps; ok but any re-serializer must replicate exactly
+
+=== F3: e-process accepts hindsight-chosen forecasts (no commitment before outcome) ===
+e-value with hindsight challenger after 10 trials: 3.25 reject at 0.05: False
+-> API lets the caller pass challenger_probability at resolution time; nothing enforces commit-before-resolve.
+
+=== F4: e-process absorbing zero with betting_fraction=1 ===
+e-value: 0.0 -> permanently 0; valid as e-process but betting_fraction=1 is never sensible; no guard.
+
+=== F5: e-process lambda is static, not predictable-adaptive; no delayed-label/order handling ===
+ChallengerEvidence has no event ids, no timestamps, no dedup -> same resolution can be fed twice:
+e-value after feeding ONE outcome 20 times: 9.6 reject: False
+
+=== F6: Kelly FOC check and cost-unit mismatch ===
+w at p_low=0.10: 0.02499999999999999 (expected 0.025)
+numeric argmax: 0.025
+growth(w*)= 0.00211  cost fraction: 0.002  -log(1-c): 0.002
+p_success_high used anywhere in allocation?  No (grep core.py).
+w_opt for p=.9,up=1.5,down=.9 (unclamped formula): 8.799999999999999 -> clamp to 0.99
+
+=== F7: coherence scaling and missing guard in event_probability_bounds ===
+coherent_joint 14 events: 0.26 s, worlds: 16384
+coherent_joint n=15 -> 1-14 events allowed in prototype (2^n enumeration)
+event_probability_bounds has NO n<=14 guard (2^n enumeration unbounded): True
+
+=== F8: coherence returns an arbitrary LP vertex, not a reference distribution ===
+joint picked: {(False, False): 0.5, (False, True): 0.3, (True, True): 0.2}
+-> c=0 objective; HiGHS returns a vertex; RFC's KL/proper-score selection is not implemented.
+
+=== F9: Evidence authenticity checks are shallow ===
+http:// (non-TLS) URL + hash not derived from content accepted: OK (no exception) -> self-declared provenance
+
+=== F10: precheck payload hard-codes ManualOrder=False and fixed FieldGroups; no schema validation ===
+accepts AssetType='NotAnAssetType', Amount=0.0001, price=1e-9: NotAnAssetType 0.0001 1e-09
+
+ALL ATTACKS COMPLETED

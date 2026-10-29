@@ -1,0 +1,46 @@
+name: pull request text
+
+# T-09 on the pull request title and body. ci.yml checks the tree and the commits; this workflow is the only check of
+# the pull request text, and it runs on every pull request event, the edited event included, under its own check
+# name. A text failure is therefore cleared by correcting the text, and a text edit never touches the six results
+# ci.yml recorded for the head. The range is checked again here so that a trailer in a commit message is reported
+# next to the text finding. Actions are pinned by commit as in ci.yml.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-text-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  text:
+    name: pull request title and body (T-09)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.13"
+      - name: Pull request title and body, with the commits of the range
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python - <<'PY'
+          import os, pathlib
+          pathlib.Path('/tmp/pr_title').write_text(os.environ['PR_TITLE'], encoding='utf-8')
+          pathlib.Path('/tmp/pr_body').write_text(os.environ.get('PR_BODY') or '', encoding='utf-8')
+          PY
+          python tools/check_provenance.py --range "$BASE_SHA..$HEAD_SHA" --head "$HEAD_SHA" \
+            --title-file /tmp/pr_title --body-file /tmp/pr_body

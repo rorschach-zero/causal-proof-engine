@@ -1,0 +1,29 @@
+name: Validate review dispatch (offline)
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/claude-on-codex-review.yml'
+      - '.github/workflows/test-review-dispatch.yml'
+      - 'tests/test_review_dispatch.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/claude-on-codex-review.yml'
+      - '.github/workflows/test-review-dispatch.yml'
+      - 'tests/test_review_dispatch.py'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run network-free dispatch regression tests
+        shell: bash
+        run: python3 -m unittest discover -s tests -p 'test_review_dispatch.py' -v
