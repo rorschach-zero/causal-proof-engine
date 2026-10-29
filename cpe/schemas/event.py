@@ -16,7 +16,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Literal, cast, get_args
 
-from cpe.canonical import JsonValue
+from cpe.canonical import JsonValue, plain_text
 from cpe.errors import Refusal
 from cpe.schemas.common import (
     identifier_list,
@@ -39,9 +39,9 @@ _PREDICATE_KEYS = frozenset({"source", "record_selector", "field", "comparator",
 
 
 def _require_choice(value: object, field: str, allowed: tuple[str, ...]) -> str:
-    if not isinstance(value, str) or value not in allowed:
+    if not isinstance(value, str) or plain_text(value) not in allowed:
         raise Refusal("invalid_choice", f"{field} must be one of {', '.join(allowed)}")
-    return value
+    return plain_text(value)
 
 
 def require_predicate_kind(value: object, field: str = "predicate_kind") -> PredicateKind:
