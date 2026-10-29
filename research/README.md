@@ -98,6 +98,14 @@ was rewritten.** A proposal that is not part of the original is marked `REVISION
 14. `20-phase3-readiness.md`: what the owner needs to decide and start Phase 3 (SIM read-only, executor
     principal): scope with sources, prerequisites, decision sheets, SIM setup guide, acceptance tests, threat
     model and build plan; `PROPOSED`, documentation only, Phase 3 not approved.
+15. `21-ai-science-precedents.md`: AI-driven scientific advances 2023 to 2026 (mathematics, formal verification,
+    physics, weather, biology, materials, forecasting) with attention to how each was verified, what the successes
+    have in common, and what CPE should borrow and where it is weaker; `NOTE`, every claim sourced and labelled,
+    sources read as search extracts only.
+16. `22-objective-and-feasibility.md`: the owner's objective (4,000 to 400,000 in ten years, long-term, by causal
+    chains recognised early) recorded as stated, the arithmetic and comparators, what the foundation says about
+    the gap between forecasting and returns, what the long-term framing changes, and proposed per-phase evidence
+    requirements and stop rules (OD-22a to OD-22d); `PROPOSED`, documentation only.
 
 Documents `02`, `03`, `06`, `07`, `08`, `09`, `11` and `12` end with an appended amendments section dated
 2026-10-16; the text above those sections is unchanged from the reviewed head `8b2dba7`.

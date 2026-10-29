@@ -1,0 +1,135 @@
+# 22 Objective and feasibility: 4,000 to 400,000 in ten years (PROPOSED)
+
+Status: `PROPOSED`, 2026-10-29, written on `main` at `c37d048` by the coordinator at the owner's request. It
+records the owner's objective as stated, puts the arithmetic and the documented comparators next to it, and
+proposes what each phase must show and when the project stops. Nothing here changes a specification, a
+decision or a roadmap item; every proposal is labelled and goes to the owner (`AGENTS.md` §1, §8). No order, no
+broker, no provider is involved.
+
+Sources: issue #3 comment `6508303144` (the objective statement); `15` §A and the arithmetic passage of its
+section F; `18` §2, §3 and §6; `07` §1 to §3 and its findings 1 and 2; `12` Phases 1 to 7 with their exit
+criteria; `05` §1 (the three model roles and Jev); `19` §2; `21` (the precedents). Labels as in `README.md`.
+
+## 1. The objective, as the owner stated it
+
+`ESTABLISHED` (as a statement; recorded in issue #3). The topmost objective of the Causal Proof Engine is to turn
+4,000 into 400,000 over the next ten years. The engine is to do this by recognising causal chains, second- to
+sixth-order effects of policy, technology, society and other drivers, earlier than millions of people, and
+strictly long-term, not by short-term trading. The three model providers of the architecture (Claude Fable
+class, OpenAI Astra class, Gemini Argon class, with Jev as the typed triage) are to achieve this together.
+
+`ESTABLISHED`. The research foundation has always named this objective (`07` §4, "the north-star arithmetic";
+`15` §A) and has always labelled its feasibility a hypothesis. This document does not change that label. It
+makes the hypothesis testable, phase by phase.
+
+## 2. The arithmetic
+
+`REPRODUCED` by the Codex review (`15` section F, PR #2, its arithmetic probe): 100x in ten years is
+100^(1/10) − 1 = 58.49 % compounded per year, if all capital is invested at the start and costs and taxes are ignored. If 1,000
+is invested in year one and 3,000 at the start of year two, the constant rate that reaches 400,000 is 64.08 %.
+If all 4,000 waits one year, the nine-year rate is 66.81 %. Later deployment needs more.
+
+`UNVERIFIED` (figures from general knowledge, not checked against a primary source in this session; the
+verification path is the published annual letters and the fund's documented history, to be added to `14` if
+the owner wants them verified): long-run documented track records sit far below this. Berkshire
+Hathaway, about 20 % per year over five decades. The best public long-only managers over twenty-year windows,
+about 25 to 30 %. Renaissance Technologies' Medallion fund, the best documented result, about 66 % gross and 39 %
+net of fees over three decades, with hundreds of scientists, proprietary data and a hard capacity limit that
+forces it to return capital. The objective therefore asks for a net return at or above the best gross return
+ever documented, from a start capital of 4,000, for ten years.
+
+`HYPOTHESIS`. Long-term, concentrated positions change the shape of the arithmetic but not its demand. A 100x
+decade built from multi-year holdings means a handful of positions each of which must multiply several-fold,
+and a hit rate on them that venture investors, who see hundreds of companies and lose most bets, do not reach.
+`15` section F shows the sensitivity: with ten-fold winners and losers at 0.3, the equal-weight cycle table
+needs between 7 % and 45 % of winners per cycle depending on the cycle count, and the table is not an
+achievable portfolio distribution once costs, correlation, timing and path dependence enter.
+
+## 3. What the foundation already says about the gap between forecasting and returns
+
+`ESTABLISHED` (`15` §A, D11; `18` §2): there is no prospective evidence that better event forecasts identify
+10x to 100x investments before the price moves, and better forecasts are neither necessary nor sufficient for
+such returns. Between "the engine sees a third-order effect early" and "the owner earns from it" stand four
+separate questions, each with its own failure mode:
+
+1. Is the effect already priced? A chain that millions can read is in the price; the edge, if any, is in chains
+   that are long, structural and outside consensus categories, which is what the Argon and Astra research roles
+   in `05` were written for.
+2. When does it arrive? A correct chain with a wrong clock loses money or opportunity. `07` §4 records the
+   trim-versus-hold trade-off: selling half at 10x and holding the rest to 100x yields 55x; holding everything
+   yields 100x or a collapse.
+3. How large may the position be? `07` §1 to §3: fractional Kelly on the worst case of the credal interval, a
+   gross cap, a per-position cap, a worst-case loss limit and a cash floor. Under the pilot limits of `07` §3
+   (1,000 capital, at most 8 positions, 20 % per position, worst-case loss per position 15 %, cash floor 10 %),
+   a 58 % compounded return is not reachable by construction; the limits exist so that the first error is
+   survivable, not so that the objective is met in the pilot.
+4. Is the chain identifiable at all? `18` §2: the confirmatory claim cannot be about causal truth; it can be
+   about forecast skill on a fixed question set. Each link of a multi-order chain multiplies the uncertainty of
+   the previous one, and the evidence for a long chain arrives only when its last link resolves.
+
+## 4. What the long-term framing changes
+
+`HYPOTHESIS`, derived from `18` §3 and `21`.
+
+- Evidence arrives slowly. If forecasts resolve in years, the owner cannot wait a decade to learn whether the
+  engine has skill. Each long chain must therefore be registered as a sequence of dated intermediate milestones
+  with exact detection signals: if the chain holds, this and that must be observable in 6, 12, 18 months. The
+  Phase 1 registry already supports this (events with deadlines, time stamps, adjudication against public
+  records, `19` §2). Skill is then measured on the links, not only on the end of the chain. This is also how
+  the precedents in `21` obtained evidence before their final results: held-out years for weather, intermediate
+  problems for mathematics, registered endpoints for the trial.
+- Power stays low. `18` §3 F1: once a period-level component exists, the information in the primary test is set
+  by the number of independent calendar periods, not by the number of events. A long-horizon design has few
+  independent periods per year. The design must count periods honestly and must not promise a verdict earlier
+  than its periods allow.
+- Independence of the three providers is the whole value of having three. `05` §1 and `21` §"What these
+  successes have in common": three models that read the same sources and see each other's drafts produce one
+  consensus in three voices. Source-locked, blinded first rounds, merged only after each has committed, are a
+  requirement of Phase 4, not an option.
+- The baseline is the market, not chance. `21` lesson 6: a forecast that restates the market's implied
+  probability is not skill. Every registered forecast needs a market- or consensus-implied comparator recorded at
+  registration time, so that "earlier than millions of people" is a measured quantity, not a slogan.
+
+## 5. What each phase must show, and when the project stops
+
+`REVISION` (proposed; the phases and exits are those of `12`, the evidence requirements and stop rules are
+new and are for the owner to confirm, amend or reject). The stop rules are deliberately stated before any
+result exists, in the sense of `21` lesson 2: a decision rule chosen after the outcome is not a rule.
+
+| Phase (`12`) | Exit already defined | Evidence this document adds | Stop rule (proposed) |
+|---|---|---|---|
+| 1 measurement apparatus | audit gate passed (issue #37) | none beyond the gate | if no pass is reached by the pass the owner names as last, redesign replay before any Phase 2 work |
+| 2 ingest, Jev, Design C, first registered events | ≥ 100 registered events, anchors verified from a second machine | every event carries a market- or consensus-implied comparator at registration; every long chain is registered as dated milestones | if fewer than 100 events can be registered with comparators in 12 months, the question set is not fit for the objective; revise Q before Phase 4 |
+| 3 SIM read-only | 7 days of readbacks, token-leak audit | none | as in `20` |
+| 4 three-model adapters and fusion | three independent round-1 outputs per event | blinding and source-locking demonstrated by a leak test; reasoning-overlap metric (`12` R9) below a pre-registered ceiling | if the three outputs are not independent by the metric, do not count them as three |
+| 5 evaluation, certificates, no orders | 150 resolved events, design selection, independent review | the pre-calibrated fixed-horizon test of `18` §6 on the registered comparator; a skill estimate with its interval; the share of resolved milestones that confirmed their chain | if the skill interval excludes the effect the objective needs (see §6), stop the investment path and keep the research path |
+| 6 promoter and self-improvement | first promotion recorded end to end | none | as in `12` |
+| 7 SIM execution | 60 days, zero duplicate orders | realised SIM return against the registered comparator, net of modelled costs | if the SIM return over the registered horizon does not exceed the comparator by the pre-registered margin, no live pilot |
+| live pilot (not in `12`; `07` §3 limits) | owner decision | a pre-registered pilot protocol with a hash deposited outside CPE (`21` lesson 2), monthly ruin report (`07` §3) | drawdown beyond the pre-registered limit, or two consecutive annual reviews below the comparator, ends the pilot |
+
+## 6. The effect the objective needs, stated so that Phase 5 can test it
+
+`HYPOTHESIS`, to be made exact in Phase 2 when the question set and the comparator exist. The objective needs,
+over the long run, a per-decision edge large enough that the Kelly-sized portfolio of `07` compounds at about
+58 % net. Phase 5 should state, before the confirmatory cohort opens, the minimum skill (Brier improvement
+against the comparator, or the equivalent in the fixed-horizon test of `18` §6) that would make that compounding
+plausible under the `07` limits, and the skill at which the investment path is abandoned. Both numbers are
+derived from the calibration work of Phase 4, not chosen by taste. Until then, this document records only the
+qualitative requirement: a skill so large that it has no documented precedent, measured so strictly that the
+owner would believe it against the base rate.
+
+## 7. What this document does not say
+
+It does not say the objective is wrong. It says the objective is a hypothesis with the lowest prior of any
+claim in this repository, and that the repository's whole design, pre-registration, anchored time stamps, two
+auditors, refusal by default, exists so that the owner learns the truth about it as early and as cheaply as
+possible. The money that funds the engine's own operation is not part of the 4,000 (issue #3 comment
+`6508303144`); the engine's cost must be carried outside the capital it manages, or it consumes it.
+
+## 8. Decisions for the owner
+
+- OD-22a: confirm the stop rules of §5 as proposed, amend them, or reject them. Without stop rules the
+  objective cannot be falsified.
+- OD-22b: confirm that every registered event carries a market- or consensus-implied comparator from Phase 2 on.
+- OD-22c: confirm that long chains are registered as dated milestones with detection signals.
+- OD-22d: confirm that the engine's operating cost is funded outside the managed capital.
