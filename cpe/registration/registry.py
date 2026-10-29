@@ -13,6 +13,22 @@ from cpe.canonical import JsonValue, digest_of
 from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Anchor, Ledger, Record
+from cpe.ledger.kinds import (
+    KIND_ARM_VERSION as KIND_ARM_VERSION,
+    KIND_BASE_RATE as KIND_BASE_RATE,
+    KIND_BEACON as KIND_BEACON,
+    KIND_CALIBRATION as KIND_CALIBRATION,
+    KIND_CANDIDATE as KIND_CANDIDATE,
+    KIND_CLAIM as KIND_CLAIM,
+    KIND_CLUSTER as KIND_CLUSTER,
+    KIND_CUTOFF_CORRECTION as KIND_CUTOFF_CORRECTION,
+    KIND_FORECAST as KIND_FORECAST,
+    KIND_REGISTER as KIND_REGISTER,
+    KIND_ROUND_REFUSED as KIND_ROUND_REFUSED,
+    KIND_VOID_REQUEST as KIND_VOID_REQUEST,
+    REGISTRATION_KINDS,
+    owned,
+)
 from cpe.ledger.record import GENESIS_HASH
 from cpe.registration.records import (
     BaseRate,
@@ -27,20 +43,8 @@ from cpe.registration.records import (
 )
 from cpe.registration.seeds import derive_seed
 from cpe.schemas import ArmVersion, EventSpec, Forecast, effective_cutoff
-from cpe.schemas.common import Payload, require_identifier
+from cpe.schemas.common import Payload, require_identifier, require_keys, require_mapping
 
-KIND_ARM_VERSION = "arm_version"
-KIND_CUTOFF_CORRECTION = "cutoff_correction"
-KIND_CANDIDATE = "candidate"
-KIND_CLUSTER = "cluster_registration"
-KIND_VOID_REQUEST = "void_request"
-KIND_BASE_RATE = "base_rate"
-KIND_FORECAST = "forecast"
-KIND_CLAIM = "claim_preregistration"
-KIND_REGISTER = "confirmatory_register"
-KIND_CALIBRATION = "calibration_record"
-KIND_BEACON = "beacon_output"
-KIND_ROUND_REFUSED = "beacon_round_refused"
 
 SlotStatus = Literal["filled", "open", "abstention", "baseline"]
 Write = tuple[str, str, JsonValue]
@@ -140,6 +144,8 @@ def replay_state(records: tuple[Record, ...]) -> _State:
     state = _State()
     for record in records:
         state.head = record.entry_hash
+        if not owned(record.kind, REGISTRATION_KINDS, record.record_id):
+            continue  # another registry's record on the same ledger
         payload = record.payload
         receipt = parse_timestamp(record.receipt_time)
         if record.kind == KIND_ARM_VERSION:
@@ -176,6 +182,9 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             for version_id in registration.arm_versions.values():  # a registration counts under every input too
                 for consumed in _consumption_closure(version_id, state.arm_versions):
                     state.registrations_under[consumed] = state.registrations_under.get(consumed, 0) + 1
+        elif record.kind == KIND_VOID_REQUEST:
+            request = VoidRequest.from_payload(payload)
+            _replayed(record, _ledger_id("void-request", request.request_id), lambda: admit_void_request(state, request))
         elif record.kind == KIND_BASE_RATE:
             rate = BaseRate.from_payload(payload)
             _replayed(record, _ledger_id("base-rate", rate.reference_class_id), lambda: admit_base_rate(state, rate))
@@ -211,16 +220,18 @@ def replay_state(records: tuple[Record, ...]) -> _State:
             state.calibration_seq[calibration.calibration_record_id] = record.seq
             state.calibration_by_claim[calibration.claim_id] = calibration.calibration_record_id
         elif record.kind == KIND_BEACON:
-            assert isinstance(payload, dict)
-            output = BeaconOutput.from_payload(payload["output"])
-            seed = _check_beacon(record, output, payload["seed"], state)
+            row = require_mapping(payload, KIND_BEACON)  # typed, never a KeyError (issue #37, pass 6)
+            require_keys(row, KIND_BEACON, frozenset({"output", "seed"}), frozenset())
+            output = BeaconOutput.from_payload(row["output"])
+            seed = _check_beacon(record, output, row["seed"], state)
             state.beacon_outputs[output.calibration_record_id] = output
             state.beacon_seq[output.calibration_record_id] = record.seq
             state.seeds[output.calibration_record_id] = seed
         elif record.kind == KIND_ROUND_REFUSED:
-            assert isinstance(payload, dict)
-            output = BeaconOutput.from_payload(payload["output"])
-            _check_refused_round(record, output, payload.get("reason"), state)
+            row = require_mapping(payload, KIND_ROUND_REFUSED)
+            require_keys(row, KIND_ROUND_REFUSED, frozenset({"output", "reason"}), frozenset())
+            output = BeaconOutput.from_payload(row["output"])
+            _check_refused_round(record, output, row["reason"], state)
             state.refused_rounds[output.calibration_record_id] = output
     return state
 
@@ -329,6 +340,8 @@ def check_anchor_times(state: _State) -> None:
                           "register's anchor, so the registry would not have refused it (RC-311)")
 
 
+# Replay is closed (reading P6-R1): every registration kind is re-validated below or in check_anchor_times, another
+# module's kind is skipped, and a kind no module writes refuses the ledger (cpe.ledger.kinds).
 
 # Admission rules of the rows that set what a forecast is judged against: one function per kind, used by the write path
 # (with the receipt the append assigns) and by replay (with the record's receipt), so that a row written through the
@@ -361,6 +374,12 @@ def admit_candidate(state: _State, entry: CandidateEntry, now: datetime) -> None
     if entry.listed_at > now:
         raise Refusal("future_listing", f"{entry.candidate_id} is listed after its receipt; a listing time is "
                       "at or before the entry's receipt (RC-78)")
+
+
+def admit_void_request(state: _State, request: VoidRequest) -> None:
+    """A VOID request names a registered event; it is logged and changes no state (RC-85, RC-87)."""
+    if request.event_id not in state.events:
+        raise Refusal("unknown_event", f"{request.event_id} is not registered")
 
 
 def admit_base_rate(state: _State, rate: BaseRate) -> None:
@@ -565,8 +584,7 @@ class RegistrationRegistry:
         request = VoidRequest.from_payload(_payload_of(request))
 
         def decide(state: _State, now: datetime) -> Write:
-            if request.event_id not in state.events:
-                raise Refusal("unknown_event", f"{request.event_id} is not registered")
+            admit_void_request(state, request)
             return KIND_VOID_REQUEST, _ledger_id("void-request", request.request_id), request.to_payload()
 
         return self._write(decide)

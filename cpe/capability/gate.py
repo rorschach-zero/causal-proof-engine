@@ -32,6 +32,7 @@ from cpe.capability.records import (
     EpochRecord,
     IntentRecord,
     epoch_ledger_id,
+    gate_ledger_id,
     intent_ledger_id,
 )
 from cpe.capability.signing import Verifier
@@ -49,10 +50,6 @@ log = logging.getLogger("cpe.capability")
 Write = tuple[str, str, JsonValue]
 Decide = Callable[[GateState, datetime], Write]
 PromotionStatus = Literal["acknowledged", "superseded"]
-
-
-def _ledger_id(prefix: str, *parts: str) -> str:
-    return f"{prefix}:{digest_of(list(parts))}"
 
 
 @dataclass(frozen=True)
@@ -245,7 +242,7 @@ class CapabilityGate:
             else:
                 verdict = ("admitted", "")
             check = CheckRecord(f"action:{action}", verdict[0], verdict[1], reading)
-            return KIND_CHECK, _ledger_id("gate-check", state.head), check.to_payload()
+            return KIND_CHECK, gate_ledger_id("gate-check", state.head), check.to_payload()
 
         with self._lock:
             record = self._append(decide)
@@ -292,7 +289,7 @@ class CapabilityGate:
             if intent_id not in state.pending_intents:  # decided against the current head, not a snapshot
                 raise Refusal("intent_settled", f"{intent_id} is already committed or aborted")
             record = AbortRecord(intent_id, reason, self._raw_reading(now))
-            return KIND_ABORT, _ledger_id("gate-abort", intent_id), record.to_payload()
+            return KIND_ABORT, gate_ledger_id("gate-abort", intent_id), record.to_payload()
 
         return self._append(decide)
 
@@ -314,7 +311,7 @@ class CapabilityGate:
             refusal = self._validate(state, capability, evidence_digest, now)
             if refusal is not None:
                 check = CheckRecord(f"presentation:{capability.nonce}", "refused", refusal, reading)
-                return KIND_CHECK, _ledger_id("gate-check", state.head), check.to_payload()
+                return KIND_CHECK, gate_ledger_id("gate-check", state.head), check.to_payload()
             record = IntentRecord(intent_id, capability, target, reading)
             return KIND_INTENT, intent_id, record.to_payload()
 
@@ -329,7 +326,7 @@ class CapabilityGate:
             # holds that time and a wall clock stepped back afterwards cannot present the capability again (RC-65;
             # H1 review 4334622032).
             check = CheckRecord(f"presentation:{capability.nonce}", "refused", "expired", self._raw_reading(receipt))
-            return KIND_CHECK, _ledger_id("gate-check", intent_id, format_timestamp(receipt)), check.to_payload()
+            return KIND_CHECK, gate_ledger_id("gate-check", intent_id, format_timestamp(receipt)), check.to_payload()
 
         with self._lock:
             self._hook("before_intent")
@@ -364,9 +361,9 @@ class CapabilityGate:
                         aborted = f"the gate reached {reached} since the intent; a commit never lowers it"
                 if aborted is not None:
                     record_abort = AbortRecord(intent_id, aborted, reading)
-                    return KIND_ABORT, _ledger_id("gate-abort", intent_id), record_abort.to_payload()
+                    return KIND_ABORT, gate_ledger_id("gate-abort", intent_id), record_abort.to_payload()
                 record = CommitRecord(intent_id, intent_anchor.prefix_length, intent_anchor.digest, reading)
-                return KIND_COMMIT, _ledger_id("gate-commit", intent_id), record.to_payload()
+                return KIND_COMMIT, gate_ledger_id("gate-commit", intent_id), record.to_payload()
 
             try:
                 self._append(commit)
@@ -385,7 +382,7 @@ class CapabilityGate:
 
             def acknowledgement(state: GateState, now: datetime) -> Write:  # a discontinuity supersedes (4333626175)
                 check = CheckRecord(f"acknowledgement:{capability.nonce}", "admitted", "", self._reading(state, now))
-                return KIND_CHECK, _ledger_id("gate-check", state.head), check.to_payload()
+                return KIND_CHECK, gate_ledger_id("gate-check", state.head), check.to_payload()
 
             try:
                 self._append(acknowledgement)

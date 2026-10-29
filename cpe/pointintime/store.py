@@ -25,6 +25,8 @@ from cpe.canonical import JsonValue, canonical_bytes, digest_of
 from cpe.clock import format_timestamp, parse_timestamp
 from cpe.errors import Refusal
 from cpe.ledger import Ledger, Record
+from cpe.ledger.kinds import KIND_ROW as KIND_ROW
+from cpe.ledger.kinds import POINT_IN_TIME_KINDS, owned
 from cpe.schemas.common import (
     payload_of,
     Payload,
@@ -37,7 +39,6 @@ from cpe.schemas.common import (
 )
 from cpe.schemas.event import EventSpec
 
-KIND_ROW = "pit_row"
 
 _ROW_KEYS = frozenset({"entity", "feature", "value", "observed_at", "available_at", "vintage_id"})
 
@@ -119,7 +120,7 @@ def replay_state(records: tuple[Record, ...]) -> _State:
     vintage, or a row under another id, is refused rather than read as a rewrite (4335189761)."""
     state = _State()
     for record in records:
-        if record.kind != KIND_ROW:
+        if not owned(record.kind, POINT_IN_TIME_KINDS, record.record_id):
             continue  # another registry's record on the same ledger
         row = FeatureRow.from_payload(record.payload)
         if record.record_id != _row_id(row):
