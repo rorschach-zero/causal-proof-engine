@@ -45,11 +45,13 @@ def test_4329836196_a_correction_to_a_consumed_version_withdraws_it_and_its_cons
     state = r.state()
     assert state.arm_versions["A-1"].declared_cutoff == date(2026, 1, 5)  # the registered record is not amended
     assert {"A-1", "FULL-1"} <= state.withdrawn  # RC-150 withdrawal follows the consumption graph (RC-156)
-    for version_id in ("A-1", "FULL-1"):
+    # Each version on its own: a registration naming A-1 is refused on A-1, and one naming only FULL-1, which consumes
+    # A-1, on FULL-1 (issue #37, pass 6: one registration naming both was tried twice).
+    for version_id, arms in (("A-1", {"FULL": "FULL-1", "A": "A-1", "DESIGN_C": "DESIGN_C-1"}),
+                             ("FULL-1", {"FULL": "FULL-1", "DESIGN_C": "DESIGN_C-1"})):
         with pytest.raises(Refusal) as refused:
-            r.register_cluster(registration([spec("E-9", "C-9")], "C-9",
-                                            arms={"FULL": "FULL-1", "A": "A-1", "DESIGN_C": "DESIGN_C-1"}))
-        assert refused.value.reason == "arm_version_withdrawn" and version_id in r.state().withdrawn
+            r.register_cluster(registration([spec("E-9", "C-9")], "C-9", arms=arms))
+        assert refused.value.reason == "arm_version_withdrawn" and refused.value.detail.startswith(version_id)
     with pytest.raises(Refusal) as consumer:  # a new version cannot build on a withdrawn input either
         r.register_arm_version(arm("FULL-2", "2026-01-03", ["A-1"]))
     assert consumer.value.reason == "arm_version_withdrawn"

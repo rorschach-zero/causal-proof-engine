@@ -60,8 +60,9 @@ def test_c1_replay_refuses_a_receipt_below_year_1000(tmp_path: Path) -> None:
                     entry_digest(2, "n-2", "note", stamp, {"x": 2}, first.entry_hash))
     state = LedgerState()
     state.apply(first)
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as refused:
         state.apply(second)  # at c3d6233: applied, the high-water mark moved back to year 999
+    assert refused.value.reason == "invalid_timestamp"  # the unpadded year is not the canonical text (issue #37, pass 6)
 
 
 def test_every_canonical_timestamp_has_four_year_digits_and_round_trips() -> None:

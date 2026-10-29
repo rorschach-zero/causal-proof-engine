@@ -3,6 +3,8 @@ section 3.3 and 4.1). Every test is offline and synthetic; the signature double 
 from __future__ import annotations
 
 import importlib
+import inspect
+import typing
 import threading
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
@@ -368,7 +370,7 @@ def test_t30_an_anchor_call_that_fails_lost_or_landed_at_either_anchoring_step(r
     if step == "intent":
         assert state.pending_intents == () and not state.commits  # aborted; the nonce stays consumed
     else:
-        assert state.unanchored_commits if mode == "lost" else True  # in doubt, never aborted
+        assert state.unanchored_commits and not state.aborted  # in doubt, never aborted (lost or landed)
     if recovery == "restart":
         rig.restart()
     else:
@@ -428,8 +430,15 @@ def test_t32_a_fabricated_elevated_state_confers_nothing_on_a_protected_operatio
     by_reflection = object.__new__(GateState)
     object.__setattr__(by_reflection, "level", "SIM_EXECUTION")
     by_import = importlib.import_module("cpe.capability.state").GateState(level="SIM_EXECUTION")
+    # No protected operation takes a state object: every public method of the gate accepts only what its signature
+    # names, and none names a GateState, so a fabricated one has nowhere to be presented (issue #37, pass 6: the
+    # object planted in the gate's namespace was read by nothing).
+    for name, method in inspect.getmembers(CapabilityGate, inspect.isfunction):
+        if not name.startswith("_"):
+            parameters = {k: v for k, v in typing.get_type_hints(method).items() if k != "return"}
+            assert GateState not in parameters.values(), name
     for fabricated in (by_constructor, by_reflection, by_import):
-        rig.gate.__dict__["_fabricated"] = fabricated  # planted in the gate's own namespace
+        assert fabricated.level == "SIM_EXECUTION"
         with pytest.raises(Refusal) as refused:
             rig.gate.perform("sim_execution")
         assert refused.value.reason == "level_insufficient"
