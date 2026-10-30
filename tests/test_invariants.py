@@ -755,6 +755,7 @@ def test_invariant_7_fails_on_a_release_without_its_disclosure_row(tmp_path: Pat
     registry = RegistrationRegistry(ledger)
     assert invariants.AFTER[(RegistrationRegistry, "forecasts_of")](registry, (), "E-1") == []  # E-1 is released
     monkeypatch.setattr(RegistrationRegistry, "_disclose", lambda self, event_id: None)
+    registry._invariants_quiet = 1  # type: ignore[attr-defined]  # the defect is made on purpose: not the fixture's
     released = registry.forecasts_of("E-2")  # closed at day 40, read at day 45, two forecasts and no row
     assert released
     problems = invariants.AFTER[(RegistrationRegistry, "forecasts_of")](registry, released, "E-2")
@@ -765,7 +766,6 @@ def test_invariant_7_fails_on_a_release_without_its_disclosure_row(tmp_path: Pat
 # mark and its entry in ``invariants.KNOWN_OPEN``).
 
 
-@pytest.mark.xfail(strict=True, reason=invariants.KNOWN_OPEN["disclosure: "])
 @pytest.mark.parametrize("read", ["forecasts_of", "forecasts_for_baseline", "slot_states"])
 def test_p9_1_a_read_that_decided_the_close_bounds_the_clock_when_nothing_is_sealed(tmp_path: Path, read: str) -> None:
     """E-2 closes at day 40 with no forecast. A read at day 41 answers as only a closed event can (an empty release, or
