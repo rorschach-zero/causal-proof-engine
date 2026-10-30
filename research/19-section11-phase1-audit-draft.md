@@ -290,6 +290,47 @@ For the owner, not findings:
 
 **Pass 8 is not passed: P8-1, P8-2 (= 8-3), 8-1 and 8-2 are reproduced P1s.**
 
+### 11.3f Pass 9, at `811ba9d6bd13996cec72da62c0179d1baf71c6f2`
+
+Pinned by the coordinator at the merge of #98 (issue #37 comment `6509542669`); the suite at the pin gives 976 passed. Records on issue #37: Claude interim `6510728542`, Codex classification `6511828016`.
+
+**Claude** (a fresh session, session 11):
+- `cpe/`, `tools/`, `ci.yml`, `pr-text.yml` and the other two workflows were read end to end, and `tools/mutation_report.py` in full.
+- `tests/invariants.py`, `conftest.py` and `test_invariants.py` were read by the auditor. The rest of `tests/` was read line by line by two independent reviewers (49 and 51 files), every item verified by mutation.
+- PR #100 adds three invariants:
+  - 5, clock monotonicity: written, reopened, restored;
+  - 6, refusal symmetry: every write-path refusal of the suite, appended raw, is refused by replay;
+  - 7, disclosure: a read that depends on the close holds the event's disclosure row.
+- Invariant 3 was rerun with type-changing perturbations and moved gate rows, and found nothing.
+
+| # | Severity | Finding | Fixed in |
+|---|---|---|---|
+| P9-1 | P1 suspected (class C, 8-1 precedent; invariant 7) | `forecasts_of`, `forecasts_for_baseline` and `slot_states` persisted nothing when the event had no forecast. A read after the close reported an empty release, or every slot an abstention; after a rollback above every receipt, a FULL forecast filled a slot already reported as an abstention (RC-109, `17` item 2 "Clock") | PR #101 |
+| P9-2 | P1 suspected (class W readings, 8-2 precedent; invariant 5) | Gate replay judged readings by boot id and drift only: a raw commit with the epoch's start reading, below its intent's, conferred its level (`perform("sim_read")` admitted) | PR #103 (supersedes #102) |
+| P9-3 | P2 proposed (its finder proposes P1 under 7-1) | A discontinuity rotation kept `observed = max(now, baseline.wall)` while persisting only the baseline, so the writer refused a time that a restore of the full export admitted | PR #103 |
+| P9-4 | P3 | `Ledger.restore(external=None)` raised `AttributeError` | PR #104 |
+| P9-5 | P3 | `ManualClock` accepted a start whose `tzinfo` gives no offset | PR #104 |
+| P9-6 | P3 | `tools/mutation_report.py` rules classified behaviour as text (the `AbortRecord` reading, `_rotate`'s baseline, `detail`/`aborted`). §10 is revised to text 1659, equivalent 149, and a sensitivity of 276 mutants / 93.90 %; the raw and adjusted scores are unchanged | PR #105 |
+| P9-7 | P3 (class B) | The import boundary passed `antigravity`, `pipes` and `mailcap`. Closure: a test runs the boundary's rules over the whole standard library of the running interpreter, each flagged module forbidden or reviewed with a reason | PR #105 |
+| P9-8 | P3 (carried from pass 8) | `tools/lean_check.sh` used fixed `/tmp` paths; it now uses its own `mktemp` directory, and its three failure paths are tested | PR #105 |
+| P9-9 | P3 | Ten tests could not fail for the reason they name (table in #106) | PR #106 |
+| P9-10 | P3 | Twenty uncovered rules (each mutant survived the suite) are now tested, 20 of 20 killed | PR #106 |
+| P9-11 | P3 | Invariant leniencies: invariant 1 now replays the module after every write; invariant 3 tries receipt-equal times, multi-field time shifts and receipts at named times; `GATE_FREE` no longer frees the verdict | PR #107 |
+
+Not defects:
+- Replay reads a row with an optional key omitted as the key's default; it is an equivalent spelling.
+- tkinter's Tcl exec is not installed in the auditor's environment, so it was not reproduced. Where present it falls under the P9-7 closure.
+
+**Codex pass 9**: automatic review of the whole-tree PR #99 (head `bb63897`, tree `479db0a`, the pin's tree). It completed on 2026-10-29 at 22:19 UTC with no findings and no inline comment.
+
+**Reviews of the pass-9 fix PRs** (one each, no fix rounds):
+- #100, `4418799310` (P2): the `KNOWN_OPEN` prefixes exempted more than the two scenarios. Valid. It is closed by removing both entries in #101 and #103, so `KNOWN_OPEN` is now empty.
+- #102, `4418866225`: **a P1 regression of #102**, reproduced. A rotation carried its triggering reading, so another gate's write in between made a gate-only ledger unreadable. #102 was closed unmerged and superseded by #103, where each rotation reads its own baseline; this also fixes P9-3.
+- #101, #103, #104, #105, #106 and #107: no findings.
+- No review claimed a nonexistent commit.
+
+**Verdict of pass 9:** <PENDING: the coordinator's ratings of P9-1, P9-2 and P9-3; pass 9 is not passed if P9-1 or P9-2 stands as P1.>
+
 ### 11.4 Deviations and readings, for the owner
 
 - **An `OPEN` member with an evidenced public occurrence** (pass 2, Codex 3). `17` defines `knowable_at` = min(publication, public occurrence, deadline + window) for an outcome, but does not say what an undecided member carries.
@@ -333,6 +374,9 @@ For the owner, not findings:
 - **P8-R1 (coordinator): every validated input is returned as plain text; no caller object survives validation.** This extends P7-R3 from schema objects to bare arguments (PR #89).
 - **P8-R2 (coordinator): the first disclosure of an event's sealed forecasts after its close is a ledger row** (`forecast_disclosure`, one per event, with a golden identifier). Its receipt bounds the clock across reopen and restore. A ledger-local mark was the alternative, rejected because a restore would lose it (PR #97).
 - **P8-R3, epoch tolerance** (PR #94; accepted by the coordinator as built): the slew tolerance is a property of the epoch, recorded at rotation as an optional field, as `release_digest` was in #63. Live checks and replay use the recorded value, and every gate start rotates the epoch and records its own. Stated limit: epochs written without the field are checked by boot id only.
+- **P9-R1: the first read after an event's close writes its disclosure row whether or not a forecast is sealed.** This extends P8-R2 to empty releases and abstentions (PR #101).
+- **P9-R2: gate replay refuses a gate record whose reading is below the latest persisted reading or the latest receipt before it** (PR #103). Stated limit: a raw row with a fresh, plausible reading cannot be told from the gate's own.
+- **P9-R3: a rotation's baseline is its own clock sample, taken against the chain head it is appended on, also after a discontinuity.** No gate record persists a reading taken by an earlier sample (PR #103).
 - **Invariant 3's free fields** (PR #94): `GATE_FREE` first treated the gate's readings as free, which is how invariant 3 missed 8-2. It is narrowed: the boot id is not free.
 
 ### 11.5 Specification questions, for the owner
@@ -417,6 +461,7 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 - pass 8: 4 distinct (Claude 2: P8-1, P8-2; Codex 3: 8-1, 8-2, 8-3, of which 8-3 is P8-2). The fix-PR reviews of pass 8 found 2 P1s in the fixes themselves (#92, #95), both superseded before merge.
 
 As the pass-8 auditor counts them, the reproduced P1s of passes 1 to 8 are 1, 4, 1, 6, 3, 3, 4 and 4.
+- pass 9: 2 suspected (Claude 2: P9-1, P9-2; Codex 0), pending the coordinator's ratings. The fix-PR reviews found 1 P1 regression, in #102, superseded before merge.
 
 **Pass 7** is pinned at `main` `c55e4cee65656355850bde32b07059e37d8b523b`, the merge of #81 (coordinator, 2026-10-29); every reproduced finding of passes 1 to 6 is fixed there. A fresh session (session 9) runs the Claude side.
 
@@ -430,4 +475,4 @@ Pass 8, at `c37d048`, is not passed: P8-1 and P8-2 (Claude), 8-1 and 8-2 (Codex;
 
 **Pass 9** is pinned at `main` `811ba9d6bd13996cec72da62c0179d1baf71c6f2`, the merge of #98, under the owner's continuing authorisation. A fresh session (session 11) runs the Claude side and extends the invariants. Codex pass 9 is the automatic review of the whole-tree PR #99 (branch `audit/pass9-full-tree`, `bb63897`, an ours-merge of the pin with the empty base). It completed at 22:19 UTC with no findings and no inline comments: **the first clean Codex whole-tree result** of the audit. As in passes 7 and 8, it did not answer items 3 and 4 of the request; session 11 runs those read-only checks.
 
-<PENDING: pass 9 of the Claude auditor (session 11); "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+<PENDING: the ratings and verdict of pass 9 (11.3f); its merges and report; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
