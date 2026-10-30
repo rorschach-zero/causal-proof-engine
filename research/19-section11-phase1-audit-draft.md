@@ -305,9 +305,9 @@ Pinned by the coordinator at the merge of #98 (issue #37 comment `6509542669`); 
 
 | # | Severity | Finding | Fixed in |
 |---|---|---|---|
-| P9-1 | P1 suspected (class C, 8-1 precedent; invariant 7) | `forecasts_of`, `forecasts_for_baseline` and `slot_states` persisted nothing when the event had no forecast. A read after the close reported an empty release, or every slot an abstention; after a rollback above every receipt, a FULL forecast filled a slot already reported as an abstention (RC-109, `17` item 2 "Clock") | PR #101 |
-| P9-2 | P1 suspected (class W readings, 8-2 precedent; invariant 5) | Gate replay judged readings by boot id and drift only: a raw commit with the epoch's start reading, below its intent's, conferred its level (`perform("sim_read")` admitted) | PR #103 (supersedes #102) |
-| P9-3 | P2 proposed (its finder proposes P1 under 7-1) | A discontinuity rotation kept `observed = max(now, baseline.wall)` while persisting only the baseline, so the writer refused a time that a restore of the full export admitted | PR #103 |
+| P9-1 | **P1** (class C, 8-1 precedent; invariant 7) | `forecasts_of`, `forecasts_for_baseline` and `slot_states` persisted nothing when the event had no forecast. A read after the close reported an empty release, or every slot an abstention; after a rollback above every receipt, a FULL forecast filled a slot already reported as an abstention (RC-109, `17` item 2 "Clock") | PR #101 |
+| P9-2 | **P1** (class W readings, 8-2 precedent; invariant 5) | Gate replay judged readings by boot id and drift only: a raw commit with the epoch's start reading, below its intent's, conferred its level (`perform("sim_read")` admitted) | PR #103 (supersedes #102) |
+| P9-3 | P2 (its finder had proposed P1 under 7-1) | A discontinuity rotation kept `observed = max(now, baseline.wall)` while persisting only the baseline, so the writer refused a time that a restore of the full export admitted | PR #103 |
 | P9-4 | P3 | `Ledger.restore(external=None)` raised `AttributeError` | PR #104 |
 | P9-5 | P3 | `ManualClock` accepted a start whose `tzinfo` gives no offset | PR #104 |
 | P9-6 | P3 | `tools/mutation_report.py` rules classified behaviour as text (the `AbortRecord` reading, `_rotate`'s baseline, `detail`/`aborted`). §10 is revised to text 1659, equivalent 149, and a sensitivity of 276 mutants / 93.90 %; the raw and adjusted scores are unchanged | PR #105 |
@@ -329,7 +329,20 @@ Not defects:
 - #101, #103, #104, #105, #106 and #107: no findings.
 - No review claimed a nonexistent commit.
 
-**Verdict of pass 9:** <PENDING: the coordinator's ratings of P9-1, P9-2 and P9-3; pass 9 is not passed if P9-1 or P9-2 stands as P1.>
+Ratings by the coordinator (2026-10-30, issue #37 comment `6510960714`): P9-1 and P9-2 are P1; P9-3 is P2; P9-4 to P9-11 are P3. The invariants of #100 found P9-1 and P9-2.
+
+**Merged:**
+- #100 at `2be46be`;
+- #101 at `eb1f31f`;
+- #103 at `020049d`;
+- #104 at `40e70ff`;
+- #105 at `e8c65c3`;
+- #106 at `c005eb4`;
+- #107 at `d3280b0`.
+
+#102 was superseded. Every reproduced finding of pass 9 is fixed on `main` at `d3280b083b5a04f9bea48f042a06aa409c87cbd5`, where the suite holds 1030 tests.
+
+**Pass 9 is not passed: P9-1 and P9-2 (Claude) are reproduced P1s; Codex reproduced none.**
 
 ### 11.4 Deviations and readings, for the owner
 
@@ -461,7 +474,9 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 - pass 8: 4 distinct (Claude 2: P8-1, P8-2; Codex 3: 8-1, 8-2, 8-3, of which 8-3 is P8-2). The fix-PR reviews of pass 8 found 2 P1s in the fixes themselves (#92, #95), both superseded before merge.
 
 As the pass-8 auditor counts them, the reproduced P1s of passes 1 to 8 are 1, 4, 1, 6, 3, 3, 4 and 4.
-- pass 9: 2 suspected (Claude 2: P9-1, P9-2; Codex 0), pending the coordinator's ratings. The fix-PR reviews found 1 P1 regression, in #102, superseded before merge.
+- pass 9: 2 (Claude 2: P9-1, P9-2; Codex 0). The fix-PR reviews found 1 P1 regression, in #102, superseded before merge.
+
+The coordinator's count of reproduced P1s at the pin, passes 1 to 9: 1, 4, 1, 6, 3, 3, 4, 4, 2.
 
 **Pass 7** is pinned at `main` `c55e4cee65656355850bde32b07059e37d8b523b`, the merge of #81 (coordinator, 2026-10-29); every reproduced finding of passes 1 to 6 is fixed there. A fresh session (session 9) runs the Claude side.
 
@@ -475,4 +490,6 @@ Pass 8, at `c37d048`, is not passed: P8-1 and P8-2 (Claude), 8-1 and 8-2 (Codex;
 
 **Pass 9** is pinned at `main` `811ba9d6bd13996cec72da62c0179d1baf71c6f2`, the merge of #98, under the owner's continuing authorisation. A fresh session (session 11) runs the Claude side and extends the invariants. Codex pass 9 is the automatic review of the whole-tree PR #99 (branch `audit/pass9-full-tree`, `bb63897`, an ours-merge of the pin with the empty base). It completed at 22:19 UTC with no findings and no inline comments: **the first clean Codex whole-tree result** of the audit. As in passes 7 and 8, it did not answer items 3 and 4 of the request; session 11 runs those read-only checks.
 
-<PENDING: the ratings and verdict of pass 9 (11.3f); its merges and report; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+Pass 9, at `811ba9d`, is not passed (P9-1, P9-2; fixes in #101 and #103).
+
+<PENDING: the pass-9 report on #37; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
