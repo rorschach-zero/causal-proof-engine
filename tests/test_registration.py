@@ -310,8 +310,9 @@ def test_a_register_anchored_after_the_round_is_refused_at_the_round(registry: R
     clock.set(day(13))
     ledger.anchor()
     clock.set(day(14))
-    with pytest.raises(Refusal):  # the named round was published before the register's anchor
+    with pytest.raises(Refusal) as again:  # the named round was published before the register's anchor
         registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(12)))
+    assert again.value.reason == "register_not_anchored"  # the recorded refusal, not the ledger's duplicate (pass 9)
     with pytest.raises(Refusal) as other_round:  # another round is not the one the record names
         registry.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-9", "ab" * 32, day(14)))
     assert other_round.value.reason == "wrong_round"

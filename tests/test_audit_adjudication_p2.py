@@ -141,8 +141,9 @@ def test_a6_one_instant_carries_one_status_whatever_its_time_zone(tmp_path: Path
     reg.register_event(spec())
     clock.set(day(101))
     reg.declare_source_status(SourceStatus("src", first, day(100)))
-    with pytest.raises(Refusal):  # in UTC the second declaration is refused as a duplicate; at c3d6233 it lands
+    with pytest.raises(Refusal) as refused:  # in UTC the second declaration is a duplicate; at c3d6233 it lands
         reg.declare_source_status(SourceStatus("src", second, day(100).astimezone(timezone(timedelta(hours=1)))))
+    assert refused.value.reason == "duplicate_status"  # the registry's rule, not the ledger's identifier (pass 9)
 
 
 # Pass 4 A7 ---------------------------------------------------------------------------------------------------------

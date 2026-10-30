@@ -282,7 +282,9 @@ def forged_registration_rows() -> dict[str, tuple[str, str, object]]:
         "a second calibration record": (
             KIND_CALIBRATION, _ledger_id("calibration", "cal-1b"),
             CalibrationRecord("cal-1b", "claim-1", "block-t", 1000, 0.01, "beacon", "round-7").to_payload()),
-        "a second register": (KIND_REGISTER, "register:other", ConfirmatoryRegister("reg-1", 1, ()).to_payload()),
+        # under the register's own identifier, so that the one-register rule refuses it, not the identifier (issue
+        # #37, pass 9); the ledger refuses the identifier twice, so the case is replayed alone
+        "a second register": (KIND_REGISTER, _ledger_id("register"), ConfirmatoryRegister("reg-1", 1, ()).to_payload()),
     }
 
 
@@ -294,6 +296,11 @@ def test_every_row_the_registry_would_refuse_refuses_the_ledger(registry: Regist
     if case == "a second register":
         registry.anchor_confirmatory_register(ConfirmatoryRegister("reg-1", 1, ("claim-1",)))
     kind, record_id, payload = forged_registration_rows()[case]
+    if case == "a second register":
+        with pytest.raises(Refusal) as second:
+            replay_state(extended(ledger.records(), kind, record_id, payload))  # type: ignore[arg-type]
+        assert second.value.reason == "invalid_record" and "second register" in second.value.detail
+        return
     ledger.append(kind, record_id, payload)  # type: ignore[arg-type]
     clock.set(day(13))
     ledger.anchor()
