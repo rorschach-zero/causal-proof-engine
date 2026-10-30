@@ -98,8 +98,10 @@ def test_4329009804_anchor_verifies_the_chain_against_existing_external_anchors(
     truncated = Ledger(tmp_path / "truncated.sqlite", clock, store)
     clock.advance(timedelta(seconds=1))
     truncated.append("event", "r-0", {"i": 0})
-    with pytest.raises(Refusal):
+    with pytest.raises(Refusal) as short:
         truncated.anchor()
+    # the ledger's own check refuses before it stages anything, not the store's regression check (issue #37, pass 9)
+    assert short.value.reason == "anchor_conflict" and truncated.pending_anchors() == ()
     clock.advance(timedelta(seconds=1))
     honest.append("event", "r-3", {"i": 3})
     assert honest.anchor().prefix_length == 4

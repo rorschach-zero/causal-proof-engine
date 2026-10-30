@@ -140,6 +140,9 @@ def test_an_expiry_equal_to_the_decision_time_or_the_receipt_is_expired(rig: Rig
     assert rig.refused(issue(rig.epoch(), "now", expiry=rig.clock.now())) == "expired"  # expiry == the decision clock
     last = payloads(rig, KIND_CHECK)[-1]
     assert (last["subject"], last["verdict"], last["reason"]) == ("presentation:now", "refused", "expired")
+    # written by the decision, under the chain head it read, not by the receipt's check (issue #37, pass 9)
+    records = rig.ledger.records()
+    assert records[-1].record_id == gate_ledger_id("gate-check", records[-2].entry_hash)
 
 
 def test_a_drift_equal_to_the_tolerance_is_not_a_discontinuity(rig: Rig) -> None:

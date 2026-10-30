@@ -17,7 +17,7 @@ from pathlib import Path
 
 import pytest
 
-from cpe.adjudication import AdjudicationRegistry, SourceStatus
+from cpe.adjudication import AdjudicationRegistry, SourceRule, SourceStatus
 from cpe.adjudication.registry import (
     KIND_CONTENT,
     KIND_EVENT,
@@ -99,7 +99,9 @@ def forged_rows() -> dict[str, tuple[str, str, object]]:
     the registry gives it, so that the write rule, not the identifier, is what refuses it (issue #37, pass 7)."""
     content = archived()
     foreign = archived(claim="not-occurred", source="other")  # other bytes than the archived YES
-    wrong_claim = record("wrong", claim="not-occurred", published=96)  # its content evaluates to "occurred"
+    # its content evaluates to "occurred"; definitive, so that a NO before the deadline is final enough and the
+    # content rule decides (issue #37, pass 9)
+    wrong_claim = record("wrong", claim="not-occurred", published=96, definitive=True)
     late, elsewhere = observation(200), {**observation(97).to_payload(), "source_id": "other"}
     return {
         "content of an unregistered source": (KIND_CONTENT, _ledger_id("content", foreign.sha256), foreign.to_payload()),
@@ -116,14 +118,24 @@ def forged_rows() -> dict[str, tuple[str, str, object]]:
     }
 
 
+# The rule that refuses a case, where more than one could (issue #37, pass 9: two cases were refused by another rule
+# first, so that removing the one they name changed nothing).
+DECIDING = {"record whose content disagrees": "claim_disagrees", "observation of another source": "wrong_source"}
+
+
 @pytest.mark.parametrize("case", sorted(forged_rows()))
 def test_every_row_the_registry_would_refuse_refuses_the_ledger(tmp_path: Path, case: str) -> None:
-    ledger, _, _ = timely_yes(tmp_path)
+    ledger, _, registry = timely_yes(tmp_path)
+    if case == "observation of another source":
+        registry.register_rule(SourceRule("other", occurrence_is_public_act=False, publishes_evidenced_times=True,
+                                          monotone_publication=False))  # registered, so that only its source refuses
     kind, record_id, payload = forged_rows()[case]
     ledger.append(kind, record_id, payload)  # type: ignore[arg-type]
     with pytest.raises(Refusal) as refused:
         AdjudicationRegistry(ledger).state()
     assert refused.value.reason == "invalid_record"
+    if case in DECIDING:
+        assert DECIDING[case] in refused.value.detail
 
 
 def test_the_adjudication_ledger_the_api_writes_still_replays(tmp_path: Path) -> None:

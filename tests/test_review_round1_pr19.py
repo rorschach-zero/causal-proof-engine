@@ -24,7 +24,6 @@ from cpe.registration import (
     derive_seed,
 )
 from tests.test_registration import arm, day, forecast, registration, spec
-from tests.test_schemas import HEX
 
 
 def make(tmp_path: Path, faults: FaultInjector | None = None) -> tuple[RegistrationRegistry, ManualClock, Ledger]:
@@ -210,4 +209,3 @@ def test_4329369285_the_calibration_record_preselects_its_round(tmp_path: Path) 
     assert refused.value.reason == "wrong_round"
     r.supply_beacon_output(BeaconOutput("cal-1", "beacon", "round-7", "ab" * 32, day(12)))
     assert r.seed_of("cal-1") == derive_seed(calibration("round-7").to_payload(), "ab" * 32)
-    assert HEX  # the digest helper of the schema tests is the shape of a beacon value

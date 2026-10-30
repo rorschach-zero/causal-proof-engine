@@ -56,7 +56,10 @@ def test_the_tables_are_disjoint_and_make_the_ledger_kinds() -> None:
 
 
 @pytest.mark.parametrize("module, kind", sorted((m, k) for m, (own, _, _) in REPLAYS.items() for k in own))
-def test_every_kind_is_re_validated_by_its_module(tmp_path: Path, module: str, kind: str) -> None:
+def test_no_kind_is_skipped_by_its_module(tmp_path: Path, module: str, kind: str) -> None:
+    """A malformed row of every kind refuses its module's replay, typed: no kind is skipped. The row is refused by
+    its schema; that each kind is admitted by its write rule is invariant 3's (``tests/test_invariants.py``; issue #37,
+    pass 9: this test was named for the rules, which it never reaches)."""
     _, _, replay = REPLAYS[module]
     ledger = _ledger(tmp_path)
     ledger.append(kind, "chosen:1", {})

@@ -122,16 +122,17 @@ def test_a_snapshot_releases_only_what_its_disclosure_rows_cover(registry: Regis
     sampled = ledger.now
     samples = 0
 
-    def stepping() -> datetime:  # the clock reaches day 61 after E-1's disclosure is written
-        nonlocal samples
+    def stepping() -> datetime:  # the clock reaches day 61 while E-1's disclosure is decided, after the snapshot's
+        nonlocal samples      # own sample (issue #37, pass 9: this step was armed at a third sample, which never came)
         samples += 1
-        if samples == 3:
+        moment = sampled()
+        if samples == 2:
             clock.set(day(61))
-        return sampled()
+        return moment
 
     ledger.now = stepping  # type: ignore[method-assign]
     snapshot = registry.state()
     ledger.now = sampled  # type: ignore[method-assign]
+    assert samples == 2  # the snapshot's sample and the disclosure's: the step was taken
     assert sorted(snapshot.forecasts_by_event) == ["E-1"]  # at d5406dd: E-1 and E-3, E-3 without its row
-    clock.set(day(50))
-    registry.submit_forecast(forecast("E-3", "A", "A-1", 0.3))  # E-3's forecast was never released: still eligible
+    assert disclosures(ledger) == [_ledger_id("disclosure", "E-1")]  # E-3, closed by then, released nothing
