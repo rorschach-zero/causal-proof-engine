@@ -85,9 +85,7 @@ _SERIAL = itertools.count()
 
 # Open findings of issue #37 that the invariants report on the existing suite, by the start of the problem text, each
 # with its strict expected failure in ``tests/test_invariants.py``; the fix removes the entry.
-KNOWN_OPEN: dict[str, str] = {
-    "disclosure: ": "pass 9 P9-1: a read that decides the close persists nothing when no forecast is sealed",
-}
+KNOWN_OPEN: dict[str, str] = {}  # none is open: P9-1 and P9-2 were fixed by #101 and #103
 
 
 def open_findings_removed(problems: list[str]) -> list[str]:

@@ -187,12 +187,16 @@ LABEL_ARGUMENT: dict[str, int] = {
 # Calls whose argument at or after the given position is human-readable text that no code reads.
 TEXT_ARGUMENT: dict[str, int] = {
     "Refusal": 1, "log.warning": 0, "log.info": 0, "log.error": 0, "log.debug": 0, "Defect": 1, "Incident": 2,
-    "AbortRecord": 1, "Problem": 2, "_not_after": 1, "self._rotate": 0, "self._abort": 1, "AssertionError": 0,
-    "_DuplicateKey": 0, "VerificationReport": 4,
+    "Problem": 2, "_not_after": 1, "self._abort": 1, "AssertionError": 0, "_DuplicateKey": 0, "VerificationReport": 4,
 }
+# Calls whose argument at exactly the given position is such text, and whose later arguments are values the code
+# persists or reads: an abort's reading, a rotation's baseline (issue #37, pass 9 P9-6).
+TEXT_ARGUMENT_AT: dict[str, int] = {"AbortRecord": 1, "self._rotate": 0}
 TEXT_KEYWORDS = frozenset({"detail"})
 LABEL_PARAMETERS = frozenset({"field", "path", "schema", "what"})
-TEXT_NAMES = frozenset({"basis", "absence_basis", "detail", "aborted"})
+# Names assigned text that no code reads but as text. ``detail`` and ``aborted`` are not among them: the gate reads both
+# as conditions (``if detail:``, ``if aborted is not None``), so a change there can change behaviour (pass 9 P9-6).
+TEXT_NAMES = frozenset({"basis", "absence_basis"})
 DISPOSITIONS = frozenset({"OPEN", "RESOLVED_YES", "RESOLVED_NO", "EXPIRED_NO", "VOID"})
 CODEC_NAMES = frozenset({"ascii", "utf-8"})
 SQL_START = re.compile(r"^\s*(SELECT|INSERT|DELETE|CREATE|BEGIN|COMMIT|ROLLBACK)\b", re.IGNORECASE)
@@ -206,7 +210,7 @@ def _sink(step: Step, outer: Step | None) -> str | None:
         short = callee.rsplit(".", 1)[-1]
         if short in LABEL_ARGUMENT and index == LABEL_ARGUMENT[short]:
             return f"field label of {short}"
-        if callee in TEXT_ARGUMENT and index >= TEXT_ARGUMENT[callee]:
+        if callee in TEXT_ARGUMENT and index >= TEXT_ARGUMENT[callee] or TEXT_ARGUMENT_AT.get(callee) == index:
             return f"text argument of {callee}"
     if isinstance(parent, ast.keyword) and parent.arg in TEXT_KEYWORDS:
         return f"keyword {parent.arg}"

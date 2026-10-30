@@ -247,3 +247,5 @@ cpe.schemas.event.xǁResolutionTimestampsǁfrom_payload__mutmut_24	equivalent	re
 cpe.schemas.event.xǁResolutionTimestampsǁfrom_payload__mutmut_25	equivalent	receipt is required; also listing it as optional changes neither the required nor the admitted key set
 cpe.schemas.forecast.x_effective_cutoff__mutmut_14	equivalent	a version left on the path is already resolved, and the resolved check comes before the cycle check
 cpe.validation.issuance.x_check_issuance__mutmut_123	equivalent	read only on the issuable path, where it was reassigned from the Jev record
+cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_13	text	the drift figure inside the discontinuity detail: any non-empty detail rotates alike and the figure is message text only
+cpe.capability.gate.xǁCapabilityGateǁ_reading__mutmut_5	equivalent	an empty detail and None are both false: detail is read as the discontinuity condition and as message text, and no discontinuity leaves it unset

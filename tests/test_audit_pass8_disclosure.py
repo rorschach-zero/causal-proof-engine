@@ -82,7 +82,7 @@ def test_codex8_1_a_rollback_before_the_release_refuses_the_read(registry: Regis
     assert disclosures(ledger) == []
 
 
-def test_one_release_per_event_and_none_without_a_forecast_or_before_the_close(
+def test_one_release_per_event_and_none_before_the_close(
         registry: RegistrationRegistry, ledger: Ledger, clock: ManualClock) -> None:
     clock.set(day(21))
     registry.submit_forecast(forecast("E-1"))
@@ -91,8 +91,9 @@ def test_one_release_per_event_and_none_without_a_forecast_or_before_the_close(
     clock.set(day(41))
     for read in READS.values():
         read(registry)
-    assert disclosures(ledger) == [_ledger_id("disclosure", "E-1")]  # E-2 has no forecast: nothing to release
-    assert registry.forecasts_of("E-2") == ()
+    assert disclosures(ledger) == [_ledger_id("disclosure", "E-1")]  # E-2 is not read
+    assert registry.forecasts_of("E-2") == ()  # E-2 has no forecast: its empty release is written too (pass 9 P9-1)
+    assert disclosures(ledger) == [_ledger_id("disclosure", "E-1"), _ledger_id("disclosure", "E-2")]
 
 
 def test_a_release_row_before_the_close_refuses_replay(registry: RegistrationRegistry, ledger: Ledger,
