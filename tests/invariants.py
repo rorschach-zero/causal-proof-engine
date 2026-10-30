@@ -10,8 +10,9 @@ scenario a finding named. ``tests/conftest.py`` applies the first two to every t
 holds the other two and the tests of the machinery itself.
 
 1. Write-replay equivalence (classes W and C). Every value a write returns is the value a replay of the ledger gives
-   right after it, and at the end of every test the writer's in-memory state and clock marks equal a replay of its
-   records and a reopen of its file.
+   right after it, the writing module's replay reads the ledger right after every write it makes (pass 9), and at the
+   end of every test the writer's in-memory state and clock marks equal a replay of its records and a reopen of its
+   file.
 2. Write-restore equivalence (class C). At the end of every test, the canonical export restored into an empty ledger
    gives the same records, anchors, receipt, anchor and observed-wall marks, and the same replayed state of every
    module, or the same refusal.
@@ -321,13 +322,34 @@ def _after_promote(gate: CapabilityGate, result: Any, *_: object) -> list[str]:
     return problems
 
 
+def _module_replays(owner: Any) -> list[str]:
+    """The module of ``owner`` replays the ledger right after its write: a write path that writes a row its own replay
+    refuses leaves a ledger no later read accepts (issue #37, pass 9 P9-11: checked before only when a test read the
+    ledger again)."""
+    records, anchors, _ = owner._ledger.snapshot()
+    try:
+        if isinstance(owner, RegistrationRegistry):
+            _registration(records, anchors)
+        elif isinstance(owner, AdjudicationRegistry):
+            adjudication_module.replay_state(records)
+        elif isinstance(owner, PointInTimeStore):
+            point_in_time_module.replay_state(records)
+        elif isinstance(owner, CapabilityGate):
+            replay_gate(records, max((a.prefix_length for a in anchors), default=0), owner._rules, anchors)
+    except Refusal as refusal:
+        return [f"write-replay: {type(owner).__name__}'s own replay refuses the ledger it wrote ({refusal.reason}: "
+                f"{refusal.detail})"]
+    return []
+
+
 def _after_record(owner: Any, result: Any, *_: object) -> list[str]:
-    """An acknowledged write is durable: the record returned is the ledger's, byte for byte."""
+    """An acknowledged write is durable: the record returned is the ledger's, byte for byte, and the module's replay
+    reads the ledger it left."""
     records = owner._ledger.records()
     record = result[0] if isinstance(result, tuple) else result
     if isinstance(record, Record) and record not in records:
         return [f"write-replay: {record.record_id} was acknowledged and is not in the ledger as returned"]
-    return []
+    return _module_replays(owner)
 
 
 # Invariant 7: disclosure ---------------------------------------------------------------------------------------
@@ -377,7 +399,8 @@ AFTER: dict[tuple[type, str], Callable[..., list[str]]] = {
     **{(AdjudicationRegistry, name): _after_record for name in (
         "archive_content", "submit_record", "submit_observation", "declare_source_status")},
     (PointInTimeStore, "ingest"): _after_record,
-    (CapabilityGate, "perform"): _after_record,
+    **{(AdjudicationRegistry, name): _after_record for name in ("register_event", "register_rule")},
+    **{(CapabilityGate, name): _after_record for name in ("perform", "demote", "anchor_epoch")},
 }
 
 

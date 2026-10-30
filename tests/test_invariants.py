@@ -24,6 +24,7 @@ but no read interface takes.
 from __future__ import annotations
 
 import copy
+import itertools
 import inspect
 from collections.abc import Callable, Iterator
 from dataclasses import replace
@@ -43,7 +44,7 @@ from cpe.capability.records import CommitRecord, gate_ledger_id
 from cpe.capability import gate as gate_module
 from cpe.clock import ManualClock, format_timestamp, parse_timestamp
 from cpe.errors import Refusal
-from cpe.ledger import Anchor, HarnessAnchorStore, Ledger, Record
+from cpe.ledger import Anchor, HarnessAnchorStore, Ledger, Record, replay
 from cpe.ledger import kinds as K
 from cpe.ledger import store as store_module
 from cpe.ledger.record import GENESIS_HASH, entry_digest
@@ -228,17 +229,54 @@ def alternatives(value: JsonValue, strings: list[str]) -> list[JsonValue]:
     return []
 
 
+def shifted(payload: JsonValue, paths: tuple[tuple[Any, ...], ...], to: str) -> JsonValue:
+    """``payload`` with the leaves at ``paths``, which hold one time, set to ``to``: a time written in several fields (a
+    disposition's ``adjudicated_at`` and its timestamps' ``adjudication``) moved together (issue #37, pass 9 P9-11)."""
+    changed = copy.deepcopy(payload)
+    for path in paths:
+        changed = with_leaf(changed, path, to)
+    return changed
+
+
 def candidates(records: tuple[Record, ...], own: frozenset[str]) -> Iterator[tuple[int, Record, str]]:
-    """For every row of the module: the row itself, and every one-field perturbation, as (index, row, label)."""
+    """For every row of the module: the row itself; every one-field perturbation; every payload time set to the
+    row's own receipt; every time written in several fields moved together; and the receipt itself moved, the payload
+    unchanged (pass 9 P9-11: a payload time was never set equal to the receipt, and two fields never moved
+    together). As (index, row, label)."""
     strings = sorted({v for r in records for _, v in leaves(r.payload) if isinstance(v, str)
                       and not v.endswith("Z") and len(v) < 40})
     for index, original in enumerate(records):
         if original.kind not in own:
             continue
         yield index, original, "as written"
+        times: dict[str, list[tuple[Any, ...]]] = {}
         for path, value in leaves(original.payload):
             for other in alternatives(value, strings):
                 yield index, replace(original, payload=with_leaf(original.payload, path, other)), f"{path}={other!r}"
+            if isinstance(value, str) and value.endswith("Z") and path:
+                times.setdefault(value, []).append(path)
+                if value != original.receipt_time:
+                    yield (index, replace(original, payload=with_leaf(original.payload, path, original.receipt_time)),
+                           f"{path}=the receipt")
+        for stamp, paths in times.items():
+            moment = parse_timestamp(stamp)
+            for size in range(2, len(paths) + 1):
+                for together in itertools.combinations(paths, size):
+                    for delta in (timedelta(days=-1), timedelta(microseconds=1), timedelta(days=1)):
+                        to = format_timestamp(moment + delta)
+                        yield (index, replace(original, payload=shifted(original.payload, together, to)),
+                               f"every {together}={to}")
+        receipt = parse_timestamp(original.receipt_time)
+        for delta in (timedelta(microseconds=-1), timedelta(microseconds=1), timedelta(days=1)):
+            yield index, replace(original, receipt_time=format_timestamp(receipt + delta)), f"receipt {delta}"
+        # the receipt at every later time an earlier row names (a period start, a close, an issuance open), and just
+        # before it: a bound between rows is tried at its edge (pass 9 P9-11)
+        named = sorted({v for r in records[:index] for _, v in leaves(r.payload)
+                        if isinstance(v, str) and v.endswith("Z") and v > original.receipt_time})
+        for stamp in named:
+            moment = parse_timestamp(stamp)
+            for at in (moment - timedelta(microseconds=1), moment):
+                yield index, replace(original, receipt_time=format_timestamp(at)), f"receipt {format_timestamp(at)}"
 
 
 def placements(index: int, label: str) -> list[int]:
@@ -260,10 +298,17 @@ def anchors_at(anchors: tuple[Anchor, ...], length: int, receipt: str) -> tuple[
 def replay_accepts(replay_module: Replay, prefix: tuple[Record, ...], row: Record, anchors: tuple[Anchor, ...]) -> bool:
     records = chain(rows_of(prefix) + [(row.kind, row.record_id, row.receipt_time, row.payload)])
     try:
+        replay(records)  # the ledger's own rules first: receipts in order (a module replay leaves them to it)
         replay_module(records, anchors)
     except Refusal:
         return False
     return True
+
+
+# A disposition carries the clock sample it was decided on, and its append may be received later than that sample:
+# a row received after the time it names is one the write path writes, which an oracle run at the receipt cannot
+# reproduce (pass 9 P9-11).
+DECIDED_BEFORE_RECEIPT = frozenset({K.KIND_DISPOSITION})
 
 
 # A status row is admitted by one status per source and instant, not by its identifier, because a ledger written
@@ -299,7 +344,9 @@ def disagreements(records: tuple[Record, ...], anchors: tuple[Anchor, ...], own:
             seen = anchors_at(anchors, position, row.receipt_time)
             replayed = replay_accepts(replay_module, prefix, row, seen)
             written = path_writes(write, prefix, row, seen, scratch)
-            if replayed != written and not (replayed and row.kind in read_as_written):
+            later = label.startswith("receipt ") and not label.startswith("receipt -") \
+                and row.kind in DECIDED_BEFORE_RECEIPT
+            if replayed != written and not (replayed and (row.kind in read_as_written or later)):
                 found.append(f"{row.kind} {row.record_id} {label} at position {position + 1}: replay "
                              f"{'accepts' if replayed else 'refuses'}, the write path "
                              f"{'writes it' if written else 'refuses it'}")
@@ -433,8 +480,14 @@ GATE_FREE: dict[str, tuple[tuple[Any, ...], ...]] = {
     K.KIND_INTENT: (("reading", "wall"), ("reading", "monotonic")),
     K.KIND_ABORT: (("reading",), ("reason",)),
     K.KIND_COMMIT: (("reading", "wall"), ("reading", "monotonic")),
-    K.KIND_CHECK: (("reading",), ("subject",), ("verdict",), ("reason",)),
+    # a check's verdict is free between the two the gate writes, and only between them (pass 9 P9-11: replay refuses
+    # any other, a rule this test did not try)
+    K.KIND_CHECK: (("reading",), ("subject",), ("reason",)),
 }
+GATE_FREE_VERDICTS = ("('verdict',)='admitted'", "('verdict',)='refused'")
+# The perturbations of time the gate itself can make, for which there is no oracle: another receipt, a reading at its
+# own receipt, a time moved in several fields (pass 9 P9-11).
+GATE_TIMES = ("receipt ", "every ")
 
 
 def test_invariant_3_gate(tmp_path: Path) -> None:
@@ -455,7 +508,8 @@ def test_invariant_3_gate(tmp_path: Path) -> None:
     replay_gate(records, max(a.prefix_length for a in anchors), RULES, anchors)  # the reference reads
     found = []
     for index, row, label in candidates(records, K.GATE_KINDS):
-        if label == "as written" or any(label.startswith(str(free)[:-1]) for free in GATE_FREE[row.kind]):
+        if label == "as written" or any(label.startswith(str(free)[:-1]) for free in GATE_FREE[row.kind]) \
+                or label.startswith(GATE_FREE_VERDICTS + GATE_TIMES) or label.endswith("=the receipt"):
             continue
         prefix = records[:index]
         seen = anchors_at(anchors, index + 1, row.receipt_time)
@@ -820,3 +874,20 @@ def test_p9_2_a_commit_read_below_a_persisted_wall_time_confers_no_level(tmp_pat
     with pytest.raises(Refusal) as refused:
         rig.gate.perform("sim_read")  # at 811ba9d: admitted at SIM_READ_ONLY
     assert refused.value.reason == "invalid_gate_ledger"
+
+
+def test_invariant_1_replays_the_module_after_a_write_whose_row_it_refuses(tmp_path: Path) -> None:
+    """Pass 9 P9-11: a write path that writes a row its own replay refuses (here a claim received after its period
+    started, as a write without its ``late_claim`` check would) is found right after the write, not only when a test
+    reads the ledger again."""
+    clock = ManualClock(day(1))
+    ledger = Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore())
+    registry = RegistrationRegistry(ledger)
+    claim = ClaimPreregistration("claim-1", "fixed_question_set", "Q-1", "holder", day(1), day(60), day(400),
+                                 "period-balanced", ("DESIGN_C",), ("L-1",), "cal-1")
+    clock.set(day(61))
+    written = ledger.append(K.KIND_CLAIM, registration_module._ledger_id("claim", "claim-1"), claim.to_payload())
+    problems = invariants.AFTER[(RegistrationRegistry, "register_claim")](registry, written, claim)
+    assert problems and "own replay refuses the ledger it wrote" in problems[0]
+    with pytest.raises(Refusal):
+        registry.event("E-1")  # the ledger is unreadable from here on
