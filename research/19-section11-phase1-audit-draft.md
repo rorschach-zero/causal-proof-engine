@@ -307,7 +307,7 @@ Pinned by the coordinator at the merge of #98 (issue #37 comment `6509542669`); 
 |---|---|---|---|
 | P9-1 | **P1** (class C, 8-1 precedent; invariant 7) | `forecasts_of`, `forecasts_for_baseline` and `slot_states` persisted nothing when the event had no forecast. A read after the close reported an empty release, or every slot an abstention; after a rollback above every receipt, a FULL forecast filled a slot already reported as an abstention (RC-109, `17` item 2 "Clock") | PR #101 |
 | P9-2 | **P1** (class W readings, 8-2 precedent; invariant 5) | Gate replay judged readings by boot id and drift only: a raw commit with the epoch's start reading, below its intent's, conferred its level (`perform("sim_read")` admitted) | PR #103 (supersedes #102) |
-| P9-3 | P2 (its finder had proposed P1 under 7-1) | A discontinuity rotation kept `observed = max(now, baseline.wall)` while persisting only the baseline, so the writer refused a time that a restore of the full export admitted | PR #103 |
+| P9-3 | P2 (rated by the coordinator; the finder's argument for P1 under 7-1 is recorded beside the rating) | A discontinuity rotation kept `observed = max(now, baseline.wall)` while persisting only the baseline, so the writer refused a time that a restore of the full export admitted | PR #103 |
 | P9-4 | P3 | `Ledger.restore(external=None)` raised `AttributeError` | PR #104 |
 | P9-5 | P3 | `ManualClock` accepted a start whose `tzinfo` gives no offset | PR #104 |
 | P9-6 | P3 | `tools/mutation_report.py` rules classified behaviour as text (the `AbortRecord` reading, `_rotate`'s baseline, `detail`/`aborted`). §10 is revised to text 1659, equivalent 149, and a sensitivity of 276 mutants / 93.90 %; the raw and adjusted scores are unchanged | PR #105 |
@@ -474,7 +474,7 @@ Pass 6, at `1dca8d7`, is not passed: Y1 and E1 (Claude) and 6-3 (Codex) are repr
 - pass 8: 4 distinct (Claude 2: P8-1, P8-2; Codex 3: 8-1, 8-2, 8-3, of which 8-3 is P8-2). The fix-PR reviews of pass 8 found 2 P1s in the fixes themselves (#92, #95), both superseded before merge.
 
 As the pass-8 auditor counts them, the reproduced P1s of passes 1 to 8 are 1, 4, 1, 6, 3, 3, 4 and 4.
-- pass 9: 2 (Claude 2: P9-1, P9-2; Codex 0). The fix-PR reviews found 1 P1 regression, in #102, superseded before merge.
+- pass 9: 2 P1 at the pin (Claude 2: P9-1, P9-2; Codex 0), not passed. The fix-PR reviews found 1 P1 regression, in #102, superseded before merge.
 
 The coordinator's count of reproduced P1s at the pin, passes 1 to 9: 1, 4, 1, 6, 3, 3, 4, 4, 2.
 
