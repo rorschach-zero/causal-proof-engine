@@ -617,12 +617,14 @@ original and the mutated function (`tools/mutation_report.py`); the hand table g
 
 | Category | Count | Of which | What it is |
 |---|---|---|---|
-| text | 1660 | 1656 by rule, 4 by hand | a refusal's detail text (774), a field label passed to a validator for its messages (846 by rule, 6 as a default label), the adjudication basis and other record text no code reads (30), the line number or key of an export refusal (3), the message of an internal exception (1). The reason code of a refusal is never text |
-| equivalent | 148 | 63 by rule, 85 by hand | SQL keyword case (41), codec-name case (12), `typing.cast` type arguments (10); values always reassigned before they are read; guards made redundant by an earlier check; branches unreachable on any ledger the registries write; fields written and never read (below) |
+| text | 1659 | 1654 by rule, 5 by hand | a refusal's detail text (773), a field label passed to a validator for its messages (846 by rule, 6 as a default label), the adjudication basis and other record text no code reads (30), the line number or key of an export refusal (3), the message of an internal exception (1). The reason code of a refusal is never text |
+| equivalent | 149 | 63 by rule, 86 by hand | SQL keyword case (41), codec-name case (12), `typing.cast` type arguments (10); values always reassigned before they are read; guards made redundant by an earlier check; branches unreachable on any ledger the registries write; fields written and never read (below) |
 | tool-limit | 16 | by hand | 12 mutants of `_order`, a factory that runs once at import to build `COMPARATORS`, which mutmut's per-call switch cannot reach; 4 reason mutants of `evaluate` that only the deselected `test_4335130178` kills. Both claims were checked by applying each mutation to the source (2026-10-22): the full suite fails on the twelve, the deselected test on the four |
 | accepted | 3 | by hand | the retry bound of the three contention loops (`range(8)` to `range(9)` in `RegistrationRegistry._write`, `CapabilityGate._append`, `AdjudicationRegistry.adjudicate`): a real difference that only a ninth consecutive stale chain head shows; not worth a test that forges eight concurrent writers. Counted against the adjusted score |
 | gap | 138 | by hand | mutants that change the identifier a record is written under: 134 in a `_ledger_id` call or in `CapabilityGate._intent_id`, 3 in the resubmission count of the registration replay, which numbers forecast identifiers, and 1 (`_validate` 17) that writes a refused check under another identifier. The identifier format is a contract (decision below), so each is a test gap; golden-identifier tests are queued for the whole-codebase audit. Counted against the adjusted score |
 | unclassified | 0 | | |
+
+**Revision of 2026-10-29 (issue #37, pass 9, P9-6).** Two structural rules of `tools/mutation_report.py` classified behaviour as text: every argument of `AbortRecord` after its reason (the persisted reading) and of `self._rotate` (a baseline), and any value assigned to `detail` or `aborted`, which the gate reads as conditions. The rules are narrowed; the two survivors they had classified (`CapabilityGate._reading` mutants 5 and 13, both "assigned to detail") are classified by hand: mutant 13 stays text (the drift figure in the message), mutant 5 (`detail = None`) is equivalent. The figures of this section are those of the narrowed rules; the excluded count, the raw and the adjusted score are unchanged, the sensitivity below moves from 277 to 276 mutants (93.89 % to 93.90 %).
 
 **Adjusted score 97.85 %,** derived from the committed classification and printed by the `classify` command above:
 detected (killed or timed out, 6422) over all mutants minus the text, equivalent and tool-limit survivors
@@ -638,8 +640,8 @@ the table.)
 
 **Sensitivity** to finding `4347648541` of the same review, reported and not applied: a mutant that puts `None` where
 a message goes (a refusal's detail, record text, an assigned basis) changes the value's type, so it is not text;
-validator labels, which stay inside f-strings, remain text. Counting those 277 mutants against as well gives an
-adjusted score of **93.89 %**. (First listed as 268 mutants and 94.04 % from a text match on the changed lines; the
+validator labels, which stay inside f-strings, remain text. Counting those 276 mutants against as well gives an
+adjusted score of **93.90 %**. (First listed as 268 mutants and 94.04 % from a text match on the changed lines; the
 syntax-tree count below is the one that holds.) Reproduced from the committed files, from the repository root, by:
 
 ```sh
@@ -663,7 +665,7 @@ print(f"4347648541: {len(sink)} moved, adjusted {6422 / (8387 - excluded + len(s
 PY
 ```
 
-which prints `4347648541: 277 moved, adjusted 93.89%`. The raw score, 76.56 %, is the primary figure under every
+which prints `4347648541: 276 moved, adjusted 93.90%`. The raw score, 76.56 %, is the primary figure under every
 reading.
 
 **How the run on `aad6255` was reached.** The earlier session measured `ac4c640` (5526 killed, 2739 survived, 121
