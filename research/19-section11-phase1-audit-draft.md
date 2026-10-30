@@ -137,7 +137,7 @@ Authorised by the owner after pass 3, and pinned at the merge of PR #50 on `f775
 | `4414429445` (PR #63) | P2 | A held pending anchor attempt stayed pending after a larger anchor succeeded, so an eligible round was refused `anchor_pending` until the ledger was reopened (origin R1, PR #61; present on `main` `bba974d`) | PR #65 |
 | `4414429436` (PR #63) | — | Claimed a commit `f152594` with a Codex author and a session footer. Not reproducible: the object is absent from the repository, the PR's commits carry the owner's identity and no trailer, and the provenance check reports 0 findings. Recorded as a reviewer artifact | no action |
 
-**Codex pass 4**, run by the owner in the web UI: <PENDING: findings and classification.>
+**Codex pass 4**, run by the owner in the web UI: not received. From pass 6 on, Codex's full-tree review ran as the automatic review of a whole-tree PR against an empty base.
 
 **Pass 4 is not passed: W1, W2, W3 and C1 are reproduced P1s** (F5 re-rated P1 with them). A new pass follows at a new pin once the fixes are merged.
 
@@ -340,7 +340,15 @@ Ratings by the coordinator (2026-10-30, issue #37 comment `6510960714`): P9-1 an
 - #106 at `c005eb4`;
 - #107 at `d3280b0`.
 
-#102 was superseded. Every reproduced finding of pass 9 is fixed on `main` at `d3280b083b5a04f9bea48f042a06aa409c87cbd5`, where the suite holds 1030 tests.
+#102 was superseded. Every reproduced finding of pass 9 is fixed on `main` at `d3280b083b5a04f9bea48f042a06aa409c87cbd5`. There:
+- the suite gives 1030 passed (Python 3.13.17 and 3.11.17);
+- mypy is clean on 149 files;
+- the import boundary reports 0 findings;
+- T-41 gives 71 OK;
+- the provenance check of `811ba9d..d3280b0` reports 0 findings;
+- CI is green.
+
+Pass-9 report: issue #37 comment `6512203003`. Comment `6511828016` also holds the auditor's answers to items 3 and 4 of the request.
 
 **Pass 9 is not passed: P9-1 and P9-2 (Claude) are reproduced P1s; Codex reproduced none.**
 
@@ -492,4 +500,4 @@ Pass 8, at `c37d048`, is not passed: P8-1 and P8-2 (Claude), 8-1 and 8-2 (Codex;
 
 Pass 9, at `811ba9d`, is not passed (P9-1, P9-2; fixes in #101 and #103).
 
-<PENDING: the pass-9 report on #37; "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
+<PENDING: "passed at <SHA>: neither auditor reproduced a P1" when a pass passes.>
