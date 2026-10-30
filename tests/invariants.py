@@ -87,8 +87,6 @@ _SERIAL = itertools.count()
 # with its strict expected failure in ``tests/test_invariants.py``; the fix removes the entry.
 KNOWN_OPEN: dict[str, str] = {
     "disclosure: ": "pass 9 P9-1: a read that decides the close persists nothing when no forecast is sealed",
-    **{f"clock: {where}: gate_": "pass 9 P9-2: gate replay reads a reading below a wall time persisted before it"
-       for where in ("written", "reopened", "restored")},
 }
 
 

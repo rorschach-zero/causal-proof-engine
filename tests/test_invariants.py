@@ -794,7 +794,6 @@ def test_p9_1_a_read_that_decided_the_close_bounds_the_clock_when_nothing_is_sea
     assert refused.value.reason == "clock_rollback"
 
 
-@pytest.mark.xfail(strict=True, reason=invariants.KNOWN_OPEN["clock: written: gate_"])
 def test_p9_2_a_commit_read_below_a_persisted_wall_time_confers_no_level(tmp_path: Path) -> None:
     """The protected operation takes no step on a reading below the latest wall time a persisted reading observed: it
     refuses ``clock_rollback`` (RC-37, RC-65; ``17`` item 2 "Clock"). Replay judges an intent's and a commit's reading
