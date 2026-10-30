@@ -72,7 +72,9 @@ def test_three_forecasts_before_the_window_are_kept(tmp_path: Path) -> None:  # 
     assert len(registry._state().forecasts_by_event["E-1"]) == 3
 
 
-def test_a_discontinuity_rotates_at_the_reading_that_showed_it(tmp_path: Path) -> None:  # _rotate 2
+def test_a_discontinuity_rotates_with_the_new_boot_as_its_baseline(tmp_path: Path) -> None:  # _rotate 2
+    """The baseline is the rotation's own reading, taken after the one that showed the discontinuity (issue #37, pass
+    9, PR #102 review 4418866225): the new boot identifier, and the monotonic time read again."""
     clock = ManualClock(datetime(2026, 1, 1, tzinfo=timezone.utc))
     time_source = CountingTimeSource(clock)
     ledger = Ledger(tmp_path / "l.sqlite", clock, HarnessAnchorStore())
@@ -81,7 +83,7 @@ def test_a_discontinuity_rotates_at_the_reading_that_showed_it(tmp_path: Path) -
     with pytest.raises(Refusal):
         gate.perform("research")
     baseline = gate.state().baseline
-    assert baseline is not None and baseline.boot_id == "boot-2" and baseline.monotonic == 5.0
+    assert baseline is not None and baseline.boot_id == "boot-2" and baseline.monotonic > 5.0
 
 
 def test_two_step_3_aborts_on_one_ledger(tmp_path: Path) -> None:  # promote 165, 167

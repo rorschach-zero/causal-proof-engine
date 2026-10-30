@@ -107,6 +107,17 @@ def discontinuity(reading: ClockReading, state: GateState) -> str | None:
     return None
 
 
+def _check_reading(record: Record, reading: ClockReading, state: GateState, received_before: datetime | None) -> None:
+    """A gate record's reading was taken from the ledger clock at or above every wall time the ledger held: the latest
+    reading a persisted gate record observed, and every receipt before it. The protected operation takes no step on a
+    reading below either (``clock_rollback``; RC-37, RC-65; ``17`` item 2 "Clock"), and replay reads none: a reading
+    provably below a persisted bound was not taken by the gate (issue #37, pass 9 P9-2)."""
+    bounds = [bound for bound in (state.observed, received_before) if bound is not None]
+    if bounds and reading.wall < max(bounds):
+        raise Refusal("invalid_gate_ledger", f"{record.kind} {record.record_id} was read below a wall time the ledger "
+                      "persisted before it")
+
+
 def _check_intent(record: Record, intent: IntentRecord, state: GateState, rules: GateRules,
                   anchors: dict[tuple[int, str], datetime]) -> None:
     """The checks the protected operation made before it wrote this intent (``CapabilityGate._validate``), on the
@@ -178,7 +189,10 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
     state = GateState()
     hashes: list[str] = []
     epochs_seen: set[int] = set()
+    received_before: datetime | None = None  # the latest receipt before the record replayed
     for record in records:
+        latest_before, received_before = received_before, max(
+            [parse_timestamp(record.receipt_time), *([received_before] if received_before is not None else [])])
         if not owned(record.kind, GATE_KINDS, record.record_id):
             state.head = record.entry_hash
             hashes.append(record.entry_hash)
@@ -188,6 +202,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
         hashes.append(record.entry_hash)
         if record.kind == KIND_EPOCH:
             epoch = EpochRecord.from_payload(record.payload)
+            _check_reading(record, epoch.baseline, state, latest_before)
             if epoch.index != state.epoch_index + 1:
                 raise Refusal("invalid_gate_ledger", f"epoch index {epoch.index} does not follow {state.epoch_index}")
             # A rotation names an epoch no earlier rotation of the ledger named: a repeated identifier would revive
@@ -208,6 +223,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
             intent = IntentRecord.from_payload(record.payload)
             if intent.intent_id in state.intents:
                 raise Refusal("invalid_gate_ledger", f"intent {intent.intent_id} appears twice")
+            _check_reading(record, intent.reading, state, latest_before)
             _check_intent(record, intent, state, rules, published)
             state.intents[intent.intent_id] = intent
             state.intent_seq[intent.intent_id] = record.seq
@@ -217,6 +233,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
             if abort.intent_id not in state.intents or abort.intent_id in state.commits \
                     or abort.intent_id in state.aborted or record.record_id != gate_ledger_id("gate-abort", abort.intent_id):
                 raise Refusal("invalid_gate_ledger", f"abort of {abort.intent_id} without a pending intent")
+            _check_reading(record, abort.reading, state, latest_before)
             state.aborted[abort.intent_id] = abort.reason
             state.observe(abort.reading)
         elif record.kind == KIND_COMMIT:
@@ -227,6 +244,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
                 raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} without a pending intent")
             if stored.capability.epoch != state.epoch:
                 raise Refusal("invalid_gate_ledger", f"commit of {commit.intent_id} after its epoch rotated")
+            _check_reading(record, commit.reading, state, latest_before)
             _check_commit(record, commit, state, hashes, published)
             state.commits[commit.intent_id] = commit
             state.commit_seq[commit.intent_id] = record.seq
@@ -237,6 +255,7 @@ def replay_gate(records: tuple[Record, ...], anchored_prefix: int, rules: GateRu
         elif record.kind == KIND_CHECK:
             check = CheckRecord.from_payload(record.payload)
             _check_check(record, check, prev_head, state)
+            _check_reading(record, check.reading, state, latest_before)
             state.observe(check.reading)
     return state
 

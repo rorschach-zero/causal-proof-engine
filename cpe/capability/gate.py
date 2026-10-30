@@ -112,12 +112,14 @@ class CapabilityGate:
         if hook is not None:
             hook()
 
-    def _append(self, decide: Decide, admit: Admit | None = None, sampled: datetime | None = None) -> Record:
+    def _append(self, decide: Decide, admit: Admit | None = None) -> Record:
         """One read-decide-write against the chain head the decision was taken on; a head that moved makes the
         decision recompute on the new state (another writer on the same ledger, this gate or another). ``admit``
         is checked by the ledger against the receipt the append assigns. The reading the decision persists holds
-        the wall time of its clock sample (or ``sampled``, an earlier sample it carries), which the ledger keeps as
-        a bound of every later clock read, of every registry on it (issue #37, pass 6 Codex 6-3)."""
+        the wall time of its clock sample, which the ledger keeps as a bound of every later clock read, of every
+        registry on it (issue #37, pass 6 Codex 6-3). No decision persists a reading taken by an earlier sample: one
+        taken before another writer's record would lie below that record's receipt, which replay refuses (pass 9 P9-2,
+        PR #102 review 4418866225), and the bound it kept would be one the ledger does not hold (pass 9 P9-3)."""
         with self._lock:
             for _ in range(8):
                 state = self.state()
@@ -132,10 +134,9 @@ class CapabilityGate:
                     raise Refusal("clock_rollback", f"server clock {format_timestamp(now)} is below the wall time "
                                   f"{format_timestamp(state.observed)} a persisted check observed (RC-65)")
                 kind, record_id, payload = decide(state, now)
-                observed = now if sampled is None else max(now, sampled)
                 try:
                     return self._ledger.append(kind, record_id, payload, expected_head=state.head, admit=admit,
-                                               observed=observed)
+                                               observed=now)
                 except Refusal as refusal:
                     if refusal.reason == "clock_rollback":  # the append's own clock sample (4333626183)
                         log.warning("clock rollback refused: %s", refusal)
@@ -180,24 +181,27 @@ class CapabilityGate:
                 detail = (f"wall-minus-monotonic drifted {reading.offset() - base.offset():.3f}s from the epoch "
                           f"baseline (tolerance {tolerance}s)")
             if detail:
-                self._rotate(f"discontinuity:{detail}", reading)
+                self._rotate(f"discontinuity:{detail}")  # its baseline is the rotation's own reading
                 log.warning("clock discontinuity, re-authorisation required: %s", detail)
                 raise Refusal("clock_discontinuity", f"{detail}; every outstanding capability is invalid")
         return reading
 
     # epochs -----------------------------------------------------------------------------------------------------
 
-    def _rotate(self, reason: str, baseline: ClockReading | None = None) -> Record:
+    def _rotate(self, reason: str) -> Record:
         """Persist the rotation (and the floor) in one writer transaction, then anchor it; an anchor failure never
-        rolls it back: the gate stays demoted-unanchored until ``anchor_epoch`` succeeds (RC-103, RC-123)."""
+        rolls it back: the gate stays demoted-unanchored until ``anchor_epoch`` succeeds (RC-103, RC-123). The baseline
+        is the reading of the rotation's own clock sample, against the chain head it is appended on, also after a
+        discontinuity: the reading that showed it was taken before, possibly before another writer's record (PR #102
+        review 4418866225), and the time source is read again for the new epoch."""
         def decide(state: GateState, now: datetime) -> Write:
-            reading = baseline if baseline is not None else self._raw_reading(now)
+            reading = self._raw_reading(now)
             # the identifier is random (not a secret): unique across restores, which a counter is not (RC-123)
             record = EpochRecord(secrets.randbits(62), state.epoch_index + 1, reason, reading, self._release_digest,
                                  float(self._tolerance))
             return KIND_EPOCH, epoch_ledger_id(record.index, record.epoch), record.to_payload()
 
-        record = self._append(decide, sampled=None if baseline is None else baseline.wall)
+        record = self._append(decide)
         self._try_anchor()
         return record
 

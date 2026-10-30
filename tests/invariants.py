@@ -85,10 +85,7 @@ _SERIAL = itertools.count()
 
 # Open findings of issue #37 that the invariants report on the existing suite, by the start of the problem text, each
 # with its strict expected failure in ``tests/test_invariants.py``; the fix removes the entry.
-KNOWN_OPEN: dict[str, str] = {
-    **{f"clock: {where}: gate_": "pass 9 P9-2: gate replay reads a reading below a wall time persisted before it"
-       for where in ("written", "reopened", "restored")},
-}
+KNOWN_OPEN: dict[str, str] = {}  # none is open: P9-1 and P9-2 were fixed by #101 and #103
 
 
 def open_findings_removed(problems: list[str]) -> list[str]:
